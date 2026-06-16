@@ -10,7 +10,7 @@ export default function LoadList({
   return (
     <div className="flex flex-col h-screen bg-gray-950">
       <div className="px-4 py-4 border-b border-gray-800">
-        <h1 className="text-white text-base font-medium">Load tracker</h1>
+        <h1 className="text-white text-base font-medium">Load Log</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pt-3">
