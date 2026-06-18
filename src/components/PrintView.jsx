@@ -5,7 +5,6 @@ export default function PrintView({ loads, onClose }) {
     window.print();
   }
 
-  // Розбиваємо лоуди на групи по 4
   const pages = [];
   for (let i = 0; i < loads.length; i += 4) {
     pages.push(loads.slice(i, i + 4));
@@ -13,7 +12,11 @@ export default function PrintView({ loads, onClose }) {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Кнопки */}
+      <style>{`
+  @media print {
+    .page-break { page-break-before: always !important; break-before: page !important; }
+  }
+`}</style>
       <div className="print:hidden flex gap-3 p-4 border-b border-gray-200">
         <button
           onClick={handlePrint}
@@ -29,95 +32,96 @@ export default function PrintView({ loads, onClose }) {
         </button>
       </div>
 
+      <h1 className="text-center text-xl font-bold text-gray-800 mb-6 print:text-lg print:mb-4 p-6 print:p-2 max-w-3xl mx-auto">
+        Load Log — Monthly Report
+      </h1>
+
       {pages.map((pageLoads, pageIdx) => (
-        <div
-          key={pageIdx}
-          className="p-6 print:p-2 print:text-xs max-w-3xl mx-auto"
-        >
-          <h1 className="text-center text-xl font-bold text-gray-800 mb-6 print:text-lg print:mb-4">
-            Load Log — Monthly Report
-          </h1>
-
-          {/* Лоуди по 2 в ряд */}
-          <div className="grid grid-cols-2 gap-4 print:gap-3">
-            {pageLoads.map((load, i) => {
-              const c = calcLoad(load);
-              return (
-                <div
-                  key={i}
-                  className="border border-gray-300 rounded-lg p-2 text-xs break-inside-avoid print:p-1.5"
-                >
-                  <div className="font-bold text-gray-900 text-sm mb-2 pb-1 border-b border-gray-200">
-                    {load.from} → {load.to}
-                  </div>
-
-                  <Row label="Date" value={fmtDate(load.date)} />
-                  <Row
-                    label="Loaded miles"
-                    value={`${load.miles.toLocaleString()} mi`}
-                  />
-                  {load.dh > 0 && (
-                    <Row label="Deadhead" value={`${load.dh} mi`} />
-                  )}
-                  {load.weight > 0 && (
-                    <Row
-                      label="Weight"
-                      value={`${load.weight.toLocaleString()} lbs`}
-                    />
-                  )}
-
-                  <div className="mt-2 mb-1 text-gray-400 uppercase text-xs tracking-wider">
-                    Pay
-                  </div>
-                  <Row label="Gross rate" value={fmtMoney(load.gross)} />
-                  <Row
-                    label="Your share"
-                    value={
-                      load.payMode === "pct"
-                        ? `${load.payVal}%`
-                        : `${load.payVal}¢/mi`
-                    }
-                  />
-                  <Row label="Your gross" value={fmtMoney(c.myGross)} />
-
-                  {(load.diesel?.length > 0 || load.expenses?.length > 0) && (
-                    <div className="mt-2 mb-1 text-gray-400 uppercase text-xs tracking-wider">
-                      Expenses
+        <div key={pageIdx}>
+          <div
+            className={`p-6 print:p-2 print:text-xs max-w-3xl mx-auto break-inside-avoid ${pageIdx > 0 ? "page-break" : ""}`}
+          >
+            <div className="grid grid-cols-2 gap-4 print:gap-3">
+              {pageLoads.map((load, i) => {
+                const c = calcLoad(load);
+                return (
+                  <div
+                    key={i}
+                    className="border border-gray-300 rounded-lg p-2 text-xs break-inside-avoid print:p-1.5"
+                  >
+                    <div className="font-bold text-gray-900 text-sm mb-2 pb-1 border-b border-gray-200">
+                      {load.from} → {load.to}
                     </div>
-                  )}
 
-                  {load.diesel?.map((d, j) => (
+                    <Row label="Date" value={fmtDate(load.date)} />
                     <Row
-                      key={j}
-                      label={`Fuel #${j + 1}`}
-                      value={`$${d.amount} − $${d.discount} = $${d.amount - d.discount}`}
+                      label="Loaded miles"
+                      value={`${load.miles.toLocaleString()} mi`}
                     />
-                  ))}
+                    {load.dh > 0 && (
+                      <Row label="Deadhead" value={`${load.dh} mi`} />
+                    )}
+                    {load.weight > 0 && (
+                      <Row
+                        label="Weight"
+                        value={`${load.weight.toLocaleString()} lbs`}
+                      />
+                    )}
 
-                  {load.expenses?.map((e, j) => (
-                    <Row key={j} label={e.name} value={fmtMoney(e.amount)} />
-                  ))}
+                    <div className="mt-2 mb-1 text-gray-400 uppercase text-xs tracking-wider">
+                      Pay
+                    </div>
+                    <Row label="Gross rate" value={fmtMoney(load.gross)} />
+                    <Row
+                      label="Your share"
+                      value={
+                        load.payMode === "pct"
+                          ? `${load.payVal}%`
+                          : `${load.payVal}¢/mi`
+                      }
+                    />
+                    <Row label="Your gross" value={fmtMoney(c.myGross)} />
 
-                  <Row
-                    label="Total expenses"
-                    value={fmtMoney(c.fuelActual + c.otherExp)}
-                  />
+                    {(load.diesel?.length > 0 || load.expenses?.length > 0) && (
+                      <div className="mt-2 mb-1 text-gray-400 uppercase text-xs tracking-wider">
+                        Expenses
+                      </div>
+                    )}
 
-                  <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between font-bold text-sm">
-                    <span className="text-gray-900">Net profit</span>
-                    <span
-                      className={c.net >= 0 ? "text-green-600" : "text-red-600"}
-                    >
-                      {fmtMoney(c.net)}
-                    </span>
+                    {load.diesel?.map((d, j) => (
+                      <Row
+                        key={j}
+                        label={`Fuel #${j + 1}`}
+                        value={`$${d.amount} − $${d.discount} = $${d.amount - d.discount}`}
+                      />
+                    ))}
+
+                    {load.expenses?.map((e, j) => (
+                      <Row key={j} label={e.name} value={fmtMoney(e.amount)} />
+                    ))}
+
+                    <Row
+                      label="Total expenses"
+                      value={fmtMoney(c.fuelActual + c.otherExp)}
+                    />
+
+                    <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between font-bold text-sm">
+                      <span className="text-gray-900">Net profit</span>
+                      <span
+                        className={
+                          c.net >= 0 ? "text-green-600" : "text-red-600"
+                        }
+                      >
+                        {fmtMoney(c.net)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Summary для цієї сторінки */}
-          <PageSummary loads={pageLoads} />
+            <PageSummary loads={pageLoads} />
+          </div>
         </div>
       ))}
     </div>
