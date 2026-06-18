@@ -8,7 +8,10 @@ export default function LoadList({
   onDelete,
 }) {
   return (
-    <div className="flex flex-col h-screen bg-gray-950">
+    <div
+      className="flex flex-col h-screen bg-gray-950"
+      style={{ height: "100dvh" }}
+    >
       <div className="px-4 py-4 border-b border-gray-800">
         <h1 className="text-white text-base font-medium">Load Log</h1>
       </div>
@@ -33,7 +36,7 @@ export default function LoadList({
         )}
       </div>
 
-      <div className="px-3 pb-safe pt-2 space-y-2 bg-gray-950 border-t border-gray-800">
+      <div className="px-3 pb-6 pt-2 space-y-2 bg-gray-950 border-t border-gray-800">
         <button
           onClick={onAdd}
           className="w-full py-3 bg-gray-900 border border-gray-700 rounded-2xl text-white text-sm font-medium"
