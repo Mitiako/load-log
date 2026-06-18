@@ -32,15 +32,14 @@ export default function PrintView({ loads, onClose }) {
         </button>
       </div>
 
-      <h1 className="text-center text-xl font-bold text-gray-800 mb-6 print:text-lg print:mb-4 p-6 print:p-2 max-w-3xl mx-auto">
-        Load Log — Monthly Report
-      </h1>
-
       {pages.map((pageLoads, pageIdx) => (
         <div key={pageIdx}>
           <div
             className={`p-6 print:p-2 print:text-xs max-w-3xl mx-auto break-inside-avoid ${pageIdx > 0 ? "page-break" : ""}`}
           >
+            <h1 className="text-center text-xl font-bold text-gray-800 mb-6 print:text-lg print:mb-4">
+              Load Log — Monthly Report
+            </h1>
             <div className="grid grid-cols-2 gap-4 print:gap-3">
               {pageLoads.map((load, i) => {
                 const c = calcLoad(load);
