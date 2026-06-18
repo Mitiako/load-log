@@ -33,7 +33,7 @@ export default function LoadList({
         )}
       </div>
 
-      <div className="px-3 pb-6 pt-2 space-y-2">
+      <div className="px-3 pb-safe pt-2 space-y-2 bg-gray-950 border-t border-gray-800">
         <button
           onClick={onAdd}
           className="w-full py-3 bg-gray-900 border border-gray-700 rounded-2xl text-white text-sm font-medium"

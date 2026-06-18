@@ -17,18 +17,18 @@ export default function PrintView({ loads, onClose }) {
     .page-break { page-break-before: always !important; break-before: page !important; }
   }
 `}</style>
-      <div className="print:hidden flex gap-3 p-4 border-b border-gray-200">
-        <button
-          onClick={handlePrint}
-          className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium"
-        >
-          Save as PDF / Print
-        </button>
+      <div className="print:hidden flex justify-between items-center p-4 border-b border-gray-200">
         <button
           onClick={onClose}
           className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm"
         >
           ← Back
+        </button>
+        <button
+          onClick={handlePrint}
+          className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium"
+        >
+          Print / Save as PDF
         </button>
       </div>
 
