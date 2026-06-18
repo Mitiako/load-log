@@ -41,7 +41,7 @@ export default function PrintView({ loads, onClose }) {
       </div>
 
       {/* Контент для друку */}
-      <div className="p-6 print:p-4">
+      <div className="p-6 print:p-2 print:text-xs max-w-3xl mx-auto">
         <h1 className="text-center text-xl font-bold text-gray-800 mb-6 print:text-lg print:mb-4">
           Load Log — Monthly Report
         </h1>
@@ -53,7 +53,7 @@ export default function PrintView({ loads, onClose }) {
             return (
               <div
                 key={i}
-                className="border border-gray-300 rounded-lg p-3 text-xs break-inside-avoid"
+                className="border border-gray-300 rounded-lg p-2 text-xs break-inside-avoid print:p-1.5"
               >
                 {/* Заголовок лоуду */}
                 <div className="font-bold text-gray-900 text-sm mb-2 pb-1 border-b border-gray-200">
@@ -96,20 +96,11 @@ export default function PrintView({ loads, onClose }) {
                 )}
 
                 {load.diesel?.map((d, j) => (
-                  <div key={j}>
-                    {d.location && (
-                      <Row
-                        label={`Fuel — ${d.location}`}
-                        value={`$${d.amount} − $${d.discount} = $${d.amount - d.discount}`}
-                      />
-                    )}
-                    {!d.location && (
-                      <Row
-                        label={`Fuel stop ${j + 1} (${d.gallons} gal)`}
-                        value={`$${d.amount} − $${d.discount} = $${d.amount - d.discount}`}
-                      />
-                    )}
-                  </div>
+                  <Row
+                    key={j}
+                    label={`Fuel #${j + 1}`}
+                    value={`$${d.amount} − $${d.discount} = $${d.amount - d.discount}`}
+                  />
                 ))}
 
                 {load.expenses?.map((e, j) => (
@@ -140,36 +131,37 @@ export default function PrintView({ loads, onClose }) {
           <h2 className="text-center text-base font-bold text-gray-800 mb-3">
             Summary per Print Page
           </h2>
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-gray-100">
-                <Th>Loads</Th>
-                <Th>Miles</Th>
-                <Th>Gross</Th>
-                <Th>Fuel</Th>
-                <Th>Gallons</Th>
-                <Th>Discount</Th>
-                <Th>Net Profit</Th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <Td>{loads.length}</Td>
-                <Td>{totalMiles.toLocaleString()}</Td>
-                <Td>{fmtMoney(totalGross)}</Td>
-                <Td>{fmtMoney(totalFuel)}</Td>
-                <Td>{totalGallons}</Td>
-                <Td>{fmtMoney(totalDiscount)}</Td>
-                <Td positive={totalNet >= 0}>{fmtMoney(totalNet)}</Td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="flex justify-center">
+            <table className="border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <Th>Loads</Th>
+                  <Th>Miles</Th>
+                  <Th>Gross</Th>
+                  <Th>Fuel</Th>
+                  <Th>Gallons</Th>
+                  <Th>Discount</Th>
+                  <Th>Net Profit</Th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <Td>{loads.length}</Td>
+                  <Td>{totalMiles.toLocaleString()}</Td>
+                  <Td>{fmtMoney(totalGross)}</Td>
+                  <Td>{fmtMoney(totalFuel)}</Td>
+                  <Td>{totalGallons}</Td>
+                  <Td>{fmtMoney(totalDiscount)}</Td>
+                  <Td positive={totalNet >= 0}>{fmtMoney(totalNet)}</Td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
 function Row({ label, value }) {
   return (
     <div className="flex justify-between py-0.5 text-xs">
@@ -178,7 +170,6 @@ function Row({ label, value }) {
     </div>
   );
 }
-
 function Th({ children }) {
   return (
     <th className="border border-gray-300 px-3 py-2 text-center font-semibold text-gray-700">
