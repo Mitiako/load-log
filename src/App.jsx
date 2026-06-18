@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getLoads, saveLoads } from "./data/store";
+import { getLoads, saveLoads, saveLocation } from "./data/store";
 import LoadList from "./components/LoadList";
 import LoadDetail from "./components/LoadDetail";
 import LoadForm from "./components/LoadForm";
@@ -50,6 +50,10 @@ export default function App() {
     }
     setLoads(updated);
     saveLoads(updated);
+    // зберігаємо локації
+    saveLocation(load.from);
+    saveLocation(load.to);
+    load.diesel?.forEach((d) => saveLocation(d.location));
     setScreen("list");
     setSelectedIdx(null);
   }

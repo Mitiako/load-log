@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
+import LocationInput from "./LocationInput";
 
 export default function LoadForm({ load, onSave, onBack }) {
   const settings = getSettings();
@@ -117,13 +118,13 @@ export default function LoadForm({ load, onSave, onBack }) {
       <div className="flex-1 overflow-y-auto pb-safe">
         <SectionLabel>Route</SectionLabel>
         <div className="grid grid-cols-2 gap-3 px-4 pb-3">
-          <Field
+          <LocationInput
             label="From"
             value={from}
             onChange={setFrom}
             placeholder="Chicago, IL"
           />
-          <Field
+          <LocationInput
             label="To"
             value={to}
             onChange={setTo}
@@ -213,12 +214,11 @@ export default function LoadForm({ load, onSave, onBack }) {
         {diesel.map((d, i) => (
           <div key={i} className="px-4 pb-3 border-b border-gray-800 mb-2">
             <div className="grid grid-cols-2 gap-2 mb-2">
-              <SmallField
+              <LocationInput
                 label="Location"
-                value={d.location}
+                value={d.location || ""}
                 onChange={(v) => updateDiesel(i, "location", v)}
                 placeholder="Oklahoma City, OK"
-                type="text"
               />
               <SmallField
                 label="Date"
