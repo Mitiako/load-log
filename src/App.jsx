@@ -107,12 +107,7 @@ export default function App() {
       {screen === "print" && (
         <PrintView loads={printLoads} onClose={() => setScreen("monthly")} />
       )}
-      return (
-      <div>
-        <Analytics />
-        <h1>My App</h1>
-      </div>
-      );
+      <Analytics />
     </div>
   );
 }
