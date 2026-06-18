@@ -43,11 +43,13 @@ export default function LoadDetail({ load, onBack, onEdit }) {
         )}
 
         {load.diesel?.map((d, i) => (
-          <Row
-            key={i}
-            label={`Fuel stop ${i + 1} (${d.gallons} gal)`}
-            value={`$${d.amount} − $${d.discount} = $${d.amount - d.discount}`}
-          />
+          <div key={i}>
+            <Row
+              label={`Fuel stop ${i + 1}${d.location ? ` — ${d.location}` : ""} (${d.gallons} gal)`}
+              value={`$${d.amount} − $${d.discount} = $${d.amount - d.discount}`}
+            />
+            {d.date && <Row label="Fuel date" value={fmtDate(d.date)} />}
+          </div>
         ))}
 
         {load.expenses?.map((e, i) => (

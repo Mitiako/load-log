@@ -4,10 +4,12 @@ import LoadList from "./components/LoadList";
 import LoadDetail from "./components/LoadDetail";
 import LoadForm from "./components/LoadForm";
 import Monthly from "./components/Monthly";
+import PrintView from "./components/PrintView";
 
 export default function App() {
   const [loads, setLoads] = useState(getLoads);
   const [screen, setScreen] = useState("list");
+  const [printLoads, setPrintLoads] = useState([]);
   const [selectedIdx, setSelectedIdx] = useState(null);
 
   function goTo(newScreen) {
@@ -87,7 +89,19 @@ export default function App() {
           onBack={handleBack}
         />
       )}
-      {screen === "monthly" && <Monthly loads={loads} onBack={handleBack} />}
+      {screen === "monthly" && (
+        <Monthly
+          loads={loads}
+          onBack={handleBack}
+          onPrint={() => {
+            setPrintLoads(loads);
+            setScreen("print");
+          }}
+        />
+      )}
+      {screen === "print" && (
+        <PrintView loads={printLoads} onClose={() => setScreen("monthly")} />
+      )}
     </div>
   );
 }

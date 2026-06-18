@@ -2,7 +2,7 @@ import { useState } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
 
-export default function Monthly({ loads, onBack }) {
+export default function Monthly({ loads, onBack, onPrint }) {
   const settings = getSettings();
   const [ins, setIns] = useState(settings.ins || "");
   const [truck, setTruck] = useState(settings.truck || "");
@@ -37,7 +37,15 @@ export default function Monthly({ loads, onBack }) {
         <button onClick={onBack} className="text-gray-400 text-sm">
           ← Back
         </button>
-        <h1 className="text-white text-base font-medium">Monthly summary</h1>
+        <h1 className="text-white text-base font-medium flex-1">
+          Monthly summary
+        </h1>
+        <button
+          onClick={onPrint}
+          className="px-3 py-1 bg-gray-700 text-white text-sm rounded-lg"
+        >
+          Print / PDF
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
