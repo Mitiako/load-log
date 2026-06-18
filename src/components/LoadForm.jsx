@@ -31,6 +31,8 @@ export default function LoadForm({ load, onSave, onBack }) {
     payMode,
     payVal: Number(payVal) || 0,
     diesel: diesel.map((d) => ({
+      location: d.location || "",
+      date: d.date || "",
       gallons: Number(d.gallons) || 0,
       amount: Number(d.amount) || 0,
       discount: Number(d.discount) || 0,
@@ -54,7 +56,10 @@ export default function LoadForm({ load, onSave, onBack }) {
   }
 
   function addDiesel() {
-    setDiesel([...diesel, { gallons: "", amount: "", discount: "" }]);
+    setDiesel([
+      ...diesel,
+      { location: "", date: "", gallons: "", amount: "", discount: "" },
+    ]);
   }
 
   function updateDiesel(i, field, val) {
@@ -206,34 +211,52 @@ export default function LoadForm({ load, onSave, onBack }) {
         <div className="h-px bg-gray-800 my-1" />
         <SectionLabel>Diesel</SectionLabel>
         {diesel.map((d, i) => (
-          <div key={i} className="grid grid-cols-3 gap-2 px-4 pb-2 items-end">
-            <SmallField
-              label="Gallons"
-              value={d.gallons}
-              onChange={(v) => updateDiesel(i, "gallons", v)}
-              placeholder="219"
-            />
-            <SmallField
-              label="Amount $"
-              value={d.amount}
-              onChange={(v) => updateDiesel(i, "amount", v)}
-              placeholder="840"
-            />
-            <div className="flex gap-1 items-end">
-              <div className="flex-1">
-                <SmallField
-                  label="Discount $"
-                  value={d.discount}
-                  onChange={(v) => updateDiesel(i, "discount", v)}
-                  placeholder="226"
-                />
+          <div key={i} className="px-4 pb-3 border-b border-gray-800 mb-2">
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <SmallField
+                label="Location"
+                value={d.location}
+                onChange={(v) => updateDiesel(i, "location", v)}
+                placeholder="Oklahoma City, OK"
+                type="text"
+              />
+              <SmallField
+                label="Date"
+                value={d.date}
+                onChange={(v) => updateDiesel(i, "date", v)}
+                placeholder=""
+                type="date"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2 items-end">
+              <SmallField
+                label="Gallons"
+                value={d.gallons}
+                onChange={(v) => updateDiesel(i, "gallons", v)}
+                placeholder="219"
+              />
+              <SmallField
+                label="Amount $"
+                value={d.amount}
+                onChange={(v) => updateDiesel(i, "amount", v)}
+                placeholder="840"
+              />
+              <div className="flex gap-1 items-end">
+                <div className="flex-1">
+                  <SmallField
+                    label="Discount $"
+                    value={d.discount}
+                    onChange={(v) => updateDiesel(i, "discount", v)}
+                    placeholder="226"
+                  />
+                </div>
+                <button
+                  onClick={() => removeDiesel(i)}
+                  className="h-9 w-8 border border-gray-700 rounded-lg text-gray-500 text-xs mb-0"
+                >
+                  ✕
+                </button>
               </div>
-              <button
-                onClick={() => removeDiesel(i)}
-                className="h-9 w-8 border border-gray-700 rounded-lg text-gray-500 text-xs mb-0"
-              >
-                ✕
-              </button>
             </div>
           </div>
         ))}
@@ -300,7 +323,6 @@ export default function LoadForm({ load, onSave, onBack }) {
                   value={`-${fmtMoney(c.otherExp)}`}
                 />
               )}
-              <ResultRow label="RPM" value={`$${c.ppm.toFixed(2)}/mi`} />
               <div className="border-t border-gray-700 pt-2 flex justify-between text-base font-medium">
                 <span className="text-white">Net profit</span>
                 <span
