@@ -149,8 +149,8 @@ function PageSummary({ loads }) {
       <h2 className="text-center text-base font-bold text-gray-800 mb-3">
         Summary for This Page
       </h2>
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-sm mx-auto">
+      <div className="overflow-x-auto print:overflow-visible">
+        <table className="border-collapse text-sm mx-auto print:text-xs">
           <thead>
             <tr className="bg-gray-100">
               <Th>Loads</Th>
