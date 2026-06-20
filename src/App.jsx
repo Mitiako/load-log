@@ -67,7 +67,8 @@ export default function App() {
       );
       setTrips(updated);
       saveTrips(updated);
-      goTo("loads");
+      history.replaceState({ screen: "loads" }, "");
+      setScreen("loads");
     } else {
       const newTrip = {
         id: generateTripId(),
@@ -83,7 +84,8 @@ export default function App() {
       setTrips(updated);
       saveTrips(updated);
       setSelectedTripIdx(0);
-      goTo("loads");
+      history.replaceState({ screen: "loads" }, "");
+      setScreen("loads");
     }
   }
 
