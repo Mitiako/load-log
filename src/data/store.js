@@ -1,16 +1,17 @@
-const LOADS_KEY = "tt_loads";
+const TRIPS_KEY = "tt_trips";
 const SETTINGS_KEY = "tt_settings";
+const LOCATIONS_KEY = "tt_locations";
 
-export function getLoads() {
+export function getTrips() {
   try {
-    return JSON.parse(localStorage.getItem(LOADS_KEY) || "[]");
+    return JSON.parse(localStorage.getItem(TRIPS_KEY) || "[]");
   } catch {
     return [];
   }
 }
 
-export function saveLoads(loads) {
-  localStorage.setItem(LOADS_KEY, JSON.stringify(loads));
+export function saveTrips(trips) {
+  localStorage.setItem(TRIPS_KEY, JSON.stringify(trips));
 }
 
 export function getSettings() {
@@ -24,8 +25,6 @@ export function getSettings() {
 export function saveSettings(settings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
-
-const LOCATIONS_KEY = "tt_locations";
 
 export function getLocations() {
   try {
@@ -44,4 +43,18 @@ export function saveLocation(location) {
     if (locations.length > 50) locations.pop();
     localStorage.setItem(LOCATIONS_KEY, JSON.stringify(locations));
   }
+}
+
+export function generateTripName(trips) {
+  const num = trips.length + 1;
+  const today = new Date().toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+  return `Trip #${num} · ${today}`;
+}
+
+export function generateTripId() {
+  return "trip_" + Date.now();
 }

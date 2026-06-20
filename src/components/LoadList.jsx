@@ -1,19 +1,23 @@
 import LoadCard from "./LoadCard";
 
 export default function LoadList({
+  trip,
   loads,
   onSelect,
   onAdd,
   onMonthly,
   onDelete,
+  onBack,
 }) {
   return (
-    <div
-      className="flex flex-col h-screen bg-gray-950"
-      style={{ height: "100dvh" }}
-    >
-      <div className="px-4 py-4 border-b border-gray-800">
-        <h1 className="text-white text-base font-medium">Load Log</h1>
+    <div className="flex flex-col bg-gray-950" style={{ height: "100dvh" }}>
+      <div className="px-4 py-4 border-b border-gray-800 flex items-center gap-3">
+        <button onClick={onBack} className="text-gray-400 text-sm">
+          ← Back
+        </button>
+        <h1 className="text-white text-base font-medium flex-1 truncate">
+          {trip.name}
+        </h1>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pt-3">
@@ -47,7 +51,7 @@ export default function LoadList({
           onClick={onMonthly}
           className="w-full py-3 border border-gray-800 rounded-2xl text-gray-400 text-sm"
         >
-          Monthly summary
+          Trip summary
         </button>
       </div>
     </div>

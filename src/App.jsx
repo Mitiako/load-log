@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { getLoads, saveLoads, saveLocation } from "./data/store";
+import {
+  getTrips,
+  saveTrips,
+  saveLocation,
+  generateTripId,
+} from "./data/store";
+import TripList from "./components/TripList";
+import TripForm from "./components/TripForm";
 import LoadList from "./components/LoadList";
 import LoadDetail from "./components/LoadDetail";
 import LoadForm from "./components/LoadForm";
@@ -8,10 +15,11 @@ import PrintView from "./components/PrintView";
 import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
-  const [loads, setLoads] = useState(getLoads);
-  const [screen, setScreen] = useState("list");
-  const [printLoads, setPrintLoads] = useState([]);
-  const [selectedIdx, setSelectedIdx] = useState(null);
+  const [trips, setTrips] = useState(getTrips);
+  const [screen, setScreen] = useState("trips");
+  const [selectedTripIdx, setSelectedTripIdx] = useState(null);
+  const [selectedLoadIdx, setSelectedLoadIdx] = useState(null);
+  const [editingTrip, setEditingTrip] = useState(false);
 
   function goTo(newScreen) {
     history.pushState({ screen: newScreen }, "");
@@ -20,49 +28,114 @@ export default function App() {
 
   useEffect(() => {
     function handlePop(e) {
-      const s = e.state?.screen || "list";
+      const s = e.state?.screen || "trips";
       setScreen(s);
-      if (s === "list") setSelectedIdx(null);
+      if (s === "trips") {
+        setSelectedTripIdx(null);
+        setSelectedLoadIdx(null);
+      }
     }
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
 
-  function handleSelect(i) {
-    setSelectedIdx(i);
+  const currentTrip = selectedTripIdx !== null ? trips[selectedTripIdx] : null;
+  const currentLoads = currentTrip?.loads || [];
+
+  // Trip handlers
+  function handleSelectTrip(i) {
+    setSelectedTripIdx(i);
+    setSelectedLoadIdx(null);
+    goTo("loads");
+  }
+
+  function handleCreateTrip() {
+    setEditingTrip(false);
+    goTo("tripForm");
+  }
+
+  function handleEditTrip(i) {
+    setSelectedTripIdx(i);
+    setEditingTrip(true);
+    goTo("tripForm");
+  }
+
+  function handleSaveTrip(name) {
+    if (editingTrip && selectedTripIdx !== null) {
+      const updated = trips.map((t, i) =>
+        i === selectedTripIdx ? { ...t, name } : t,
+      );
+      setTrips(updated);
+      saveTrips(updated);
+      goTo("loads");
+    } else {
+      const newTrip = {
+        id: generateTripId(),
+        name,
+        createdAt: new Date().toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+          year: "numeric",
+        }),
+        loads: [],
+      };
+      const updated = [newTrip, ...trips];
+      setTrips(updated);
+      saveTrips(updated);
+      setSelectedTripIdx(0);
+      goTo("loads");
+    }
+  }
+
+  function handleDeleteTrip(i) {
+    const updated = trips.filter((_, idx) => idx !== i);
+    setTrips(updated);
+    saveTrips(updated);
+  }
+
+  // Load handlers
+  function handleSelectLoad(i) {
+    setSelectedLoadIdx(i);
     goTo("detail");
   }
 
-  function handleAdd() {
-    setSelectedIdx(null);
+  function handleAddLoad() {
+    setSelectedLoadIdx(null);
     goTo("form");
   }
 
-  function handleEdit() {
+  function handleEditLoad() {
     goTo("form");
   }
 
-  function handleSave(load) {
-    let updated;
-    if (selectedIdx !== null) {
-      updated = loads.map((l, i) => (i === selectedIdx ? load : l));
+  function handleSaveLoad(load) {
+    let updatedLoads;
+    if (selectedLoadIdx !== null) {
+      updatedLoads = currentLoads.map((l, i) =>
+        i === selectedLoadIdx ? load : l,
+      );
     } else {
-      updated = [...loads, load];
+      updatedLoads = [...currentLoads, load];
     }
-    setLoads(updated);
-    saveLoads(updated);
-    // зберігаємо локації
+    const updatedTrips = trips.map((t, i) =>
+      i === selectedTripIdx ? { ...t, loads: updatedLoads } : t,
+    );
+    setTrips(updatedTrips);
+    saveTrips(updatedTrips);
     saveLocation(load.from);
     saveLocation(load.to);
     load.diesel?.forEach((d) => saveLocation(d.location));
-    setScreen("list");
-    setSelectedIdx(null);
+    goTo("loads");
+    setSelectedLoadIdx(null);
   }
 
-  function handleDelete(i) {
-    const updated = loads.filter((_, idx) => idx !== i);
-    setLoads(updated);
-    saveLoads(updated);
+  function handleDeleteLoad(i) {
+    const updatedLoads = currentLoads.filter((_, idx) => idx !== i);
+    const updatedTrips = trips.map((t, idx) =>
+      idx === selectedTripIdx ? { ...t, loads: updatedLoads } : t,
+    );
+    setTrips(updatedTrips);
+    saveTrips(updatedTrips);
   }
 
   function handleBack() {
@@ -70,43 +143,70 @@ export default function App() {
   }
 
   return (
-    <div className="max-w-md mx-auto">
+    <div className="max-w-md mx-auto print:max-w-full print:w-full">
       <Analytics />
-      {screen === "list" && (
+
+      {screen === "trips" && (
+        <TripList
+          trips={trips}
+          onSelect={handleSelectTrip}
+          onCreate={handleCreateTrip}
+          onEdit={handleEditTrip}
+          onDelete={handleDeleteTrip}
+        />
+      )}
+
+      {screen === "tripForm" && (
+        <TripForm
+          trips={trips}
+          trip={
+            editingTrip && selectedTripIdx !== null
+              ? trips[selectedTripIdx]
+              : null
+          }
+          onSave={handleSaveTrip}
+          onBack={handleBack}
+        />
+      )}
+
+      {screen === "loads" && currentTrip && (
         <LoadList
-          loads={loads}
-          onSelect={handleSelect}
-          onAdd={handleAdd}
+          trip={currentTrip}
+          loads={currentLoads}
+          onSelect={handleSelectLoad}
+          onAdd={handleAddLoad}
           onMonthly={() => goTo("monthly")}
-          onDelete={handleDelete}
+          onDelete={handleDeleteLoad}
+          onBack={handleBack}
         />
       )}
-      {screen === "detail" && selectedIdx !== null && (
+
+      {screen === "detail" && selectedLoadIdx !== null && currentTrip && (
         <LoadDetail
-          load={loads[selectedIdx]}
+          load={currentLoads[selectedLoadIdx]}
           onBack={handleBack}
-          onEdit={handleEdit}
+          onEdit={handleEditLoad}
         />
       )}
-      {screen === "form" && (
+
+      {screen === "form" && currentTrip && (
         <LoadForm
-          load={selectedIdx !== null ? loads[selectedIdx] : null}
-          onSave={handleSave}
+          load={selectedLoadIdx !== null ? currentLoads[selectedLoadIdx] : null}
+          onSave={handleSaveLoad}
           onBack={handleBack}
         />
       )}
-      {screen === "monthly" && (
+
+      {screen === "monthly" && currentTrip && (
         <Monthly
-          loads={loads}
+          loads={currentLoads}
           onBack={handleBack}
-          onPrint={() => {
-            setPrintLoads(loads);
-            setScreen("print");
-          }}
+          onPrint={() => goTo("print")}
         />
       )}
-      {screen === "print" && (
-        <PrintView loads={printLoads} onClose={() => setScreen("monthly")} />
+
+      {screen === "print" && currentTrip && (
+        <PrintView loads={currentLoads} onClose={() => goTo("monthly")} />
       )}
     </div>
   );
