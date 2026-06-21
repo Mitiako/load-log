@@ -1,10 +1,9 @@
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
+import Login from "./components/Login";
 import { useState, useEffect } from "react";
-import {
-  getTrips,
-  saveTrips,
-  saveLocation,
-  generateTripId,
-} from "./data/store";
+import { saveLocation, generateTripId } from "./data/store";
+import { fetchTrips, saveTrip, deleteTrip } from "./data/firestore";
 import TripList from "./components/TripList";
 import TripForm from "./components/TripForm";
 import LoadList from "./components/LoadList";
@@ -15,7 +14,26 @@ import PrintView from "./components/PrintView";
 import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
-  const [trips, setTrips] = useState(getTrips);
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  const [trips, setTrips] = useState([]);
+  const [tripsLoading, setTripsLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        const data = await fetchTrips(u.uid);
+        setTrips(data);
+      } else {
+        setTrips([]);
+      }
+      setAuthLoading(false);
+      setTripsLoading(false);
+    });
+    return unsubscribe;
+  }, []);
   const [screen, setScreen] = useState("trips");
   const [selectedTripIdx, setSelectedTripIdx] = useState(null);
   const [selectedLoadIdx, setSelectedLoadIdx] = useState(null);
@@ -60,13 +78,14 @@ export default function App() {
     goTo("tripForm");
   }
 
-  function handleSaveTrip(name) {
+  async function handleSaveTrip(name) {
     if (editingTrip && selectedTripIdx !== null) {
+      const updatedTrip = { ...trips[selectedTripIdx], name };
       const updated = trips.map((t, i) =>
-        i === selectedTripIdx ? { ...t, name } : t,
+        i === selectedTripIdx ? updatedTrip : t,
       );
       setTrips(updated);
-      saveTrips(updated);
+      await saveTrip(user.uid, updatedTrip);
       history.replaceState({ screen: "loads" }, "");
       setScreen("loads");
     } else {
@@ -82,17 +101,18 @@ export default function App() {
       };
       const updated = [newTrip, ...trips];
       setTrips(updated);
-      saveTrips(updated);
+      await saveTrip(user.uid, newTrip);
       setSelectedTripIdx(0);
       history.replaceState({ screen: "loads" }, "");
       setScreen("loads");
     }
   }
 
-  function handleDeleteTrip(i) {
+  async function handleDeleteTrip(i) {
+    const trip = trips[i];
     const updated = trips.filter((_, idx) => idx !== i);
     setTrips(updated);
-    saveTrips(updated);
+    await deleteTrip(user.uid, trip.id);
   }
 
   // Load handlers
@@ -110,7 +130,7 @@ export default function App() {
     goTo("form");
   }
 
-  function handleSaveLoad(load) {
+  async function handleSaveLoad(load) {
     let updatedLoads;
     if (selectedLoadIdx !== null) {
       updatedLoads = currentLoads.map((l, i) =>
@@ -119,11 +139,12 @@ export default function App() {
     } else {
       updatedLoads = [...currentLoads, load];
     }
+    const updatedTrip = { ...currentTrip, loads: updatedLoads };
     const updatedTrips = trips.map((t, i) =>
-      i === selectedTripIdx ? { ...t, loads: updatedLoads } : t,
+      i === selectedTripIdx ? updatedTrip : t,
     );
     setTrips(updatedTrips);
-    saveTrips(updatedTrips);
+    await saveTrip(user.uid, updatedTrip);
     saveLocation(load.from);
     saveLocation(load.to);
     load.diesel?.forEach((d) => saveLocation(d.location));
@@ -131,17 +152,44 @@ export default function App() {
     setSelectedLoadIdx(null);
   }
 
-  function handleDeleteLoad(i) {
+  async function handleDeleteLoad(i) {
     const updatedLoads = currentLoads.filter((_, idx) => idx !== i);
+    const updatedTrip = { ...currentTrip, loads: updatedLoads };
     const updatedTrips = trips.map((t, idx) =>
-      idx === selectedTripIdx ? { ...t, loads: updatedLoads } : t,
+      idx === selectedTripIdx ? updatedTrip : t,
     );
     setTrips(updatedTrips);
-    saveTrips(updatedTrips);
+    await saveTrip(user.uid, updatedTrip);
   }
 
   function handleBack() {
     history.back();
+  }
+
+  if (authLoading) {
+    return (
+      <div
+        className="flex items-center justify-center bg-gray-950"
+        style={{ height: "100dvh" }}
+      >
+        <div className="text-gray-400 text-sm">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
+  if (tripsLoading) {
+    return (
+      <div
+        className="flex items-center justify-center bg-gray-950"
+        style={{ height: "100dvh" }}
+      >
+        <div className="text-gray-400 text-sm">Loading trips...</div>
+      </div>
+    );
   }
 
   return (
