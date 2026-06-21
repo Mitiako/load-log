@@ -6,13 +6,16 @@ export default function TripList({
   onCreate,
   onEdit,
   onDelete,
+  onLogout,
 }) {
   return (
     <div className="flex flex-col bg-gray-950" style={{ height: "100dvh" }}>
-      <div className="px-4 py-4 border-b border-gray-800">
+      <div className="px-4 py-4 border-b border-gray-800 flex justify-between items-center">
         <h1 className="text-white text-base font-medium">Load Log</h1>
+        <button onClick={onLogout} className="text-gray-500 text-xs">
+          Sign out
+        </button>
       </div>
-
       <div className="flex-1 overflow-y-auto px-3 pt-3">
         {trips.length === 0 ? (
           <div className="text-center text-gray-500 text-sm pt-16">

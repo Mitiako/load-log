@@ -12,6 +12,7 @@ import LoadForm from "./components/LoadForm";
 import Monthly from "./components/Monthly";
 import PrintView from "./components/PrintView";
 import { Analytics } from "@vercel/analytics/react";
+import { signOut } from "firebase/auth";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -166,6 +167,12 @@ export default function App() {
     history.back();
   }
 
+  async function handleLogout() {
+    await signOut(auth);
+    setTrips([]);
+    setScreen("trips");
+  }
+
   if (authLoading) {
     return (
       <div
@@ -203,6 +210,7 @@ export default function App() {
           onCreate={handleCreateTrip}
           onEdit={handleEditTrip}
           onDelete={handleDeleteTrip}
+          onLogout={handleLogout}
         />
       )}
 
