@@ -12,20 +12,129 @@ export default function Login() {
 
   return (
     <div
-      className="flex flex-col items-center justify-center bg-gray-950"
-      style={{ height: "100dvh" }}
+      style={{
+        height: "100dvh",
+        background: "var(--bg-base)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 24px",
+      }}
     >
-      <div className="px-8 text-center">
-        <h1 className="text-white text-2xl font-bold mb-2">Load Log</h1>
-        <p className="text-gray-400 text-sm mb-12">
-          Track your loads and profit on every trip
+      {/* Логотип */}
+      <div
+        style={{
+          marginBottom: 48,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 20,
+        }}
+      >
+        <svg viewBox="0 0 100 100" width="56" height="56" fill="none">
+          <path
+            d="M31 23 V77 H59"
+            stroke="#F4F1EB"
+            strokeWidth="11"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M69 77 V23 H41"
+            stroke="#FF8A3D"
+            strokeWidth="11"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontWeight: 700,
+              fontSize: 28,
+              letterSpacing: "-0.02em",
+              color: "var(--text-primary)",
+              lineHeight: 1,
+            }}
+          >
+            LOAD<span style={{ color: "var(--accent)" }}>LOG</span>
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.32em",
+              color: "var(--text-muted)",
+              marginTop: 8,
+              paddingLeft: "0.32em",
+            }}
+          >
+            DAILY FREIGHT JOURNAL
+          </div>
+        </div>
+      </div>
+
+      {/* Картка */}
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          background: "var(--bg-elevated)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-card)",
+          padding: "32px 28px",
+        }}
+      >
+        <p
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 15,
+            color: "var(--text-secondary)",
+            marginBottom: 24,
+            lineHeight: 1.5,
+          }}
+        >
+          Sign in to track loads and profit across every trip.
         </p>
 
         <button
           onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 font-medium py-3 px-6 rounded-2xl text-sm"
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            padding: "13px 20px",
+            background: "var(--bg-base)",
+            border: "1px solid var(--border-hover)",
+            borderRadius: "var(--radius-btn)",
+            color: "var(--text-primary)",
+            fontFamily: "var(--font-sans)",
+            fontWeight: 500,
+            fontSize: 15,
+            cursor: "pointer",
+            transition:
+              "border-color var(--transition), background var(--transition)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--accent)";
+            e.currentTarget.style.background = "var(--accent-subtle)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--border-hover)";
+            e.currentTarget.style.background = "var(--bg-base)";
+          }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24">
+          {/* Google G */}
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            style={{ flexShrink: 0 }}
+          >
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -45,6 +154,19 @@ export default function Login() {
           </svg>
           Continue with Google
         </button>
+      </div>
+
+      {/* Футер */}
+      <div
+        style={{
+          marginTop: 32,
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--text-muted)",
+          letterSpacing: "0.04em",
+        }}
+      >
+        Your data stays yours.
       </div>
     </div>
   );

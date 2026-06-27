@@ -1,77 +1,222 @@
+// PrintView.jsx
 import { calcLoad, fmtDate, fmtMoney } from "../data/calc";
 
 export default function PrintView({ loads, onClose }) {
-  function handlePrint() {
-    window.print();
-  }
-
   const pages = [];
   for (let i = 0; i < loads.length; i += 4) {
     pages.push(loads.slice(i, i + 4));
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div style={{ minHeight: "100dvh", background: "#ffffff" }}>
       <style>{`
-  @media print {
-    .page-break { page-break-before: always !important; break-before: page !important; }
-  }
-`}</style>
-      <div className="print:hidden flex justify-between items-center p-4 border-b border-gray-200">
+        @media print {
+          .no-print { display: none !important; }
+          .page-break { page-break-before: always !important; break-before: page !important; }
+        }
+      `}</style>
+
+      {/* Screen-only header */}
+      <div
+        className="no-print"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "16px 20px",
+          background: "var(--bg-base)",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
         <button
           onClick={onClose}
-          className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "var(--text-muted)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "var(--text-secondary)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "var(--text-muted)")
+          }
         >
-          ← Back
+          ← BACK
         </button>
         <button
-          onClick={handlePrint}
-          className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium"
+          onClick={() => window.print()}
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 13,
+            background: "var(--accent)",
+            color: "#100F0C",
+            border: "none",
+            borderRadius: "var(--radius-btn)",
+            padding: "10px 20px",
+            cursor: "pointer",
+          }}
         >
           Print / Save as PDF
         </button>
       </div>
 
+      {/* Pages */}
       {pages.map((pageLoads, pageIdx) => (
-        <div key={pageIdx}>
+        <div key={pageIdx} className={pageIdx > 0 ? "page-break" : ""}>
           <div
-            className={`p-6 print:p-2 print:text-xs max-w-3xl mx-auto break-inside-avoid ${pageIdx > 0 ? "page-break" : ""}`}
+            style={{ maxWidth: 760, margin: "0 auto", padding: "32px 24px" }}
           >
-            <h1 className="text-center text-xl font-bold text-gray-800 mb-6 print:text-lg print:mb-4">
-              Load Log — Monthly Report
-            </h1>
-            <div className="grid grid-cols-2 gap-4 print:gap-3">
+            {/* Report header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 24,
+                paddingBottom: 16,
+                borderBottom: "2px solid #100F0C",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <svg viewBox="0 0 100 100" width="32" height="32" fill="none">
+                  <path
+                    d="M31 23 V77 H59"
+                    stroke="#100F0C"
+                    strokeWidth="11"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M69 77 V23 H41"
+                    stroke="#FF8A3D"
+                    strokeWidth="11"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <div>
+                  <div
+                    style={{
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      fontWeight: 700,
+                      fontSize: 18,
+                      color: "#100F0C",
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    LOAD<span style={{ color: "#FF8A3D" }}>LOG</span>
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 9,
+                      letterSpacing: "0.2em",
+                      color: "#8E8A82",
+                    }}
+                  >
+                    DAILY FREIGHT JOURNAL
+                  </div>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontWeight: 600,
+                    fontSize: 14,
+                    color: "#100F0C",
+                  }}
+                >
+                  Monthly Report
+                </div>
+                <div
+                  style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 11,
+                    color: "#8E8A82",
+                    marginTop: 2,
+                  }}
+                >
+                  {pageIdx > 0
+                    ? `Page ${pageIdx + 1}`
+                    : new Date().toLocaleDateString("en-US", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                </div>
+              </div>
+            </div>
+
+            {/* Load cards grid */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
+            >
               {pageLoads.map((load, i) => {
                 const c = calcLoad(load);
                 return (
                   <div
                     key={i}
-                    className="border border-gray-300 rounded-lg p-2 text-xs break-inside-avoid print:p-1.5"
+                    style={{
+                      border: "1px solid #E5E2DC",
+                      borderRadius: 10,
+                      padding: 14,
+                      breakInside: "avoid",
+                    }}
                   >
-                    <div className="font-bold text-gray-900 text-sm mb-2 pb-1 border-b border-gray-200">
+                    <div
+                      style={{
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        color: "#100F0C",
+                        marginBottom: 8,
+                        paddingBottom: 8,
+                        borderBottom: "1px solid #E5E2DC",
+                      }}
+                    >
                       {load.from} → {load.to}
                     </div>
 
-                    <Row label="Date" value={fmtDate(load.date)} />
-                    <Row
+                    <PrintRow label="Date" value={fmtDate(load.date)} />
+                    <PrintRow
                       label="Loaded miles"
                       value={`${load.miles.toLocaleString()} mi`}
                     />
                     {load.dh > 0 && (
-                      <Row label="Deadhead" value={`${load.dh} mi`} />
+                      <PrintRow label="Deadhead" value={`${load.dh} mi`} />
                     )}
                     {load.weight > 0 && (
-                      <Row
+                      <PrintRow
                         label="Weight"
                         value={`${load.weight.toLocaleString()} lbs`}
                       />
                     )}
 
-                    <div className="mt-2 mb-1 text-gray-400 uppercase text-xs tracking-wider">
+                    <div
+                      style={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 9,
+                        letterSpacing: "0.16em",
+                        color: "#8E8A82",
+                        margin: "8px 0 4px",
+                        textTransform: "uppercase",
+                      }}
+                    >
                       Pay
                     </div>
-                    <Row label="Gross rate" value={fmtMoney(load.gross)} />
-                    <Row
+                    <PrintRow label="Gross rate" value={fmtMoney(load.gross)} />
+                    <PrintRow
                       label="Your share"
                       value={
                         load.payMode === "pct"
@@ -79,37 +224,68 @@ export default function PrintView({ loads, onClose }) {
                           : `${load.payVal}¢/mi`
                       }
                     />
-                    <Row label="Your gross" value={fmtMoney(c.myGross)} />
+                    <PrintRow label="Your gross" value={fmtMoney(c.myGross)} />
 
                     {(load.diesel?.length > 0 || load.expenses?.length > 0) && (
-                      <div className="mt-2 mb-1 text-gray-400 uppercase text-xs tracking-wider">
+                      <div
+                        style={{
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontSize: 9,
+                          letterSpacing: "0.16em",
+                          color: "#8E8A82",
+                          margin: "8px 0 4px",
+                          textTransform: "uppercase",
+                        }}
+                      >
                         Expenses
                       </div>
                     )}
-
                     {load.diesel?.map((d, j) => (
-                      <Row
+                      <PrintRow
                         key={j}
                         label={`Fuel #${j + 1}`}
                         value={`$${d.amount} − $${d.discount} = $${d.amount - d.discount}`}
                       />
                     ))}
-
                     {load.expenses?.map((e, j) => (
-                      <Row key={j} label={e.name} value={fmtMoney(e.amount)} />
+                      <PrintRow
+                        key={j}
+                        label={e.name}
+                        value={fmtMoney(e.amount)}
+                      />
                     ))}
-
-                    <Row
+                    <PrintRow
                       label="Total expenses"
                       value={fmtMoney(c.fuelActual + c.otherExp)}
                     />
 
-                    <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between font-bold text-sm">
-                      <span className="text-gray-900">Net profit</span>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        paddingTop: 8,
+                        borderTop: "1px solid #E5E2DC",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
                       <span
-                        className={
-                          c.net >= 0 ? "text-green-600" : "text-red-600"
-                        }
+                        style={{
+                          fontFamily: "'Space Grotesk', sans-serif",
+                          fontWeight: 700,
+                          fontSize: 12,
+                          color: "#100F0C",
+                        }}
+                      >
+                        Net profit
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontWeight: 700,
+                          fontSize: 13,
+                          color: c.net >= 0 ? "#16a34a" : "#dc2626",
+                        }}
                       >
                         {fmtMoney(c.net)}
                       </span>
@@ -119,6 +295,7 @@ export default function PrintView({ loads, onClose }) {
               })}
             </div>
 
+            {/* Page summary */}
             <PageSummary loads={pageLoads} />
           </div>
         </div>
@@ -144,70 +321,123 @@ function PageSummary({ loads }) {
   );
   const totalNet = calcs.reduce((s, c) => s + c.net, 0);
 
-  return (
-    <div className="mt-8 print:mt-6">
-      <h2 className="text-center text-base font-bold text-gray-800 mb-3">
-        Summary for This Page
-      </h2>
-      <div className="overflow-x-auto print:overflow-visible">
-        <table className="border-collapse text-sm mx-auto print:text-xs">
-          <thead>
-            <tr className="bg-gray-100">
-              <Th>Loads</Th>
-              <Th>Miles</Th>
-              <Th>Gross</Th>
-              <Th>Fuel</Th>
-              <Th>Gallons</Th>
-              <Th>Discount</Th>
-              <Th>Net Profit</Th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <Td>{loads.length}</Td>
-              <Td>{totalMiles.toLocaleString()}</Td>
-              <Td>{fmtMoney(totalGross)}</Td>
-              <Td>{fmtMoney(totalFuel)}</Td>
-              <Td>{totalGallons}</Td>
-              <Td>{fmtMoney(totalDiscount)}</Td>
-              <Td positive={totalNet >= 0}>{fmtMoney(totalNet)}</Td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+  const cols = [
+    "Loads",
+    "Miles",
+    "Gross",
+    "Fuel",
+    "Gallons",
+    "Discount",
+    "Net Profit",
+  ];
+  const vals = [
+    loads.length,
+    totalMiles.toLocaleString(),
+    fmtMoney(totalGross),
+    fmtMoney(totalFuel),
+    totalGallons,
+    fmtMoney(totalDiscount),
+    fmtMoney(totalNet),
+  ];
 
-function Row({ label, value }) {
   return (
-    <div className="flex justify-between py-0.5 text-xs">
-      <span className="text-gray-500">{label}</span>
-      <span className="text-gray-900 font-medium">{value}</span>
-    </div>
-  );
-}
-
-function Th({ children }) {
-  return (
-    <th className="border border-gray-300 px-3 py-2 text-center font-semibold text-gray-700">
-      {children}
-    </th>
-  );
-}
-
-function Td({ children, positive }) {
-  return (
-    <td
-      className={`border border-gray-300 px-3 py-2 text-center ${
-        positive === true
-          ? "text-green-600 font-bold"
-          : positive === false
-            ? "text-red-600 font-bold"
-            : "text-gray-900"
-      }`}
+    <div
+      style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #E5E2DC" }}
     >
-      {children}
-    </td>
+      <div
+        style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontWeight: 700,
+          fontSize: 12,
+          color: "#100F0C",
+          marginBottom: 10,
+          textAlign: "center",
+          letterSpacing: "0.04em",
+        }}
+      >
+        PAGE SUMMARY
+      </div>
+      <table
+        style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}
+      >
+        <thead>
+          <tr style={{ background: "#F4F1EB" }}>
+            {cols.map((col) => (
+              <th
+                key={col}
+                style={{
+                  border: "1px solid #E5E2DC",
+                  padding: "6px 10px",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 10,
+                  color: "#5C594F",
+                  textAlign: "center",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                {col.toUpperCase()}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            {vals.map((val, i) => (
+              <td
+                key={i}
+                style={{
+                  border: "1px solid #E5E2DC",
+                  padding: "8px 10px",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 12,
+                  textAlign: "center",
+                  color:
+                    i === vals.length - 1
+                      ? totalNet >= 0
+                        ? "#16a34a"
+                        : "#dc2626"
+                      : "#100F0C",
+                  fontWeight: i === vals.length - 1 ? 700 : 400,
+                }}
+              >
+                {val}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PrintRow({ label, value }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        padding: "2px 0",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: 11,
+          color: "#8E8A82",
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11,
+          color: "#100F0C",
+          fontWeight: 500,
+        }}
+      >
+        {value}
+      </span>
+    </div>
   );
 }

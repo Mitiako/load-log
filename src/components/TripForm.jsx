@@ -1,3 +1,4 @@
+// TripForm.jsx
 import { useState } from "react";
 import { generateTripName } from "../data/store";
 
@@ -10,36 +11,98 @@ export default function TripForm({ trips, trip, onSave, onBack }) {
   }
 
   return (
-    <div className="flex flex-col bg-gray-950" style={{ height: "100dvh" }}>
-      <div className="px-4 py-4 border-b border-gray-800 flex items-center gap-3">
-        <button onClick={onBack} className="text-gray-400 text-sm">
-          ← Back
+    <div
+      style={{
+        height: "100dvh",
+        background: "var(--bg-base)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: "16px 20px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexShrink: 0,
+        }}
+      >
+        <button
+          onClick={onBack}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "var(--text-muted)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "var(--text-secondary)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "var(--text-muted)")
+          }
+        >
+          ← BACK
         </button>
-        <h1 className="text-white text-base font-medium flex-1">
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 15,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+            flex: 1,
+          }}
+        >
           {trip ? "Edit Trip" : "New Trip"}
-        </h1>
+        </span>
       </div>
 
-      <div className="flex-1 p-4">
-        <label className="block text-xs text-gray-500 mb-2">Trip name</label>
+      {/* Content */}
+      <div style={{ flex: 1, padding: "24px 16px" }}>
+        <div className="label" style={{ marginBottom: 8 }}>
+          Trip name
+        </div>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-3 text-white text-sm outline-none focus:border-gray-500"
           autoFocus
+          className="input"
+          style={{ fontSize: 15 }}
         />
-        <p className="text-xs text-gray-600 mt-2">
+        <p
+          style={{
+            marginTop: 8,
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
+            color: "var(--text-muted)",
+            lineHeight: 1.5,
+          }}
+        >
           You can use any name — the default is auto-generated.
         </p>
       </div>
 
-      <div className="px-4 pb-8">
+      {/* Footer */}
+      <div style={{ padding: "12px 16px 32px", flexShrink: 0 }}>
         <button
           onClick={handleSave}
-          className="w-full py-3 bg-gray-900 border border-gray-700 rounded-2xl text-white font-medium"
+          className="btn-primary"
+          style={{
+            width: "100%",
+            fontSize: 15,
+            opacity: !name.trim() ? 0.4 : 1,
+          }}
         >
-          {trip ? "Save changes" : "Create Trip"}
+          {trip ? "Save Changes" : "Create Trip"}
         </button>
       </div>
     </div>

@@ -47,12 +47,7 @@ export function saveLocation(location) {
 
 export function generateTripName(trips) {
   const num = trips.length + 1;
-  const today = new Date().toLocaleDateString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-  });
-  return `Trip #${num} · ${today}`;
+  return `Trip #${num}`;
 }
 
 export function generateTripId() {

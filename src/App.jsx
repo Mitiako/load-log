@@ -1,4 +1,5 @@
-import { onAuthStateChanged } from "firebase/auth";
+// App.jsx
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
 import Login from "./components/Login";
 import { useState, useEffect } from "react";
@@ -12,14 +13,13 @@ import LoadForm from "./components/LoadForm";
 import Monthly from "./components/Monthly";
 import PrintView from "./components/PrintView";
 import { Analytics } from "@vercel/analytics/react";
-import { signOut } from "firebase/auth";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-
   const [trips, setTrips] = useState([]);
   const [tripsLoading, setTripsLoading] = useState(true);
+  const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -35,6 +35,13 @@ export default function App() {
     });
     return unsubscribe;
   }, []);
+
+  // Інтро показуємо 2.5 сек при першому завантаженні
+  useEffect(() => {
+    const t = setTimeout(() => setShowIntro(false), 2500);
+    return () => clearTimeout(t);
+  }, []);
+
   const [screen, setScreen] = useState("trips");
   const [selectedTripIdx, setSelectedTripIdx] = useState(null);
   const [selectedLoadIdx, setSelectedLoadIdx] = useState(null);
@@ -61,18 +68,15 @@ export default function App() {
   const currentTrip = selectedTripIdx !== null ? trips[selectedTripIdx] : null;
   const currentLoads = currentTrip?.loads || [];
 
-  // Trip handlers
   function handleSelectTrip(i) {
     setSelectedTripIdx(i);
     setSelectedLoadIdx(null);
     goTo("loads");
   }
-
   function handleCreateTrip() {
     setEditingTrip(false);
     goTo("tripForm");
   }
-
   function handleEditTrip(i) {
     setSelectedTripIdx(i);
     setEditingTrip(true);
@@ -111,40 +115,29 @@ export default function App() {
 
   async function handleDeleteTrip(i) {
     const trip = trips[i];
-    const updated = trips.filter((_, idx) => idx !== i);
-    setTrips(updated);
+    setTrips(trips.filter((_, idx) => idx !== i));
     await deleteTrip(user.uid, trip.id);
   }
 
-  // Load handlers
   function handleSelectLoad(i) {
     setSelectedLoadIdx(i);
     goTo("detail");
   }
-
   function handleAddLoad() {
     setSelectedLoadIdx(null);
     goTo("form");
   }
-
   function handleEditLoad() {
     goTo("form");
   }
 
   async function handleSaveLoad(load) {
-    let updatedLoads;
-    if (selectedLoadIdx !== null) {
-      updatedLoads = currentLoads.map((l, i) =>
-        i === selectedLoadIdx ? load : l,
-      );
-    } else {
-      updatedLoads = [...currentLoads, load];
-    }
+    const updatedLoads =
+      selectedLoadIdx !== null
+        ? currentLoads.map((l, i) => (i === selectedLoadIdx ? load : l))
+        : [...currentLoads, load];
     const updatedTrip = { ...currentTrip, loads: updatedLoads };
-    const updatedTrips = trips.map((t, i) =>
-      i === selectedTripIdx ? updatedTrip : t,
-    );
-    setTrips(updatedTrips);
+    setTrips(trips.map((t, i) => (i === selectedTripIdx ? updatedTrip : t)));
     await saveTrip(user.uid, updatedTrip);
     saveLocation(load.from);
     saveLocation(load.to);
@@ -156,10 +149,9 @@ export default function App() {
   async function handleDeleteLoad(i) {
     const updatedLoads = currentLoads.filter((_, idx) => idx !== i);
     const updatedTrip = { ...currentTrip, loads: updatedLoads };
-    const updatedTrips = trips.map((t, idx) =>
-      idx === selectedTripIdx ? updatedTrip : t,
+    setTrips(
+      trips.map((t, idx) => (idx === selectedTripIdx ? updatedTrip : t)),
     );
-    setTrips(updatedTrips);
     await saveTrip(user.uid, updatedTrip);
   }
 
@@ -173,15 +165,14 @@ export default function App() {
     setScreen("trips");
   }
 
+  // Інтро екран
+  if (showIntro) {
+    return <IntroScreen />;
+  }
+
+  // Auth loading
   if (authLoading) {
-    return (
-      <div
-        className="flex items-center justify-center bg-gray-950"
-        style={{ height: "100dvh" }}
-      >
-        <div className="text-gray-400 text-sm">Loading...</div>
-      </div>
-    );
+    return <LoadingScreen label="LOADING..." />;
   }
 
   if (!user) {
@@ -189,18 +180,14 @@ export default function App() {
   }
 
   if (tripsLoading) {
-    return (
-      <div
-        className="flex items-center justify-center bg-gray-950"
-        style={{ height: "100dvh" }}
-      >
-        <div className="text-gray-400 text-sm">Loading trips...</div>
-      </div>
-    );
+    return <LoadingScreen label="LOADING TRIPS..." />;
   }
 
   return (
-    <div className="max-w-md mx-auto print:max-w-full print:w-full">
+    <div
+      style={{ maxWidth: 480, margin: "0 auto" }}
+      className="print:max-w-full print:w-full"
+    >
       <Analytics />
 
       {screen === "trips" && (
@@ -213,7 +200,6 @@ export default function App() {
           onLogout={handleLogout}
         />
       )}
-
       {screen === "tripForm" && (
         <TripForm
           trips={trips}
@@ -226,7 +212,6 @@ export default function App() {
           onBack={handleBack}
         />
       )}
-
       {screen === "loads" && currentTrip && (
         <LoadList
           trip={currentTrip}
@@ -238,7 +223,6 @@ export default function App() {
           onBack={handleBack}
         />
       )}
-
       {screen === "detail" && selectedLoadIdx !== null && currentTrip && (
         <LoadDetail
           load={currentLoads[selectedLoadIdx]}
@@ -246,7 +230,6 @@ export default function App() {
           onEdit={handleEditLoad}
         />
       )}
-
       {screen === "form" && currentTrip && (
         <LoadForm
           load={selectedLoadIdx !== null ? currentLoads[selectedLoadIdx] : null}
@@ -254,7 +237,6 @@ export default function App() {
           onBack={handleBack}
         />
       )}
-
       {screen === "monthly" && currentTrip && (
         <Monthly
           loads={currentLoads}
@@ -262,10 +244,170 @@ export default function App() {
           onPrint={() => goTo("print")}
         />
       )}
-
       {screen === "print" && currentTrip && (
         <PrintView loads={currentLoads} onClose={() => goTo("monthly")} />
       )}
+    </div>
+  );
+}
+
+// Інтро екран з анімацією логотипу
+function IntroScreen() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const start = Date.now();
+    const duration = 2200;
+    const frame = () => {
+      const p = Math.min((Date.now() - start) / duration, 1);
+      setProgress(p);
+      if (p < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }, []);
+
+  return (
+    <div
+      style={{
+        height: "100dvh",
+        background: "var(--bg-base)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 32,
+      }}
+    >
+      {/* Логотип */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+        }}
+      >
+        <svg
+          viewBox="0 0 100 100"
+          width="64"
+          height="64"
+          fill="none"
+          style={{ animation: "fadeIn 0.6s ease-out" }}
+        >
+          <path
+            d="M31 23 V77 H59"
+            stroke="#F4F1EB"
+            strokeWidth="11"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              strokeDasharray: 120,
+              strokeDashoffset: 120,
+              animation: "drawPath 0.8s ease-out 0.2s forwards",
+            }}
+          />
+          <path
+            d="M69 77 V23 H41"
+            stroke="#FF8A3D"
+            strokeWidth="11"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              strokeDasharray: 120,
+              strokeDashoffset: 120,
+              animation: "drawPath 0.8s ease-out 0.6s forwards",
+            }}
+          />
+        </svg>
+        <div
+          style={{
+            textAlign: "center",
+            animation: "fadeIn 0.6s ease-out 0.8s both",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontWeight: 700,
+              fontSize: 32,
+              letterSpacing: "-0.02em",
+              color: "var(--text-primary)",
+              lineHeight: 1,
+            }}
+          >
+            LOAD<span style={{ color: "var(--accent)" }}>LOG</span>
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.32em",
+              color: "var(--text-muted)",
+              marginTop: 8,
+              paddingLeft: "0.32em",
+            }}
+          >
+            DAILY FREIGHT JOURNAL
+          </div>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div
+        style={{
+          width: 120,
+          height: 2,
+          background: "var(--border)",
+          borderRadius: 99,
+          overflow: "hidden",
+          animation: "fadeIn 0.4s ease-out 0.4s both",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${progress * 100}%`,
+            background: "var(--accent)",
+            borderRadius: 99,
+            transition: "width 0.05s linear",
+          }}
+        />
+      </div>
+
+      <style>{`
+        @keyframes drawPath {
+          to { stroke-dashoffset: 0; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function LoadingScreen({ label }) {
+  return (
+    <div
+      style={{
+        height: "100dvh",
+        background: "var(--bg-base)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          letterSpacing: "0.12em",
+          color: "var(--text-muted)",
+        }}
+      >
+        {label}
+      </div>
     </div>
   );
 }

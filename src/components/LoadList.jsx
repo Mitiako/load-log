@@ -1,4 +1,6 @@
+// LoadList.jsx
 import LoadCard from "./LoadCard";
+import { calcLoad, fmtMoney } from "../data/calc";
 
 export default function LoadList({
   trip,
@@ -9,26 +11,128 @@ export default function LoadList({
   onDelete,
   onBack,
 }) {
+  const totalNet = (loads || []).reduce((s, l) => s + calcLoad(l).net, 0);
+  const totalMiles = (loads || []).reduce(
+    (s, l) => s + l.miles + (l.dh || 0),
+    0,
+  );
+  const loadCount = (loads || []).length;
+
   return (
-    <div className="flex flex-col bg-gray-950" style={{ height: "100dvh" }}>
-      <div className="px-4 py-4 border-b border-gray-800 flex items-center gap-3">
-        <button onClick={onBack} className="text-gray-400 text-sm">
-          ← Back
+    <div
+      style={{
+        height: "100dvh",
+        background: "var(--bg-base)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: "16px 20px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexShrink: 0,
+        }}
+      >
+        <button
+          onClick={onBack}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "var(--text-muted)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "var(--text-secondary)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "var(--text-muted)")
+          }
+        >
+          ← BACK
         </button>
-        <h1 className="text-white text-base font-medium flex-1 truncate">
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 15,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+            flex: 1,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
           {trip.name}
-        </h1>
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 pt-3">
-        {loads.length === 0 ? (
-          <div className="text-center text-gray-500 text-sm pt-16">
+      {/* Summary strip */}
+      {loadCount > 0 && (
+        <div
+          style={{
+            padding: "12px 20px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexShrink: 0,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--text-muted)",
+            }}
+          >
+            {loadCount} {loadCount === 1 ? "load" : "loads"} ·{" "}
+            {totalMiles.toLocaleString()} mi
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 15,
+              color: totalNet >= 0 ? "#4ade80" : "#f87171",
+            }}
+          >
+            {fmtMoney(totalNet)}
+          </span>
+        </div>
+      )}
+
+      {/* List */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+        {loadCount === 0 ? (
+          <div
+            style={{
+              paddingTop: 80,
+              textAlign: "center",
+              fontFamily: "var(--font-sans)",
+              fontSize: 14,
+              color: "var(--text-muted)",
+              lineHeight: 1.6,
+            }}
+          >
             No loads yet.
             <br />
-            Add your first load below.
+            <span style={{ color: "var(--text-secondary)" }}>
+              Add your first load below.
+            </span>
           </div>
         ) : (
-          loads.map((load, i) => (
+          (loads || []).map((load, i) => (
             <LoadCard
               key={i}
               load={load}
@@ -40,18 +144,30 @@ export default function LoadList({
         )}
       </div>
 
-      <div className="px-3 pb-6 pt-2 space-y-2 bg-gray-950 border-t border-gray-800">
+      {/* Footer */}
+      <div
+        style={{
+          padding: "12px 16px 32px",
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          flexShrink: 0,
+        }}
+      >
         <button
           onClick={onAdd}
-          className="w-full py-3 bg-gray-900 border border-gray-700 rounded-2xl text-white text-sm font-medium"
+          className="btn-primary"
+          style={{ width: "100%", fontSize: 15 }}
         >
-          + Add load
+          + Add Load
         </button>
         <button
           onClick={onMonthly}
-          className="w-full py-3 border border-gray-800 rounded-2xl text-gray-400 text-sm"
+          className="btn-ghost"
+          style={{ width: "100%", fontSize: 14 }}
         >
-          Trip summary
+          Trip Summary
         </button>
       </div>
     </div>

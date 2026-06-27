@@ -1,3 +1,4 @@
+// Monthly.jsx
 import { useState } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
@@ -32,53 +33,174 @@ export default function Monthly({ loads, onBack, onPrint }) {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950">
-      <div className="px-4 py-4 border-b border-gray-800 flex items-center gap-3">
-        <button onClick={onBack} className="text-gray-400 text-sm">
-          ← Back
+    <div
+      style={{
+        height: "100dvh",
+        background: "var(--bg-base)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: "16px 20px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexShrink: 0,
+        }}
+      >
+        <button
+          onClick={onBack}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "var(--text-muted)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "var(--text-secondary)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "var(--text-muted)")
+          }
+        >
+          ← BACK
         </button>
-        <h1 className="text-white text-base font-medium flex-1">
-          Monthly summary
-        </h1>
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 15,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+            flex: 1,
+          }}
+        >
+          Trip Summary
+        </span>
         <button
           onClick={onPrint}
-          className="px-3 py-1 bg-gray-700 text-white text-sm rounded-lg"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "var(--text-muted)",
+            background: "none",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-btn)",
+            padding: "6px 12px",
+            cursor: "pointer",
+            transition: "all var(--transition)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "var(--text-primary)";
+            e.currentTarget.style.borderColor = "var(--border-hover)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "var(--text-muted)";
+            e.currentTarget.style.borderColor = "var(--border)";
+          }}
         >
-          Print / PDF
+          PRINT / PDF
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-2 gap-3 p-4">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
+        {/* Stat grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 10,
+            padding: "16px 16px 8px",
+          }}
+        >
           <StatCard label="Loads" value={loads.length} />
           <StatCard label="Total miles" value={totalMiles.toLocaleString()} />
           <StatCard label="Total gross" value={fmtMoney(totalGross)} />
           <StatCard
             label="Net from loads"
             value={fmtMoney(netFromLoads)}
-            positive={netFromLoads >= 0}
+            highlight={netFromLoads >= 0 ? "green" : "red"}
           />
         </div>
 
-        <div className="mx-4 mb-4 bg-gray-900 rounded-2xl p-4 space-y-2">
+        {/* Breakdown */}
+        <div
+          style={{
+            margin: "8px 16px 16px",
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-card)",
+            padding: "16px 20px",
+          }}
+        >
           <ResultRow
             label="Your gross (after company)"
             value={fmtMoney(totalMyGross)}
           />
           <ResultRow label="Fuel (actual paid)" value={fmtMoney(totalFuel)} />
           <ResultRow label="Other expenses" value={fmtMoney(totalOther)} />
-          <div className="border-t border-gray-700 pt-2 flex justify-between text-sm font-medium">
-            <span className="text-white">Net from loads</span>
+          <div
+            style={{ height: 1, background: "var(--border)", margin: "12px 0" }}
+          />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <span
-              className={netFromLoads >= 0 ? "text-green-400" : "text-red-400"}
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontWeight: 600,
+                fontSize: 14,
+                color: "var(--text-primary)",
+              }}
+            >
+              Net from loads
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                fontSize: 16,
+                color: netFromLoads >= 0 ? "#4ade80" : "#f87171",
+              }}
             >
               {fmtMoney(netFromLoads)}
             </span>
           </div>
         </div>
 
-        <SectionLabel>Fixed monthly costs</SectionLabel>
-        <div className="grid grid-cols-2 gap-3 px-4 pb-3">
+        {/* Fixed costs */}
+        <div
+          style={{
+            padding: "4px 16px 8px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.2em",
+            color: "var(--text-muted)",
+          }}
+        >
+          FIXED MONTHLY COSTS
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 10,
+            padding: "0 16px 10px",
+          }}
+        >
           <Field
             label="Insurance $"
             value={ins}
@@ -100,7 +222,7 @@ export default function Monthly({ loads, onBack, onPrint }) {
             onChange={(v) => handleFixed(setEld, "eld", v)}
           />
         </div>
-        <div className="px-4 pb-4">
+        <div style={{ padding: "0 16px 16px" }}>
           <Field
             label="Other fixed $"
             value={other}
@@ -108,11 +230,45 @@ export default function Monthly({ loads, onBack, onPrint }) {
           />
         </div>
 
-        <div className="mx-4 mb-8 bg-gray-900 rounded-2xl p-4 space-y-2">
-          <ResultRow label="Total fixed costs" value={`-${fmtMoney(fixed)}`} />
-          <div className="border-t border-gray-700 pt-2 flex justify-between text-base font-medium">
-            <span className="text-white">Final net profit</span>
-            <span className={finalNet >= 0 ? "text-green-400" : "text-red-400"}>
+        {/* Final */}
+        <div
+          style={{
+            margin: "0 16px",
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-card)",
+            padding: "16px 20px",
+          }}
+        >
+          <ResultRow label="Total fixed costs" value={`−${fmtMoney(fixed)}`} />
+          <div
+            style={{ height: 1, background: "var(--border)", margin: "12px 0" }}
+          />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontWeight: 600,
+                fontSize: 15,
+                color: "var(--text-primary)",
+              }}
+            >
+              Final net profit
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                fontSize: 22,
+                color: finalNet >= 0 ? "#4ade80" : "#f87171",
+              }}
+            >
               {fmtMoney(finalNet)}
             </span>
           </div>
@@ -122,12 +278,40 @@ export default function Monthly({ loads, onBack, onPrint }) {
   );
 }
 
-function StatCard({ label, value, positive }) {
+function StatCard({ label, value, highlight }) {
+  const color =
+    highlight === "green"
+      ? "#4ade80"
+      : highlight === "red"
+        ? "#f87171"
+        : "var(--text-primary)";
   return (
-    <div className="bg-gray-900 rounded-xl p-3">
-      <div className="text-xs text-gray-500 mb-1">{label}</div>
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-card)",
+        padding: "14px 16px",
+      }}
+    >
       <div
-        className={`text-xl font-medium ${positive === false ? "text-red-400" : positive ? "text-green-400" : "text-white"}`}
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          letterSpacing: "0.16em",
+          color: "var(--text-muted)",
+          marginBottom: 8,
+        }}
+      >
+        {label.toUpperCase()}
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          fontSize: 22,
+          color,
+        }}
       >
         {value}
       </div>
@@ -137,9 +321,32 @@ function StatCard({ label, value, positive }) {
 
 function ResultRow({ label, value }) {
   return (
-    <div className="flex justify-between text-sm">
-      <span className="text-gray-400">{label}</span>
-      <span className="text-white">{value}</span>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "5px 0",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 13,
+          color: "var(--text-secondary)",
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          color: "var(--text-primary)",
+        }}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -147,22 +354,17 @@ function ResultRow({ label, value }) {
 function Field({ label, value, onChange }) {
   return (
     <div>
-      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+      <div className="label" style={{ marginBottom: 6 }}>
+        {label}
+      </div>
       <input
         type="number"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
         placeholder="0"
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-gray-500"
+        onChange={(e) => onChange(e.target.value)}
+        className="input"
+        style={{ fontSize: 14, padding: "10px 12px" }}
       />
-    </div>
-  );
-}
-
-function SectionLabel({ children }) {
-  return (
-    <div className="px-4 pt-2 pb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-      {children}
     </div>
   );
 }

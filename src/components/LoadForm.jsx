@@ -1,3 +1,4 @@
+// LoadForm.jsx
 import { useState } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
@@ -50,39 +51,32 @@ export default function LoadForm({ load, onSave, onBack }) {
     setPayMode(mode);
     saveSettings({ ...getSettings(), payMode: mode });
   }
-
   function handlePayVal(val) {
     setPayVal(val);
     saveSettings({ ...getSettings(), payVal: val });
   }
-
   function addDiesel() {
     setDiesel([
       ...diesel,
       { location: "", date: "", gallons: "", amount: "", discount: "" },
     ]);
   }
-
   function updateDiesel(i, field, val) {
-    const updated = [...diesel];
-    updated[i] = { ...updated[i], [field]: val };
-    setDiesel(updated);
+    const u = [...diesel];
+    u[i] = { ...u[i], [field]: val };
+    setDiesel(u);
   }
-
   function removeDiesel(i) {
     setDiesel(diesel.filter((_, idx) => idx !== i));
   }
-
   function addExpense() {
     setExpenses([...expenses, { name: "", amount: "" }]);
   }
-
   function updateExpense(i, field, val) {
-    const updated = [...expenses];
-    updated[i] = { ...updated[i], [field]: val };
-    setExpenses(updated);
+    const u = [...expenses];
+    u[i] = { ...u[i], [field]: val };
+    setExpenses(u);
   }
-
   function removeExpense(i) {
     setExpenses(expenses.filter((_, idx) => idx !== i));
   }
@@ -105,19 +99,72 @@ export default function LoadForm({ load, onSave, onBack }) {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950">
-      <div className="px-4 py-4 border-b border-gray-800 flex items-center gap-3">
-        <button onClick={onBack} className="text-gray-400 text-sm">
-          ← Back
+    <div
+      style={{
+        height: "100dvh",
+        background: "var(--bg-base)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: "16px 20px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexShrink: 0,
+        }}
+      >
+        <button
+          onClick={onBack}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "var(--text-muted)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "var(--text-secondary)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "var(--text-muted)")
+          }
+        >
+          ← BACK
         </button>
-        <h1 className="text-white text-base font-medium">
-          {load ? "Edit load" : "New load"}
-        </h1>
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 15,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+            flex: 1,
+          }}
+        >
+          {load ? "Edit Load" : "New Load"}
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-safe">
-        <SectionLabel>Route</SectionLabel>
-        <div className="grid grid-cols-2 gap-3 px-4 pb-3">
+      {/* Form */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
+        {/* Route */}
+        <FormSection label="ROUTE" />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 12,
+            padding: "0 16px 12px",
+          }}
+        >
           <LocationInput
             label="From"
             value={from}
@@ -131,7 +178,14 @@ export default function LoadForm({ load, onSave, onBack }) {
             placeholder="Dallas, TX"
           />
         </div>
-        <div className="grid grid-cols-2 gap-3 px-4 pb-3">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 12,
+            padding: "0 16px 12px",
+          }}
+        >
           <Field
             label="Loaded miles"
             value={miles}
@@ -141,17 +195,28 @@ export default function LoadForm({ load, onSave, onBack }) {
           />
           <Field label="Date" value={date} onChange={setDate} type="date" />
         </div>
-        <label className="flex items-center gap-2 px-4 pb-3 text-sm text-gray-400 cursor-pointer">
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "0 16px 16px",
+            cursor: "pointer",
+            fontFamily: "var(--font-sans)",
+            fontSize: 14,
+            color: "var(--text-secondary)",
+          }}
+        >
           <input
             type="checkbox"
             checked={showDh}
             onChange={(e) => setShowDh(e.target.checked)}
-            className="w-auto"
+            style={{ accentColor: "var(--accent)", width: 16, height: 16 }}
           />
           Add deadhead miles
         </label>
         {showDh && (
-          <div className="px-4 pb-3">
+          <div style={{ padding: "0 16px 12px" }}>
             <Field
               label="Deadhead miles"
               value={dh}
@@ -162,23 +227,53 @@ export default function LoadForm({ load, onSave, onBack }) {
           </div>
         )}
 
-        <div className="h-px bg-gray-800 my-1" />
-        <SectionLabel>Pay</SectionLabel>
-        <div className="grid grid-cols-2 mx-4 mb-3 border border-gray-700 rounded-xl overflow-hidden">
-          <button
-            onClick={() => handlePayMode("pct")}
-            className={`py-2 text-sm ${payMode === "pct" ? "bg-blue-900 text-blue-300 font-medium" : "text-gray-500"}`}
-          >
-            % of gross
-          </button>
-          <button
-            onClick={() => handlePayMode("cpm")}
-            className={`py-2 text-sm ${payMode === "cpm" ? "bg-blue-900 text-blue-300 font-medium" : "text-gray-500"}`}
-          >
-            Cents per mile
-          </button>
+        {/* Pay */}
+        <div
+          style={{ height: 1, background: "var(--border)", margin: "4px 0" }}
+        />
+        <FormSection label="PAY" />
+
+        {/* Toggle */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            margin: "0 16px 12px",
+            background: "var(--bg-base)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-btn)",
+            overflow: "hidden",
+          }}
+        >
+          {["pct", "cpm"].map((mode) => (
+            <button
+              key={mode}
+              onClick={() => handlePayMode(mode)}
+              style={{
+                padding: "10px",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
+                fontSize: 13,
+                fontWeight: 500,
+                background: payMode === mode ? "var(--accent)" : "transparent",
+                color: payMode === mode ? "#100F0C" : "var(--text-muted)",
+                transition: "all var(--transition)",
+              }}
+            >
+              {mode === "pct" ? "% of gross" : "Cents per mile"}
+            </button>
+          ))}
         </div>
-        <div className="grid grid-cols-2 gap-3 px-4 pb-1">
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 12,
+            padding: "0 16px 4px",
+          }}
+        >
           <Field
             label="Gross rate $"
             value={gross}
@@ -194,12 +289,20 @@ export default function LoadForm({ load, onSave, onBack }) {
             placeholder={payMode === "pct" ? "87" : "90"}
           />
         </div>
-        <p className="px-4 pb-3 text-xs text-gray-500">
+        <p
+          style={{
+            padding: "4px 16px 12px",
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
+            color: "var(--text-muted)",
+            lineHeight: 1.5,
+          }}
+        >
           {payMode === "pct"
             ? "Owner-operator: ~85–87%. Hired driver: ~28–32%."
             : "Enter cents per mile as a whole number (e.g. 90 = $0.90/mile)."}
         </p>
-        <div className="px-4 pb-3">
+        <div style={{ padding: "0 16px 12px" }}>
           <Field
             label="Weight (lbs)"
             value={weight}
@@ -209,124 +312,270 @@ export default function LoadForm({ load, onSave, onBack }) {
           />
         </div>
 
-        <div className="h-px bg-gray-800 my-1" />
-        <SectionLabel>Diesel</SectionLabel>
+        {/* Diesel */}
+        <div
+          style={{ height: 1, background: "var(--border)", margin: "4px 0" }}
+        />
+        <FormSection label="DIESEL" />
         {diesel.map((d, i) => (
-          <div key={i} className="px-4 pb-3 border-b border-gray-800 mb-2">
-            <div className="grid grid-cols-2 gap-2 mb-2">
+          <div
+            key={i}
+            style={{
+              padding: "0 16px 16px",
+              borderBottom: "1px solid var(--border)",
+              marginBottom: 8,
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 8,
+                marginBottom: 8,
+              }}
+            >
               <LocationInput
                 label="Location"
                 value={d.location || ""}
                 onChange={(v) => updateDiesel(i, "location", v)}
                 placeholder="Oklahoma City, OK"
               />
-              <SmallField
+              <Field
                 label="Date"
                 value={d.date}
                 onChange={(v) => updateDiesel(i, "date", v)}
-                placeholder=""
                 type="date"
+                placeholder=""
               />
             </div>
-            <div className="grid grid-cols-3 gap-2 items-end">
-              <SmallField
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr auto",
+                gap: 8,
+                alignItems: "flex-end",
+              }}
+            >
+              <Field
                 label="Gallons"
                 value={d.gallons}
                 onChange={(v) => updateDiesel(i, "gallons", v)}
                 placeholder="219"
               />
-              <SmallField
+              <Field
                 label="Amount $"
                 value={d.amount}
                 onChange={(v) => updateDiesel(i, "amount", v)}
                 placeholder="840"
               />
-              <div className="flex gap-1 items-end">
-                <div className="flex-1">
-                  <SmallField
-                    label="Discount $"
-                    value={d.discount}
-                    onChange={(v) => updateDiesel(i, "discount", v)}
-                    placeholder="226"
-                  />
-                </div>
-                <button
-                  onClick={() => removeDiesel(i)}
-                  className="h-9 w-8 border border-gray-700 rounded-lg text-gray-500 text-xs mb-0"
-                >
-                  ✕
-                </button>
-              </div>
+              <Field
+                label="Discount $"
+                value={d.discount}
+                onChange={(v) => updateDiesel(i, "discount", v)}
+                placeholder="226"
+              />
+              <button
+                onClick={() => removeDiesel(i)}
+                style={{
+                  height: 42,
+                  width: 36,
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-input)",
+                  background: "transparent",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = "var(--text-muted)")
+                }
+              >
+                ×
+              </button>
             </div>
           </div>
         ))}
         <button
           onClick={addDiesel}
-          className="mx-4 mb-3 w-[calc(100%-32px)] py-2 border border-dashed border-gray-700 rounded-xl text-gray-500 text-sm"
+          style={{
+            display: "block",
+            margin: "0 16px 12px",
+            width: "calc(100% - 32px)",
+            padding: "10px",
+            border: "1px dashed var(--border)",
+            borderRadius: "var(--radius-btn)",
+            background: "transparent",
+            color: "var(--text-muted)",
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            cursor: "pointer",
+            transition:
+              "border-color var(--transition), color var(--transition)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--accent)";
+            e.currentTarget.style.color = "var(--accent)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--border)";
+            e.currentTarget.style.color = "var(--text-muted)";
+          }}
         >
           + Add fuel stop
         </button>
 
-        <div className="h-px bg-gray-800 my-1" />
-        <SectionLabel>Other expenses</SectionLabel>
+        {/* Other expenses */}
+        <div
+          style={{ height: 1, background: "var(--border)", margin: "4px 0" }}
+        />
+        <FormSection label="OTHER EXPENSES" />
         {expenses.map((e, i) => (
-          <div key={i} className="grid grid-cols-2 gap-2 px-4 pb-2 items-end">
-            <SmallField
+          <div
+            key={i}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr auto",
+              gap: 8,
+              padding: "0 16px 8px",
+              alignItems: "flex-end",
+            }}
+          >
+            <Field
               label="Description"
               value={e.name}
               onChange={(v) => updateExpense(i, "name", v)}
               placeholder="Lumper, tolls..."
               type="text"
             />
-            <div className="flex gap-1 items-end">
-              <div className="flex-1">
-                <SmallField
-                  label="Amount $"
-                  value={e.amount}
-                  onChange={(v) => updateExpense(i, "amount", v)}
-                  placeholder="0"
-                />
-              </div>
-              <button
-                onClick={() => removeExpense(i)}
-                className="h-9 w-8 border border-gray-700 rounded-lg text-gray-500 text-xs"
-              >
-                ✕
-              </button>
-            </div>
+            <Field
+              label="Amount $"
+              value={e.amount}
+              onChange={(v) => updateExpense(i, "amount", v)}
+              placeholder="0"
+            />
+            <button
+              onClick={() => removeExpense(i)}
+              style={{
+                height: 42,
+                width: 36,
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-input)",
+                background: "transparent",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                fontSize: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "var(--text-muted)")
+              }
+            >
+              ×
+            </button>
           </div>
         ))}
         <button
           onClick={addExpense}
-          className="mx-4 mb-3 w-[calc(100%-32px)] py-2 border border-dashed border-gray-700 rounded-xl text-gray-500 text-sm"
+          style={{
+            display: "block",
+            margin: "0 16px 12px",
+            width: "calc(100% - 32px)",
+            padding: "10px",
+            border: "1px dashed var(--border)",
+            borderRadius: "var(--radius-btn)",
+            background: "transparent",
+            color: "var(--text-muted)",
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            cursor: "pointer",
+            transition:
+              "border-color var(--transition), color var(--transition)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--accent)";
+            e.currentTarget.style.color = "var(--accent)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--border)";
+            e.currentTarget.style.color = "var(--text-muted)";
+          }}
         >
           + Add expense
         </button>
 
+        {/* Live result */}
         {c && (
           <>
-            <div className="h-px bg-gray-800 my-1" />
-            <SectionLabel>Result</SectionLabel>
-            <div className="mx-4 my-3 bg-gray-900 rounded-2xl p-4 space-y-2">
+            <div
+              style={{
+                height: 1,
+                background: "var(--border)",
+                margin: "4px 0",
+              }}
+            />
+            <FormSection label="RESULT" />
+            <div
+              style={{
+                margin: "0 16px 16px",
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-card)",
+                padding: "16px 20px",
+              }}
+            >
               <ResultRow label="Gross" value={fmtMoney(currentLoad.gross)} />
-              <ResultRow label="Company share" value={`-${fmtMoney(c.cut)}`} />
+              <ResultRow label="Company share" value={`−${fmtMoney(c.cut)}`} />
               <ResultRow label="Your gross" value={fmtMoney(c.myGross)} />
               {c.fuelActual > 0 && (
                 <ResultRow
                   label="Fuel (actual)"
-                  value={`-${fmtMoney(c.fuelActual)}`}
+                  value={`−${fmtMoney(c.fuelActual)}`}
                 />
               )}
               {c.otherExp > 0 && (
                 <ResultRow
                   label="Other expenses"
-                  value={`-${fmtMoney(c.otherExp)}`}
+                  value={`−${fmtMoney(c.otherExp)}`}
                 />
               )}
-              <div className="border-t border-gray-700 pt-2 flex justify-between text-base font-medium">
-                <span className="text-white">Net profit</span>
+              <div
+                style={{
+                  height: 1,
+                  background: "var(--border)",
+                  margin: "12px 0",
+                }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                 <span
-                  className={c.net >= 0 ? "text-green-400" : "text-red-400"}
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 600,
+                    fontSize: 15,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  Net profit
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    fontSize: 18,
+                    color: c.net >= 0 ? "#4ade80" : "#f87171",
+                  }}
                 >
                   {fmtMoney(c.net)}
                 </span>
@@ -335,12 +584,16 @@ export default function LoadForm({ load, onSave, onBack }) {
           </>
         )}
 
-        <button
-          onClick={handleSave}
-          className="mx-4 mb-4 w-[calc(100%-32px)] py-3 bg-gray-900 border border-gray-700 rounded-2xl text-white font-medium"
-        >
-          Save load
-        </button>
+        {/* Save */}
+        <div style={{ padding: "0 16px" }}>
+          <button
+            onClick={handleSave}
+            className="btn-primary"
+            style={{ width: "100%", fontSize: 15, opacity: !gross ? 0.4 : 1 }}
+          >
+            {load ? "Save Changes" : "Save Load"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -349,28 +602,16 @@ export default function LoadForm({ load, onSave, onBack }) {
 function Field({ label, value, onChange, type = "text", placeholder }) {
   return (
     <div>
-      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+      <div className="label" style={{ marginBottom: 6 }}>
+        {label}
+      </div>
       <input
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-gray-500"
-      />
-    </div>
-  );
-}
-
-function SmallField({ label, value, onChange, type = "number", placeholder }) {
-  return (
-    <div>
-      <label className="block text-xs text-gray-500 mb-1">{label}</label>
-      <input
-        type={type}
-        value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-white text-sm outline-none focus:border-gray-500"
+        className="input"
+        style={{ fontSize: 14, padding: "10px 12px" }}
       />
     </div>
   );
@@ -378,17 +619,48 @@ function SmallField({ label, value, onChange, type = "number", placeholder }) {
 
 function ResultRow({ label, value }) {
   return (
-    <div className="flex justify-between text-sm">
-      <span className="text-gray-400">{label}</span>
-      <span className="text-white">{value}</span>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "5px 0",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 13,
+          color: "var(--text-secondary)",
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          color: "var(--text-primary)",
+        }}
+      >
+        {value}
+      </span>
     </div>
   );
 }
 
-function SectionLabel({ children }) {
+function FormSection({ label }) {
   return (
-    <div className="px-4 pt-3 pb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-      {children}
+    <div
+      style={{
+        padding: "16px 16px 8px",
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        letterSpacing: "0.2em",
+        color: "var(--text-muted)",
+      }}
+    >
+      {label}
     </div>
   );
 }

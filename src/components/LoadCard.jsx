@@ -1,3 +1,4 @@
+// LoadCard.jsx
 import { useState } from "react";
 import { calcLoad, fmtDate, fmtMoney } from "../data/calc";
 
@@ -9,68 +10,187 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
     e.stopPropagation();
     setConfirm(true);
   }
-
   function handleConfirm(e) {
     e.stopPropagation();
     onDelete(index);
   }
-
   function handleCancel(e) {
     e.stopPropagation();
     setConfirm(false);
   }
 
+  if (confirm) {
+    return (
+      <div
+        style={{
+          background: "var(--bg-elevated)",
+          border: "1px solid rgba(239,68,68,0.2)",
+          borderRadius: "var(--radius-card)",
+          padding: "20px",
+          marginBottom: 10,
+        }}
+      >
+        <p
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 14,
+            color: "var(--text-primary)",
+            marginBottom: 16,
+          }}
+        >
+          Delete{" "}
+          <strong>
+            {load.from} → {load.to}
+          </strong>
+          ?
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={handleConfirm}
+            style={{
+              flex: 1,
+              padding: "10px",
+              borderRadius: "var(--radius-btn)",
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.3)",
+              color: "#f87171",
+              fontFamily: "var(--font-sans)",
+              fontWeight: 500,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Delete
+          </button>
+          <button
+            onClick={handleCancel}
+            style={{
+              flex: 1,
+              padding: "10px",
+              borderRadius: "var(--radius-btn)",
+              background: "transparent",
+              border: "1px solid var(--border)",
+              color: "var(--text-secondary)",
+              fontFamily: "var(--font-sans)",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       onClick={() => onClick(index)}
-      className="bg-gray-900 border border-gray-800 rounded-2xl p-4 mb-3 cursor-pointer active:bg-gray-800 relative"
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-card)",
+        padding: "16px 20px",
+        marginBottom: 10,
+        cursor: "pointer",
+        transition: "border-color var(--transition)",
+      }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.borderColor = "var(--border-hover)")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.borderColor = "var(--border)")
+      }
     >
-      {confirm ? (
-        <div onClick={(e) => e.stopPropagation()}>
-          <div className="text-white text-sm mb-3">Delete this load?</div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleConfirm}
-              className="flex-1 py-2 bg-red-900 border border-red-700 rounded-xl text-red-300 text-sm font-medium"
-            >
-              Delete
-            </button>
-            <button
-              onClick={handleCancel}
-              className="flex-1 py-2 border border-gray-700 rounded-xl text-gray-400 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <button
-            onClick={handleDelete}
-            className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center text-gray-600 hover:text-red-400 text-lg leading-none"
-          >
-            ×
-          </button>
-          <div className="text-white font-medium mb-1 pr-6">
-            {load.from} → {load.to}
-          </div>
-          <div className="flex justify-between items-center text-sm text-gray-400 mb-1">
-            <span>
-              {load.miles.toLocaleString()} mi · {fmtMoney(load.gross)}
-            </span>
-            <span
-              className={
-                c.net >= 0
-                  ? "text-green-400 font-medium"
-                  : "text-red-400 font-medium"
-              }
-            >
-              Net profit: {fmtMoney(c.net)}
-            </span>
-          </div>
-          <div className="text-xs text-gray-500">{fmtDate(load.date)}</div>
-        </>
-      )}
+      {/* Рядок 1: маршрут + net profit */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 12,
+          marginBottom: 8,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 15,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+            flex: 1,
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {load.from} → {load.to}
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontWeight: 700,
+            fontSize: 17,
+            color: c.net >= 0 ? "#4ade80" : "#f87171",
+            flexShrink: 0,
+          }}
+        >
+          {fmtMoney(c.net)}
+        </span>
+      </div>
+
+      {/* Рядок 2: miles · gross — дрібно, muted */}
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--text-muted)",
+          marginBottom: 6,
+        }}
+      >
+        {load.miles.toLocaleString()} mi · gross {fmtMoney(load.gross)}
+      </div>
+
+      {/* Рядок 3: дата + delete */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--text-muted)",
+          }}
+        >
+          {fmtDate(load.date)}
+        </span>
+        <button
+          onClick={handleDelete}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "var(--text-muted)",
+            padding: 0,
+            transition: "color var(--transition)",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "var(--text-muted)")
+          }
+        >
+          DELETE
+        </button>
+      </div>
     </div>
   );
 }

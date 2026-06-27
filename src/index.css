@@ -1,4 +1,246 @@
 @import "tailwindcss";
+
+/* ─── Design Tokens ─────────────────────────────────────── */
+@layer base {
+    :root {
+        --bg-base: #100F0C;
+        --bg-elevated: #1A1813;
+        --bg-overlay: #222018;
+
+        --text-primary: #F4F1EB;
+        --text-secondary: #8E8A82;
+        --text-muted: #5C594F;
+
+        --accent: #FF8A3D;
+        --accent-dark: #C9621F;
+        --accent-subtle: rgba(255, 138, 61, 0.12);
+
+        --border: rgba(255, 255, 255, 0.07);
+        --border-hover: rgba(255, 255, 255, 0.12);
+
+        --radius-card: 16px;
+        --radius-btn: 12px;
+        --radius-input: 10px;
+
+        --font-sans: 'Space Grotesk', system-ui, sans-serif;
+        --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+        --transition: 200ms ease-out;
+    }
+}
+
+/* ─── Reset & Base ──────────────────────────────────────── */
+@layer base {
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html {
+        font-size: 16px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+
+    body {
+        font-family: var(--font-sans);
+        background-color: var(--bg-base);
+        color: var(--text-primary);
+        min-height: 100dvh;
+        line-height: 1.5;
+    }
+
+    #root {
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+/* ─── Typography ────────────────────────────────────────── */
+@layer base {
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-sans);
+        font-weight: 600;
+        line-height: 1.2;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+    }
+
+    /* числа, дати, мітки — завжди mono */
+    .mono {
+        font-family: var(--font-mono);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+    }
+
+    p {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    a {
+        color: var(--accent);
+        text-decoration: none;
+        transition: color var(--transition);
+    }
+
+    a:hover {
+        color: var(--text-primary);
+    }
+}
+
+/* ─── Focus & Selection ─────────────────────────────────── */
+@layer base {
+    :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 4px;
+    }
+
+    ::selection {
+        background: var(--accent-subtle);
+        color: var(--text-primary);
+    }
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────── */
+@layer base {
+    ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--border-hover);
+        border-radius: 99px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-muted);
+    }
+}
+
+/* ─── Utility Classes ───────────────────────────────────── */
+@layer components {
+
+    /* картка */
+    .card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        padding: 20px;
+    }
+
+    /* основна кнопка */
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: var(--accent);
+        color: #100F0C;
+        font-family: var(--font-sans);
+        font-weight: 600;
+        font-size: 0.875rem;
+        border-radius: var(--radius-btn);
+        border: none;
+        cursor: pointer;
+        transition: background var(--transition), transform var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn-primary:hover {
+        background: var(--accent-dark);
+    }
+
+    .btn-primary:active {
+        transform: scale(0.98);
+    }
+
+    /* ghost кнопка */
+    .btn-ghost {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: var(--font-sans);
+        font-weight: 500;
+        font-size: 0.875rem;
+        border-radius: var(--radius-btn);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: all var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn-ghost:hover {
+        color: var(--text-primary);
+        border-color: var(--border-hover);
+        background: var(--bg-overlay);
+    }
+
+    /* інпут */
+    .input {
+        width: 100%;
+        padding: 12px 14px;
+        background: var(--bg-base);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-input);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        font-size: 0.9375rem;
+        transition: border-color var(--transition);
+        outline: none;
+    }
+
+    .input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .input:focus {
+        border-color: var(--accent);
+    }
+
+    /* label */
+    .label {
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+    }
+
+    /* divider */
+    .divider {
+        height: 1px;
+        background: var(--border);
+        border: none;
+        margin: 0;
+    }
+}
+
+/* ─── Print ─────────────────────────────────────────────── */
 @media print {
     .page-break {
         page-break-before: always;
