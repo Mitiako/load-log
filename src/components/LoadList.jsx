@@ -34,10 +34,25 @@ export default function LoadList({
           borderBottom: "1px solid var(--border)",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          justifyContent: "space-between",
           flexShrink: 0,
         }}
       >
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 15,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flex: 1,
+          }}
+        >
+          {trip.name}
+        </span>
         <button
           onClick={onBack}
           style={{
@@ -50,6 +65,7 @@ export default function LoadList({
             cursor: "pointer",
             padding: 0,
             flexShrink: 0,
+            marginLeft: 12,
           }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.color = "var(--text-secondary)")
@@ -58,23 +74,8 @@ export default function LoadList({
             (e.currentTarget.style.color = "var(--text-muted)")
           }
         >
-          ← BACK
+          BACK →
         </button>
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 15,
-            color: "var(--text-primary)",
-            letterSpacing: "-0.01em",
-            flex: 1,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {trip.name}
-        </span>
       </div>
 
       {/* Summary strip */}

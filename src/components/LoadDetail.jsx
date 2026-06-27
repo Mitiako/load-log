@@ -20,47 +20,10 @@ export default function LoadDetail({ load, onBack, onEdit }) {
           borderBottom: "1px solid var(--border)",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          justifyContent: "space-between",
           flexShrink: 0,
         }}
       >
-        <button
-          onClick={onBack}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            color: "var(--text-muted)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = "var(--text-secondary)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--text-muted)")
-          }
-        >
-          ← BACK
-        </button>
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 15,
-            color: "var(--text-primary)",
-            letterSpacing: "-0.01em",
-            flex: 1,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {load.from} → {load.to}
-        </span>
         <button
           onClick={onEdit}
           style={{
@@ -81,11 +44,49 @@ export default function LoadDetail({ load, onBack, onEdit }) {
         >
           EDIT
         </button>
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 15,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+            flex: 1,
+            textAlign: "center",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            padding: "0 12px",
+          }}
+        >
+          {load.from} → {load.to}
+        </span>
+        <button
+          onClick={onBack}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "var(--text-muted)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "var(--text-secondary)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "var(--text-muted)")
+          }
+        >
+          BACK →
+        </button>
       </div>
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0 32px" }}>
-        {/* Route info */}
         <Section label="ROUTE" />
         <Row label="Date" value={fmtDate(load.date)} />
         <Row label="Loaded miles" value={`${load.miles.toLocaleString()} mi`} />
@@ -94,7 +95,6 @@ export default function LoadDetail({ load, onBack, onEdit }) {
           <Row label="Weight" value={`${load.weight.toLocaleString()} lbs`} />
         )}
 
-        {/* Pay */}
         <Section label="PAY" />
         <Row label="Gross rate" value={fmtMoney(load.gross)} />
         <Row
@@ -112,7 +112,6 @@ export default function LoadDetail({ load, onBack, onEdit }) {
           value={fmtMoney(c.fuelActual + c.otherExp)}
         />
 
-        {/* Expenses detail */}
         {(load.diesel?.length > 0 || load.expenses?.length > 0) && (
           <>
             <Section label="EXPENSES" />
@@ -134,7 +133,6 @@ export default function LoadDetail({ load, onBack, onEdit }) {
           </>
         )}
 
-        {/* Net profit */}
         <div style={{ margin: "20px 16px 0" }}>
           <div
             style={{

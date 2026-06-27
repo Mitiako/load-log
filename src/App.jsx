@@ -142,7 +142,8 @@ export default function App() {
     saveLocation(load.from);
     saveLocation(load.to);
     load.diesel?.forEach((d) => saveLocation(d.location));
-    goTo("loads");
+    history.replaceState({ screen: "loads" }, "");
+    setScreen("loads");
     setSelectedLoadIdx(null);
   }
 
@@ -185,7 +186,7 @@ export default function App() {
 
   return (
     <div
-      style={{ maxWidth: 480, margin: "0 auto" }}
+      style={{ width: "100%", maxWidth: 480, margin: "0 auto" }}
       className="print:max-w-full print:w-full"
     >
       <Analytics />

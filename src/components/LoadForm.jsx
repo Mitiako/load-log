@@ -114,10 +114,21 @@ export default function LoadForm({ load, onSave, onBack }) {
           borderBottom: "1px solid var(--border)",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          justifyContent: "space-between",
           flexShrink: 0,
         }}
       >
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 15,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {load ? "Edit Load" : "New Load"}
+        </span>
         <button
           onClick={onBack}
           style={{
@@ -137,20 +148,8 @@ export default function LoadForm({ load, onSave, onBack }) {
             (e.currentTarget.style.color = "var(--text-muted)")
           }
         >
-          ← BACK
+          BACK →
         </button>
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 15,
-            color: "var(--text-primary)",
-            letterSpacing: "-0.01em",
-            flex: 1,
-          }}
-        >
-          {load ? "Edit Load" : "New Load"}
-        </span>
       </div>
 
       {/* Form */}

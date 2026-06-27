@@ -26,10 +26,21 @@ export default function TripForm({ trips, trip, onSave, onBack }) {
           borderBottom: "1px solid var(--border)",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          justifyContent: "space-between",
           flexShrink: 0,
         }}
       >
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 15,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {trip ? "Edit Trip" : "New Trip"}
+        </span>
         <button
           onClick={onBack}
           style={{
@@ -49,20 +60,8 @@ export default function TripForm({ trips, trip, onSave, onBack }) {
             (e.currentTarget.style.color = "var(--text-muted)")
           }
         >
-          ← BACK
+          BACK →
         </button>
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 15,
-            color: "var(--text-primary)",
-            letterSpacing: "-0.01em",
-            flex: 1,
-          }}
-        >
-          {trip ? "Edit Trip" : "New Trip"}
-        </span>
       </div>
 
       {/* Content */}

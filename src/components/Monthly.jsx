@@ -48,31 +48,10 @@ export default function Monthly({ loads, onBack, onPrint }) {
           borderBottom: "1px solid var(--border)",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          justifyContent: "space-between",
           flexShrink: 0,
         }}
       >
-        <button
-          onClick={onBack}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            color: "var(--text-muted)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = "var(--text-secondary)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--text-muted)")
-          }
-        >
-          ← BACK
-        </button>
         <span
           style={{
             fontFamily: "var(--font-sans)",
@@ -80,36 +59,58 @@ export default function Monthly({ loads, onBack, onPrint }) {
             fontSize: 15,
             color: "var(--text-primary)",
             letterSpacing: "-0.01em",
-            flex: 1,
           }}
         >
           Trip Summary
         </span>
-        <button
-          onClick={onPrint}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            color: "var(--text-muted)",
-            background: "none",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-btn)",
-            padding: "6px 12px",
-            cursor: "pointer",
-            transition: "all var(--transition)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "var(--text-primary)";
-            e.currentTarget.style.borderColor = "var(--border-hover)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "var(--text-muted)";
-            e.currentTarget.style.borderColor = "var(--border)";
-          }}
-        >
-          PRINT / PDF
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={onPrint}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              color: "var(--text-muted)",
+              background: "none",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-btn)",
+              padding: "6px 12px",
+              cursor: "pointer",
+              transition: "all var(--transition)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--text-primary)";
+              e.currentTarget.style.borderColor = "var(--border-hover)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--text-muted)";
+              e.currentTarget.style.borderColor = "var(--border)";
+            }}
+          >
+            PRINT / PDF
+          </button>
+          <button
+            onClick={onBack}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              color: "var(--text-muted)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-secondary)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-muted)")
+            }
+          >
+            BACK →
+          </button>
+        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
