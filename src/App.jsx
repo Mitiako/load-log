@@ -42,14 +42,23 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  const [screen, setScreen] = useState("trips");
-  const [selectedTripIdx, setSelectedTripIdx] = useState(null);
-  const [selectedLoadIdx, setSelectedLoadIdx] = useState(null);
+  const [screen, setScreen] = useState(
+    () => sessionStorage.getItem("screen") || "trips",
+  );
+  const [selectedTripIdx, setSelectedTripIdx] = useState(() => {
+    const v = sessionStorage.getItem("selectedTripIdx");
+    return v !== null ? Number(v) : null;
+  });
+  const [selectedLoadIdx, setSelectedLoadIdx] = useState(() => {
+    const v = sessionStorage.getItem("selectedLoadIdx");
+    return v !== null ? Number(v) : null;
+  });
   const [editingTrip, setEditingTrip] = useState(false);
 
   function goTo(newScreen) {
     history.pushState({ screen: newScreen }, "");
     setScreen(newScreen);
+    sessionStorage.setItem("screen", newScreen);
   }
 
   useEffect(() => {
@@ -71,6 +80,8 @@ export default function App() {
   function handleSelectTrip(i) {
     setSelectedTripIdx(i);
     setSelectedLoadIdx(null);
+    sessionStorage.setItem("selectedTripIdx", i);
+    sessionStorage.removeItem("selectedLoadIdx");
     goTo("loads");
   }
   function handleCreateTrip() {
@@ -121,6 +132,7 @@ export default function App() {
 
   function handleSelectLoad(i) {
     setSelectedLoadIdx(i);
+    sessionStorage.setItem("selectedLoadIdx", i);
     goTo("detail");
   }
   function handleAddLoad() {
@@ -164,6 +176,7 @@ export default function App() {
     await signOut(auth);
     setTrips([]);
     setScreen("trips");
+    sessionStorage.clear();
   }
 
   // Інтро екран

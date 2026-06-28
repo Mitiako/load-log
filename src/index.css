@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@layer base {
+    html {
+        overscroll-behavior: none;
+    }
+}
+
 /* ─── Design Tokens ─────────────────────────────────────── */
 @layer base {
     :root {
@@ -40,12 +46,13 @@
         padding: 0;
     }
 
-    html {
-        font-size: 16px;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-rendering: optimizeLegibility;
-    }
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            overscroll-behavior: none;
+        }
 
     body {
         font-family: var(--font-sans);
