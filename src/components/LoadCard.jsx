@@ -107,27 +107,65 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "flex-start",
+          alignItems: "center",
           gap: 12,
-          marginBottom: 8,
+          marginBottom: 10,
         }}
       >
-        <span
+        {/* Маршрут з стрілкою по центру */}
+        <div
           style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 15,
-            color: "var(--text-primary)",
-            letterSpacing: "-0.01em",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
             flex: 1,
             minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
           }}
         >
-          {load.from} → {load.to}
-        </span>
+          <span
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontWeight: 600,
+              fontSize: 15,
+              color: "var(--text-primary)",
+              letterSpacing: "-0.01em",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              flexShrink: 1,
+            }}
+          >
+            {load.from}
+          </span>
+          <span
+            style={{
+              color: "var(--accent)",
+              fontSize: 14,
+              flexShrink: 0,
+              lineHeight: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            →
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontWeight: 600,
+              fontSize: 15,
+              color: "var(--text-primary)",
+              letterSpacing: "-0.01em",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              flexShrink: 1,
+            }}
+          >
+            {load.to}
+          </span>
+        </div>
+        {/* Net profit */}
         <span
           style={{
             fontFamily: "var(--font-mono)",
@@ -141,16 +179,32 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
         </span>
       </div>
 
-      {/* Рядок 2: miles · gross — дрібно, muted */}
+      {/* Рядок 2: miles · gross */}
       <div
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          color: "var(--text-muted)",
-          marginBottom: 6,
+          display: "flex",
+          gap: 16,
+          marginBottom: 8,
         }}
       >
-        {load.miles.toLocaleString()} mi · gross {fmtMoney(load.gross)}
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            color: "var(--text-secondary)",
+          }}
+        >
+          {load.miles.toLocaleString()} mi
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            color: "var(--text-secondary)",
+          }}
+        >
+          gross {fmtMoney(load.gross)}
+        </span>
       </div>
 
       {/* Рядок 3: дата + delete */}
@@ -164,7 +218,7 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: 12,
             color: "var(--text-muted)",
           }}
         >
