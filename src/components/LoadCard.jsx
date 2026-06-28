@@ -133,6 +133,7 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
               flexShrink: 1,
+              lineHeight: 1,
             }}
           >
             {load.from}
@@ -148,6 +149,22 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
             }}
           >
             →
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontWeight: 600,
+              fontSize: 15,
+              color: "var(--text-primary)",
+              letterSpacing: "-0.01em",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              flexShrink: 1,
+              lineHeight: 1,
+            }}
+          >
+            {load.to}
           </span>
           <span
             style={{
