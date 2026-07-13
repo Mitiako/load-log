@@ -93,7 +93,7 @@ html:not([data-theme="light"])::before {
     background-size: 100% auto;
     background-position: center center;
     background-repeat: no-repeat;
-    filter: blur(12px) brightness(0.4) grayscale(0.45);
+    filter: blur(10px) brightness(0.8) grayscale(0.45);
     z-index: -1;
 }
 
@@ -105,7 +105,7 @@ html[data-theme="light"]::before {
     background-size: 100% auto;
     background-position: center center;
     background-repeat: no-repeat;
-    filter: blur(2px) grayscale(0.45);
+    filter: blur(4px) grayscale(0.45);
     z-index: -1;
 }
 
