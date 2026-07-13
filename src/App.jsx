@@ -25,7 +25,6 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    document.body.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
   }, [theme]);
 
@@ -197,7 +196,13 @@ export default function App() {
 
   return (
     <div
-      style={{ width: "100%", maxWidth: 480, margin: "0 auto" }}
+      style={{
+        width: "100%",
+        maxWidth: 480,
+        margin: "0 auto",
+        background: "transparent",
+        minHeight: "100dvh",
+      }}
       className="print:max-w-full print:w-full"
     >
       <Analytics />

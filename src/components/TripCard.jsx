@@ -32,10 +32,9 @@ export default function TripCard({ trip, index, onClick, onEdit, onDelete }) {
   if (confirm) {
     return (
       <div
+        className="glass"
         style={{
-          background: "var(--bg-elevated)",
           border: "1px solid rgba(239,68,68,0.2)",
-          borderRadius: "var(--radius-card)",
           padding: "20px",
           marginBottom: 10,
         }}
@@ -92,21 +91,12 @@ export default function TripCard({ trip, index, onClick, onEdit, onDelete }) {
   return (
     <div
       onClick={() => onClick(index)}
+      className="glass"
       style={{
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-card)",
         padding: "18px 20px",
         marginBottom: 10,
         cursor: "pointer",
-        transition: "border-color var(--transition)",
       }}
-      onMouseEnter={(e) =>
-        (e.currentTarget.style.borderColor = "var(--border-hover)")
-      }
-      onMouseLeave={(e) =>
-        (e.currentTarget.style.borderColor = "var(--border)")
-      }
     >
       {/* Рядок 1: назва + profit */}
       <div

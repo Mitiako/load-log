@@ -8,13 +8,14 @@ export default function LoadDetail({ load, onBack, onEdit }) {
     <div
       style={{
         height: "100dvh",
-        background: "var(--bg-base)",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
       }}
     >
       {/* Header */}
       <div
+        className="glass-bar"
         style={{
           padding: "16px 20px",
           borderBottom: "1px solid var(--border)",
@@ -135,10 +136,8 @@ export default function LoadDetail({ load, onBack, onEdit }) {
 
         <div style={{ margin: "20px 16px 0" }}>
           <div
+            className="glass"
             style={{
-              background: "var(--bg-elevated)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-card)",
               padding: "18px 20px",
               display: "flex",
               justifyContent: "space-between",

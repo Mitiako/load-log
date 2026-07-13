@@ -102,13 +102,14 @@ export default function LoadForm({ load, onSave, onBack }) {
     <div
       style={{
         height: "100dvh",
-        background: "var(--bg-base)",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
       }}
     >
       {/* Header */}
       <div
+        className="glass-bar"
         style={{
           padding: "16px 20px",
           borderBottom: "1px solid var(--border)",
@@ -521,11 +522,9 @@ export default function LoadForm({ load, onSave, onBack }) {
             />
             <FormSection label="RESULT" />
             <div
+              className="glass"
               style={{
                 margin: "0 16px 16px",
-                background: "var(--bg-elevated)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-card)",
                 padding: "16px 20px",
               }}
             >

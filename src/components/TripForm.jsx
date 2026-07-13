@@ -14,13 +14,14 @@ export default function TripForm({ trips, trip, onSave, onBack }) {
     <div
       style={{
         height: "100dvh",
-        background: "var(--bg-base)",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
       }}
     >
       {/* Header */}
       <div
+        className="glass-bar"
         style={{
           padding: "16px 20px",
           borderBottom: "1px solid var(--border)",

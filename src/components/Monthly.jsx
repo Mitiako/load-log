@@ -36,13 +36,14 @@ export default function Monthly({ loads, onBack, onPrint }) {
     <div
       style={{
         height: "100dvh",
-        background: "var(--bg-base)",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
       }}
     >
       {/* Header */}
       <div
+        className="glass-bar"
         style={{
           padding: "16px 20px",
           borderBottom: "1px solid var(--border)",
@@ -135,13 +136,8 @@ export default function Monthly({ loads, onBack, onPrint }) {
 
         {/* Breakdown */}
         <div
-          style={{
-            margin: "8px 16px 16px",
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-card)",
-            padding: "16px 20px",
-          }}
+          className="glass"
+          style={{ margin: "8px 16px 16px", padding: "16px 20px" }}
         >
           <ResultRow
             label="Your gross (after company)"
@@ -233,13 +229,8 @@ export default function Monthly({ loads, onBack, onPrint }) {
 
         {/* Final */}
         <div
-          style={{
-            margin: "0 16px",
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-card)",
-            padding: "16px 20px",
-          }}
+          className="glass"
+          style={{ margin: "0 16px", padding: "16px 20px" }}
         >
           <ResultRow label="Total fixed costs" value={`−${fmtMoney(fixed)}`} />
           <div
@@ -287,14 +278,7 @@ function StatCard({ label, value, highlight }) {
         ? "#f87171"
         : "var(--text-primary)";
   return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-card)",
-        padding: "14px 16px",
-      }}
-    >
+    <div className="glass" style={{ padding: "14px 16px" }}>
       <div
         style={{
           fontFamily: "var(--font-mono)",

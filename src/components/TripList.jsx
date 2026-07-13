@@ -15,13 +15,14 @@ export default function TripList({
     <div
       style={{
         height: "100dvh",
-        background: "var(--bg-base)",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
       }}
     >
       {/* Header */}
       <div
+        className="glass-bar"
         style={{
           padding: "16px 20px",
           borderBottom: "1px solid var(--border)",
@@ -141,6 +142,7 @@ export default function TripList({
 
       {/* Footer */}
       <div
+        className="glass-bar"
         style={{
           padding: "12px 16px 32px",
           borderTop: "1px solid var(--border)",

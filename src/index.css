@@ -30,6 +30,13 @@
     --transition: 200ms ease-out;
 }
 
+/* Frosted glass для всіх екранів */
+body {
+    background: transparent;
+}
+
+/* Хедери і футери теж прозорі */
+
 /* ─── Light Theme ───────────────────────────────────────── */
 [data-theme="light"] {
     --bg-base: transparent;
@@ -61,11 +68,19 @@
 }
 
 html {
-    font-size: 16px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    overscroll-behavior: none;
+    min-height: 100%;
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(40, 35, 80, 0.6) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(20, 40, 60, 0.5) 0%, transparent 60%),
+        #100F0C;
+    background-attachment: fixed;
+}
+
+html[data-theme="light"] {
+    background:
+        radial-gradient(ellipse at 15% 15%, rgba(200, 210, 255, 0.8) 0%, transparent 50%),
+        radial-gradient(ellipse at 85% 85%, rgba(255, 200, 220, 0.6) 0%, transparent 50%),
+        #EEF0F8;
 }
 
 /* ─── Body backgrounds ──────────────────────────────────── */
@@ -74,9 +89,7 @@ body {
     color: var(--text-primary);
     min-height: 100dvh;
     line-height: 1.5;
-    background: #100F0C;
-    background-attachment: fixed;
-    transition: background 0.4s ease;
+    background: transparent;
 }
 
 /* Темна тема — радіальний градієнт з синьо-фіолетовим */
@@ -169,7 +182,30 @@ a:hover {
     background: var(--text-muted);
 }
 
-/* ─── Glass card ────────────────────────────────────────── */
+/* ─── Glass surface ─────────────────────────────────────── */
+.glass {
+    background: var(--bg-elevated);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--glass-shadow);
+    transition: border-color var(--transition);
+}
+
+.glass:hover {
+    border-color: var(--border-hover);
+}
+
+/* Хедер і футер екранів */
+.glass-bar {
+    background: var(--bg-elevated);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-color: var(--border);
+}
+
+/* Картка — з padding */
 .card {
     background: var(--bg-elevated);
     backdrop-filter: var(--glass-blur);
