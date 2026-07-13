@@ -36,7 +36,7 @@ export default function TripList({
           <svg viewBox="0 0 100 100" width="28" height="28" fill="none">
             <path
               d="M31 23 V77 H59"
-              stroke="#F4F1EB"
+              stroke={theme === "light" ? "#1A1813" : "#F4F1EB"}
               strokeWidth="11"
               strokeLinecap="round"
               strokeLinejoin="round"

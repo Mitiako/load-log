@@ -2,9 +2,9 @@
 
 /* ─── Dark Theme (default) ──────────────────────────────── */
 :root {
-    --bg-base: #100F0C;
-    --bg-elevated: rgba(26, 24, 19, 0.65);
-    --bg-overlay: rgba(34, 32, 24, 0.7);
+    --bg-base: transparent;
+    --bg-elevated: rgba(255, 255, 255, 0.06);
+    --bg-overlay: rgba(255, 255, 255, 0.08);
 
     --text-primary: #F4F1EB;
     --text-secondary: #B8B4AC;
@@ -14,13 +14,17 @@
     --accent-dark: #C9621F;
     --accent-subtle: rgba(255, 138, 61, 0.12);
 
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.14);
+    --border: rgba(255, 255, 255, 0.1);
+    --border-hover: rgba(255, 255, 255, 0.2);
 
-    --glass-blur: blur(20px);
-    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    --glass-blur: blur(24px);
+    --glass-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        0 2px 8px rgba(0, 0, 0, 0.2);
 
-    --radius-card: 16px;
+    --radius-card: 20px;
     --radius-btn: 12px;
     --radius-input: 10px;
 
@@ -30,21 +34,14 @@
     --transition: 200ms ease-out;
 }
 
-/* Frosted glass для всіх екранів */
-body {
-    background: transparent;
-}
-
-/* Хедери і футери теж прозорі */
-
 /* ─── Light Theme ───────────────────────────────────────── */
 [data-theme="light"] {
     --bg-base: transparent;
-    --bg-elevated: rgba(255, 255, 255, 0.55);
-    --bg-overlay: rgba(255, 255, 255, 0.7);
+    --bg-elevated: rgba(255, 255, 255, 0.45);
+    --bg-overlay: rgba(255, 255, 255, 0.85);
 
-    --text-primary: #1A1813;
-    --text-secondary: #4A4740;
+    --text-primary: #111218;
+    --text-secondary: #3A3840;
     --text-muted: #8E8A82;
 
     --accent: #FF8A3D;
@@ -52,13 +49,17 @@ body {
     --accent-subtle: rgba(255, 138, 61, 0.1);
 
     --border: rgba(255, 255, 255, 0.6);
-    --border-hover: rgba(255, 255, 255, 0.85);
+    --border-hover: rgba(255, 255, 255, 0.9);
 
-    --glass-blur: blur(20px);
-    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    --glass-blur: blur(24px);
+    --glass-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* ─── Reset & Base ──────────────────────────────────────── */
+/* ─── Reset ─────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -67,47 +68,54 @@ body {
     padding: 0;
 }
 
+/* ─── HTML ──────────────────────────────────────────────── */
 html {
     min-height: 100%;
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(40, 35, 80, 0.6) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 80%, rgba(20, 40, 60, 0.5) 0%, transparent 60%),
-        #100F0C;
-    background-attachment: fixed;
+    overscroll-behavior: none;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    position: relative;
+    background: #080a14;
 }
 
 html[data-theme="light"] {
-    background:
-        radial-gradient(ellipse at 15% 15%, rgba(200, 210, 255, 0.8) 0%, transparent 50%),
-        radial-gradient(ellipse at 85% 85%, rgba(255, 200, 220, 0.6) 0%, transparent 50%),
-        #EEF0F8;
+    background: #e2e6f8;
 }
 
-/* ─── Body backgrounds ──────────────────────────────────── */
+/* ─── Backgrounds via ::before ──────────────────────────── */
+html:not([data-theme="light"])::before {
+    content: '';
+    position: fixed;
+    inset: -20px;
+    background-image: url('/bg-dark.png');
+    background-size: 40% auto;
+    background-position: center center;
+    background-repeat: no-repeat;
+    filter: blur(12px) brightness(0.4) grayscale(0.45);
+    z-index: -1;
+}
+
+html[data-theme="light"]::before {
+    content: '';
+    position: fixed;
+    inset: -20px;
+    background-image: url('/bg-light.png');
+    background-size: 40% auto;
+    background-position: center center;
+    background-repeat: no-repeat;
+    filter: blur(5px) grayscale(0.45);
+    z-index: -1;
+}
+
+/* ─── Body ──────────────────────────────────────────────── */
 body {
     font-family: var(--font-sans);
     color: var(--text-primary);
     min-height: 100dvh;
     line-height: 1.5;
     background: transparent;
-}
-
-/* Темна тема — радіальний градієнт з синьо-фіолетовим */
-body:not([data-theme="light"]) {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(40, 35, 80, 0.6) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 80%, rgba(20, 40, 60, 0.5) 0%, transparent 60%),
-        #100F0C;
-}
-
-/* Світла тема — пастельний градієнт */
-[data-theme="light"] body,
-body[data-theme="light"] {
-    background:
-        radial-gradient(ellipse at 15% 15%, rgba(200, 210, 255, 0.8) 0%, transparent 50%),
-        radial-gradient(ellipse at 85% 85%, rgba(255, 200, 220, 0.6) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 50%, rgba(210, 235, 255, 0.4) 0%, transparent 70%),
-        #EEF0F8;
 }
 
 #root {
@@ -190,14 +198,13 @@ a:hover {
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     box-shadow: var(--glass-shadow);
-    transition: border-color var(--transition);
+    transition: border-color var(--transition), box-shadow var(--transition);
 }
 
 .glass:hover {
     border-color: var(--border-hover);
 }
 
-/* Хедер і футер екранів */
 .glass-bar {
     background: var(--bg-elevated);
     backdrop-filter: var(--glass-blur);
@@ -205,7 +212,6 @@ a:hover {
     border-color: var(--border);
 }
 
-/* Картка — з padding */
 .card {
     background: var(--bg-elevated);
     backdrop-filter: var(--glass-blur);
