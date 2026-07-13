@@ -123,7 +123,7 @@ export default function TripCard({ trip, index, onClick, onEdit, onDelete }) {
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
             fontSize: 16,
-            color: totalNet >= 0 ? "#4ade80" : "#f87171",
+            color: totalNet >= 0 ? "var(--accent)" : "#f87171",
             flexShrink: 0,
             marginLeft: 12,
           }}

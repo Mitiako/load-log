@@ -178,7 +178,7 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
             fontSize: 17,
-            color: c.net >= 0 ? "#4ade80" : "#f87171",
+            color: c.net >= 0 ? "var(--accent)" : "#f87171",
             flexShrink: 0,
           }}
         >

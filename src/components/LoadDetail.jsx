@@ -159,7 +159,7 @@ export default function LoadDetail({ load, onBack, onEdit }) {
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
                 fontSize: 22,
-                color: c.net >= 0 ? "#4ade80" : "#f87171",
+                color: c.net >= 0 ? "var(--accent)" : "#f87171",
               }}
             >
               {fmtMoney(c.net)}

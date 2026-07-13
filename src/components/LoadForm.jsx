@@ -572,7 +572,7 @@ export default function LoadForm({ load, onSave, onBack }) {
                     fontFamily: "var(--font-mono)",
                     fontWeight: 700,
                     fontSize: 18,
-                    color: c.net >= 0 ? "#4ade80" : "#f87171",
+                    color: c.net >= 0 ? "var(--accent)" : "#f87171",
                   }}
                 >
                   {fmtMoney(c.net)}

@@ -107,7 +107,7 @@ export default function LoadList({
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 15,
-              color: totalNet >= 0 ? "#4ade80" : "#f87171",
+              color: totalNet >= 0 ? "var(--accent)" : "#f87171",
             }}
           >
             {fmtMoney(totalNet)}

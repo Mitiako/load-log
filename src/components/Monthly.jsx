@@ -170,7 +170,7 @@ export default function Monthly({ loads, onBack, onPrint }) {
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
                 fontSize: 16,
-                color: netFromLoads >= 0 ? "#4ade80" : "#f87171",
+                color: netFromLoads >= 0 ? "var(--accent)" : "#f87171",
               }}
             >
               {fmtMoney(netFromLoads)}
@@ -258,7 +258,7 @@ export default function Monthly({ loads, onBack, onPrint }) {
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
                 fontSize: 22,
-                color: finalNet >= 0 ? "#4ade80" : "#f87171",
+                color: finalNet >= 0 ? "var(--accent)" : "#f87171",
               }}
             >
               {fmtMoney(finalNet)}
@@ -273,7 +273,7 @@ export default function Monthly({ loads, onBack, onPrint }) {
 function StatCard({ label, value, highlight }) {
   const color =
     highlight === "green"
-      ? "#4ade80"
+      ? "var(--accent)"
       : highlight === "red"
         ? "#f87171"
         : "var(--text-primary)";
