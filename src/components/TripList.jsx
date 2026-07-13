@@ -8,6 +8,8 @@ export default function TripList({
   onEdit,
   onDelete,
   onLogout,
+  theme,
+  onToggleTheme,
 }) {
   return (
     <div
@@ -58,27 +60,50 @@ export default function TripList({
             LOAD<span style={{ color: "var(--accent)" }}>LOG</span>
           </span>
         </div>
-        <button
-          onClick={onLogout}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            color: "var(--text-muted)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "4px 0",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = "var(--text-secondary)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--text-muted)")
-          }
-        >
-          SIGN OUT
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <button
+            onClick={onToggleTheme}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 18,
+              lineHeight: 1,
+              padding: "4px",
+              color: "var(--text-muted)",
+              transition: "color var(--transition)",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--accent)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-muted)")
+            }
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+          <button
+            onClick={onLogout}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              color: "var(--text-muted)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "4px 0",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-secondary)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-muted)")
+            }
+          >
+            SIGN OUT
+          </button>
+        </div>
       </div>
 
       {/* List */}

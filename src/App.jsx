@@ -1,4 +1,3 @@
-// App.jsx
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
 import Login from "./components/Login";
@@ -20,6 +19,19 @@ export default function App() {
   const [trips, setTrips] = useState([]);
   const [tripsLoading, setTripsLoading] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("theme") || "dark",
+  );
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    document.body.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((t) => (t === "dark" ? "light" : "dark"));
+  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -36,7 +48,6 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  // Інтро показуємо 2.5 сек при першому завантаженні
   useEffect(() => {
     const t = setTimeout(() => setShowIntro(false), 2500);
     return () => clearTimeout(t);
@@ -179,23 +190,10 @@ export default function App() {
     sessionStorage.clear();
   }
 
-  // Інтро екран
-  if (showIntro) {
-    return <IntroScreen />;
-  }
-
-  // Auth loading
-  if (authLoading) {
-    return <LoadingScreen label="LOADING..." />;
-  }
-
-  if (!user) {
-    return <Login />;
-  }
-
-  if (tripsLoading) {
-    return <LoadingScreen label="LOADING TRIPS..." />;
-  }
+  if (showIntro) return <IntroScreen />;
+  if (authLoading) return <LoadingScreen label="LOADING..." />;
+  if (!user) return <Login />;
+  if (tripsLoading) return <LoadingScreen label="LOADING TRIPS..." />;
 
   return (
     <div
@@ -203,7 +201,6 @@ export default function App() {
       className="print:max-w-full print:w-full"
     >
       <Analytics />
-
       {screen === "trips" && (
         <TripList
           trips={trips}
@@ -212,6 +209,8 @@ export default function App() {
           onEdit={handleEditTrip}
           onDelete={handleDeleteTrip}
           onLogout={handleLogout}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       )}
       {screen === "tripForm" && (
@@ -265,10 +264,8 @@ export default function App() {
   );
 }
 
-// Інтро екран з анімацією логотипу
 function IntroScreen() {
   const [progress, setProgress] = useState(0);
-
   useEffect(() => {
     const start = Date.now();
     const duration = 2200;
@@ -292,7 +289,6 @@ function IntroScreen() {
         gap: 32,
       }}
     >
-      {/* Логотип */}
       <div
         style={{
           display: "flex",
@@ -365,8 +361,6 @@ function IntroScreen() {
           </div>
         </div>
       </div>
-
-      {/* Progress bar */}
       <div
         style={{
           width: 120,
@@ -387,15 +381,9 @@ function IntroScreen() {
           }}
         />
       </div>
-
       <style>{`
-        @keyframes drawPath {
-          to { stroke-dashoffset: 0; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes drawPath { to { stroke-dashoffset: 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   );

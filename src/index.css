@@ -1,250 +1,277 @@
 @import "tailwindcss";
 
-@layer base {
-    html {
-        overscroll-behavior: none;
-    }
+/* ─── Dark Theme (default) ──────────────────────────────── */
+:root {
+    --bg-base: #100F0C;
+    --bg-elevated: rgba(26, 24, 19, 0.65);
+    --bg-overlay: rgba(34, 32, 24, 0.7);
+
+    --text-primary: #F4F1EB;
+    --text-secondary: #B8B4AC;
+    --text-muted: #8E8A82;
+
+    --accent: #FF8A3D;
+    --accent-dark: #C9621F;
+    --accent-subtle: rgba(255, 138, 61, 0.12);
+
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.14);
+
+    --glass-blur: blur(20px);
+    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+
+    --radius-card: 16px;
+    --radius-btn: 12px;
+    --radius-input: 10px;
+
+    --font-sans: 'Space Grotesk', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    --transition: 200ms ease-out;
 }
 
-/* ─── Design Tokens ─────────────────────────────────────── */
-@layer base {
-    :root {
-        --bg-base: #100F0C;
-        --bg-elevated: #1A1813;
-        --bg-overlay: #222018;
+/* ─── Light Theme ───────────────────────────────────────── */
+[data-theme="light"] {
+    --bg-base: transparent;
+    --bg-elevated: rgba(255, 255, 255, 0.55);
+    --bg-overlay: rgba(255, 255, 255, 0.7);
 
-        --text-primary: #F4F1EB;
-        --text-secondary: #B8B4AC;
-            --text-muted: #8E8A82;
+    --text-primary: #1A1813;
+    --text-secondary: #4A4740;
+    --text-muted: #8E8A82;
 
-        --accent: #FF8A3D;
-        --accent-dark: #C9621F;
-        --accent-subtle: rgba(255, 138, 61, 0.12);
+    --accent: #FF8A3D;
+    --accent-dark: #C9621F;
+    --accent-subtle: rgba(255, 138, 61, 0.1);
 
-        --border: rgba(255, 255, 255, 0.07);
-        --border-hover: rgba(255, 255, 255, 0.12);
+    --border: rgba(255, 255, 255, 0.6);
+    --border-hover: rgba(255, 255, 255, 0.85);
 
-        --radius-card: 16px;
-        --radius-btn: 12px;
-        --radius-input: 10px;
-
-        --font-sans: 'Space Grotesk', system-ui, sans-serif;
-        --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-
-        --transition: 200ms ease-out;
-    }
+    --glass-blur: blur(20px);
+    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
 
 /* ─── Reset & Base ──────────────────────────────────────── */
-@layer base {
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-    *,
-    *::before,
-    *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior: none;
+}
 
-        html {
-            font-size: 16px;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
-            overscroll-behavior: none;
-        }
+/* ─── Body backgrounds ──────────────────────────────────── */
+body {
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    min-height: 100dvh;
+    line-height: 1.5;
+    background: #100F0C;
+    background-attachment: fixed;
+    transition: background 0.4s ease;
+}
 
-    body {
-        font-family: var(--font-sans);
-        background-color: var(--bg-base);
-        color: var(--text-primary);
-        min-height: 100dvh;
-        line-height: 1.5;
-    }
+/* Темна тема — радіальний градієнт з синьо-фіолетовим */
+body:not([data-theme="light"]) {
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(40, 35, 80, 0.6) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(20, 40, 60, 0.5) 0%, transparent 60%),
+        #100F0C;
+}
 
-    #root {
-        min-height: 100dvh;
-        display: flex;
-        flex-direction: column;
-    }
+/* Світла тема — пастельний градієнт */
+[data-theme="light"] body,
+body[data-theme="light"] {
+    background:
+        radial-gradient(ellipse at 15% 15%, rgba(200, 210, 255, 0.8) 0%, transparent 50%),
+        radial-gradient(ellipse at 85% 85%, rgba(255, 200, 220, 0.6) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(210, 235, 255, 0.4) 0%, transparent 70%),
+        #EEF0F8;
+}
+
+#root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ─── Typography ────────────────────────────────────────── */
-@layer base {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        font-family: var(--font-sans);
-        font-weight: 600;
-        line-height: 1.2;
-        color: var(--text-primary);
-        letter-spacing: -0.02em;
-    }
+.mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+}
 
-    /* числа, дати, мітки — завжди mono */
-    .mono {
-        font-family: var(--font-mono);
-        font-variant-numeric: tabular-nums;
-        letter-spacing: 0;
-    }
+p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
 
-    p {
-        color: var(--text-secondary);
-        line-height: 1.6;
-    }
+a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color var(--transition);
+}
 
-    a {
-        color: var(--accent);
-        text-decoration: none;
-        transition: color var(--transition);
-    }
-
-    a:hover {
-        color: var(--text-primary);
-    }
+a:hover {
+    color: var(--text-primary);
 }
 
 /* ─── Focus & Selection ─────────────────────────────────── */
-@layer base {
-    :focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 3px;
-        border-radius: 4px;
-    }
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
 
-    ::selection {
-        background: var(--accent-subtle);
-        color: var(--text-primary);
-    }
+::selection {
+    background: var(--accent-subtle);
+    color: var(--text-primary);
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────── */
-@layer base {
-    ::-webkit-scrollbar {
-        width: 4px;
-        height: 4px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: var(--border-hover);
-        border-radius: 99px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: var(--text-muted);
-    }
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
 }
 
-/* ─── Utility Classes ───────────────────────────────────── */
-@layer components {
+::-webkit-scrollbar-track {
+    background: transparent;
+}
 
-    /* картка */
-    .card {
-        background: var(--bg-elevated);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-card);
-        padding: 20px;
-    }
+::-webkit-scrollbar-thumb {
+    background: var(--border-hover);
+    border-radius: 99px;
+}
 
-    /* основна кнопка */
-    .btn-primary {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 20px;
-        background: var(--accent);
-        color: #100F0C;
-        font-family: var(--font-sans);
-        font-weight: 600;
-        font-size: 0.875rem;
-        border-radius: var(--radius-btn);
-        border: none;
-        cursor: pointer;
-        transition: background var(--transition), transform var(--transition);
-        white-space: nowrap;
-    }
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
 
-    .btn-primary:hover {
-        background: var(--accent-dark);
-    }
+/* ─── Glass card ────────────────────────────────────────── */
+.card {
+    background: var(--bg-elevated);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 20px;
+    box-shadow: var(--glass-shadow);
+}
 
-    .btn-primary:active {
-        transform: scale(0.98);
-    }
+/* ─── Buttons ───────────────────────────────────────────── */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--accent);
+    color: #100F0C;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-radius: var(--radius-btn);
+    border: none;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+    white-space: nowrap;
+}
 
-    /* ghost кнопка */
-    .btn-ghost {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px 16px;
-        background: transparent;
-        color: var(--text-secondary);
-        font-family: var(--font-sans);
-        font-weight: 500;
-        font-size: 0.875rem;
-        border-radius: var(--radius-btn);
-        border: 1px solid var(--border);
-        cursor: pointer;
-        transition: all var(--transition);
-        white-space: nowrap;
-    }
+.btn-primary:hover {
+    background: var(--accent-dark);
+}
 
-    .btn-ghost:hover {
-        color: var(--text-primary);
-        border-color: var(--border-hover);
-        background: var(--bg-overlay);
-    }
+.btn-primary:active {
+    transform: scale(0.98);
+}
 
-    /* інпут */
-    .input {
-        width: 100%;
-        padding: 12px 14px;
-        background: var(--bg-base);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-input);
-        color: var(--text-primary);
-        font-family: var(--font-sans);
-        font-size: 0.9375rem;
-        transition: border-color var(--transition);
-        outline: none;
-    }
+.btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--bg-elevated);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 0.875rem;
+    border-radius: var(--radius-btn);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+}
 
-    .input::placeholder {
-        color: var(--text-muted);
-    }
+.btn-ghost:hover {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+}
 
-    .input:focus {
-        border-color: var(--accent);
-    }
+/* ─── Input ─────────────────────────────────────────────── */
+.input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg-elevated);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    transition: border-color var(--transition);
+    outline: none;
+}
 
-    /* label */
-    .label {
-        font-family: var(--font-mono);
-        font-size: 0.6875rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--text-muted);
-    }
+.input::placeholder {
+    color: var(--text-muted);
+}
 
-    /* divider */
-    .divider {
-        height: 1px;
-        background: var(--border);
-        border: none;
-        margin: 0;
-    }
+.input:focus {
+    border-color: var(--accent);
+}
+
+/* ─── Label ─────────────────────────────────────────────── */
+.label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+/* ─── Divider ───────────────────────────────────────────── */
+.divider {
+    height: 1px;
+    background: var(--border);
+    border: none;
+    margin: 0;
 }
 
 /* ─── Print ─────────────────────────────────────────────── */
