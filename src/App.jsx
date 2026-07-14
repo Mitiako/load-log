@@ -1,7 +1,7 @@
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
 import Login from "./components/Login";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { saveLocation, generateTripId } from "./data/store";
 import { fetchTrips, saveTrip, deleteTrip } from "./data/firestore";
 import TripList from "./components/TripList";
@@ -291,24 +291,34 @@ export default function App() {
       </div>
 
       {showBottomNav && (
-        <BottomNav activeTab={activeTab} onSwitch={switchTab} />
+        <BottomNav activeTab={activeTab} onSwitch={switchTab} theme={theme} />
       )}
     </div>
   );
 }
 
-function BottomNav({ activeTab, onSwitch }) {
+function BottomNav({ activeTab, onSwitch, theme }) {
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+  const navRef = useRef(null);
+  const tabRefs = useRef({});
+
   const tabs = [
     {
       id: "trips",
       label: "Trips",
-      icon: (active) => (
+      icon: (active, theme) => (
         <svg
-          width="22"
-          height="22"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke={active ? "var(--accent)" : "var(--text-muted)"}
+          stroke={
+            active
+              ? theme === "light"
+                ? "#1A1813"
+                : "#fff"
+              : "var(--text-muted)"
+          }
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -321,13 +331,19 @@ function BottomNav({ activeTab, onSwitch }) {
     {
       id: "analytics",
       label: "Analytics",
-      icon: (active) => (
+      icon: (active, theme) => (
         <svg
-          width="22"
-          height="22"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke={active ? "var(--accent)" : "var(--text-muted)"}
+          stroke={
+            active
+              ? theme === "light"
+                ? "#1A1813"
+                : "#fff"
+              : "var(--text-muted)"
+          }
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -339,13 +355,19 @@ function BottomNav({ activeTab, onSwitch }) {
     {
       id: "profile",
       label: "Profile",
-      icon: (active) => (
+      icon: (active, theme) => (
         <svg
-          width="22"
-          height="22"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke={active ? "var(--accent)" : "var(--text-muted)"}
+          stroke={
+            active
+              ? theme === "light"
+                ? "#1A1813"
+                : "#fff"
+              : "var(--text-muted)"
+          }
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -357,6 +379,19 @@ function BottomNav({ activeTab, onSwitch }) {
     },
   ];
 
+  useEffect(() => {
+    const el = tabRefs.current[activeTab];
+    const nav = navRef.current;
+    if (el && nav) {
+      const navRect = nav.getBoundingClientRect();
+      const tabRect = el.getBoundingClientRect();
+      setIndicatorStyle({
+        left: tabRect.left - navRect.left,
+        width: tabRect.width,
+      });
+    }
+  }, [activeTab]);
+
   return (
     <div
       style={{
@@ -367,49 +402,93 @@ function BottomNav({ activeTab, onSwitch }) {
         width: "100%",
         maxWidth: 480,
         zIndex: 100,
+        padding: "12px 16px 24px",
       }}
     >
       <div
-        className="glass-bar"
+        ref={navRef}
         style={{
           display: "flex",
-          borderTop: "1px solid var(--border)",
-          paddingBottom: "env(safe-area-inset-bottom)",
+          background:
+            theme === "light"
+              ? "rgba(255, 255, 255, 0.8)"
+              : "rgba(15, 13, 10, 0.9)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderRadius: 99,
+          border:
+            theme === "light"
+              ? "1px solid rgba(0,0,0,0.08)"
+              : "1px solid rgba(255,255,255,0.08)",
+          padding: "5px",
+          position: "relative",
         }}
       >
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onSwitch(tab.id)}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              padding: "10px 0 12px",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              transition: "all var(--transition)",
-            }}
-          >
-            {tab.icon(activeTab === tab.id)}
-            <span
+        {/* Ковзаюча капсула */}
+        <div
+          style={{
+            position: "absolute",
+            top: 5,
+            bottom: 5,
+            left: indicatorStyle.left,
+            width: indicatorStyle.width,
+            background:
+              theme === "light"
+                ? "rgba(255,138,61,0.12)"
+                : "rgba(255,255,255,0.08)",
+            borderRadius: 99,
+            transition:
+              "left 300ms cubic-bezier(0.4, 0, 0.2, 1), width 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+            boxShadow:
+              theme === "light"
+                ? `0 0 20px rgba(255,138,61,0.5), 0 0 40px rgba(255,138,61,0.25), inset 0 1px 0 rgba(255,255,255,0.9)`
+                : `0 0 16px rgba(255,138,61,0.35), 0 0 32px rgba(255,138,61,0.15), 0 0 64px rgba(255,138,61,0.08), inset 0 1px 0 rgba(255,255,255,0.12)`,
+            pointerEvents: "none",
+          }}
+        />
+
+        {tabs.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              ref={(el) => (tabRefs.current[tab.id] = el)}
+              onClick={() => onSwitch(tab.id)}
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: "0.08em",
-                color:
-                  activeTab === tab.id ? "var(--accent)" : "var(--text-muted)",
-                transition: "color var(--transition)",
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 3,
+                padding: "8px 0",
+                background: "transparent",
+                border: "none",
+                borderRadius: 99,
+                cursor: "pointer",
+                position: "relative",
+                zIndex: 1,
               }}
             >
-              {tab.label.toUpperCase()}
-            </span>
-          </button>
-        ))}
+              {tab.icon(active, theme)}
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 8,
+                  letterSpacing: "0.08em",
+                  color: active
+                    ? theme === "light"
+                      ? "#1A1813"
+                      : "#fff"
+                    : "var(--text-muted)",
+                  transition: "color 300ms ease-out",
+                }}
+              >
+                {tab.label.toUpperCase()}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

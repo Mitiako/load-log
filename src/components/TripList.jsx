@@ -122,7 +122,7 @@ export default function TripList({
       <div
         className="glass-bar"
         style={{
-          padding: "12px 16px 32px",
+          padding: "12px 16px 100px",
           borderTop: "1px solid var(--border)",
           flexShrink: 0,
         }}
