@@ -22,6 +22,21 @@ export default function App() {
   const [theme, setTheme] = useState(
     () => localStorage.getItem("theme") || "dark",
   );
+  const [activeTab, setActiveTab] = useState(
+    () => sessionStorage.getItem("activeTab") || "trips",
+  );
+  const [screen, setScreen] = useState(
+    () => sessionStorage.getItem("screen") || "trips",
+  );
+  const [selectedTripIdx, setSelectedTripIdx] = useState(() => {
+    const v = sessionStorage.getItem("selectedTripIdx");
+    return v !== null ? Number(v) : null;
+  });
+  const [selectedLoadIdx, setSelectedLoadIdx] = useState(() => {
+    const v = sessionStorage.getItem("selectedLoadIdx");
+    return v !== null ? Number(v) : null;
+  });
+  const [editingTrip, setEditingTrip] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -52,23 +67,22 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  const [screen, setScreen] = useState(
-    () => sessionStorage.getItem("screen") || "trips",
-  );
-  const [selectedTripIdx, setSelectedTripIdx] = useState(() => {
-    const v = sessionStorage.getItem("selectedTripIdx");
-    return v !== null ? Number(v) : null;
-  });
-  const [selectedLoadIdx, setSelectedLoadIdx] = useState(() => {
-    const v = sessionStorage.getItem("selectedLoadIdx");
-    return v !== null ? Number(v) : null;
-  });
-  const [editingTrip, setEditingTrip] = useState(false);
-
   function goTo(newScreen) {
     history.pushState({ screen: newScreen }, "");
     setScreen(newScreen);
     sessionStorage.setItem("screen", newScreen);
+  }
+
+  function switchTab(tab) {
+    setActiveTab(tab);
+    sessionStorage.setItem("activeTab", tab);
+    if (tab === "trips") {
+      goTo("trips");
+      setSelectedTripIdx(null);
+      setSelectedLoadIdx(null);
+    } else {
+      goTo(tab);
+    }
   }
 
   useEffect(() => {
@@ -186,6 +200,7 @@ export default function App() {
     await signOut(auth);
     setTrips([]);
     setScreen("trips");
+    setActiveTab("trips");
     sessionStorage.clear();
   }
 
@@ -194,77 +209,320 @@ export default function App() {
   if (!user) return <Login />;
   if (tripsLoading) return <LoadingScreen label="LOADING TRIPS..." />;
 
+  const showBottomNav = ["trips", "analytics", "profile"].includes(screen);
+
   return (
     <div
       style={{
         width: "100%",
         maxWidth: 480,
         margin: "0 auto",
-        background: "transparent",
         minHeight: "100dvh",
+        display: "flex",
+        flexDirection: "column",
       }}
       className="print:max-w-full print:w-full"
     >
       <Analytics />
-      {screen === "trips" && (
-        <TripList
-          trips={trips}
-          onSelect={handleSelectTrip}
-          onCreate={handleCreateTrip}
-          onEdit={handleEditTrip}
-          onDelete={handleDeleteTrip}
-          onLogout={handleLogout}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-        />
+      <div style={{ flex: 1, paddingBottom: showBottomNav ? 72 : 0 }}>
+        {screen === "trips" && (
+          <TripList
+            trips={trips}
+            onSelect={handleSelectTrip}
+            onCreate={handleCreateTrip}
+            onEdit={handleEditTrip}
+            onDelete={handleDeleteTrip}
+            onLogout={handleLogout}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+        )}
+        {screen === "tripForm" && (
+          <TripForm
+            trips={trips}
+            trip={
+              editingTrip && selectedTripIdx !== null
+                ? trips[selectedTripIdx]
+                : null
+            }
+            onSave={handleSaveTrip}
+            onBack={handleBack}
+          />
+        )}
+        {screen === "loads" && currentTrip && (
+          <LoadList
+            trip={currentTrip}
+            loads={currentLoads}
+            onSelect={handleSelectLoad}
+            onAdd={handleAddLoad}
+            onMonthly={() => goTo("monthly")}
+            onDelete={handleDeleteLoad}
+            onBack={handleBack}
+          />
+        )}
+        {screen === "detail" && selectedLoadIdx !== null && currentTrip && (
+          <LoadDetail
+            load={currentLoads[selectedLoadIdx]}
+            onBack={handleBack}
+            onEdit={handleEditLoad}
+          />
+        )}
+        {screen === "form" && currentTrip && (
+          <LoadForm
+            load={
+              selectedLoadIdx !== null ? currentLoads[selectedLoadIdx] : null
+            }
+            onSave={handleSaveLoad}
+            onBack={handleBack}
+          />
+        )}
+        {screen === "monthly" && currentTrip && (
+          <Monthly
+            loads={currentLoads}
+            onBack={handleBack}
+            onPrint={() => goTo("print")}
+          />
+        )}
+        {screen === "print" && currentTrip && (
+          <PrintView loads={currentLoads} onClose={() => goTo("monthly")} />
+        )}
+        {screen === "analytics" && <AnalyticsPlaceholder />}
+        {screen === "profile" && <ProfilePlaceholder onLogout={handleLogout} />}
+      </div>
+
+      {showBottomNav && (
+        <BottomNav activeTab={activeTab} onSwitch={switchTab} />
       )}
-      {screen === "tripForm" && (
-        <TripForm
-          trips={trips}
-          trip={
-            editingTrip && selectedTripIdx !== null
-              ? trips[selectedTripIdx]
-              : null
-          }
-          onSave={handleSaveTrip}
-          onBack={handleBack}
-        />
-      )}
-      {screen === "loads" && currentTrip && (
-        <LoadList
-          trip={currentTrip}
-          loads={currentLoads}
-          onSelect={handleSelectLoad}
-          onAdd={handleAddLoad}
-          onMonthly={() => goTo("monthly")}
-          onDelete={handleDeleteLoad}
-          onBack={handleBack}
-        />
-      )}
-      {screen === "detail" && selectedLoadIdx !== null && currentTrip && (
-        <LoadDetail
-          load={currentLoads[selectedLoadIdx]}
-          onBack={handleBack}
-          onEdit={handleEditLoad}
-        />
-      )}
-      {screen === "form" && currentTrip && (
-        <LoadForm
-          load={selectedLoadIdx !== null ? currentLoads[selectedLoadIdx] : null}
-          onSave={handleSaveLoad}
-          onBack={handleBack}
-        />
-      )}
-      {screen === "monthly" && currentTrip && (
-        <Monthly
-          loads={currentLoads}
-          onBack={handleBack}
-          onPrint={() => goTo("print")}
-        />
-      )}
-      {screen === "print" && currentTrip && (
-        <PrintView loads={currentLoads} onClose={() => goTo("monthly")} />
-      )}
+    </div>
+  );
+}
+
+function BottomNav({ activeTab, onSwitch }) {
+  const tabs = [
+    {
+      id: "trips",
+      label: "Trips",
+      icon: (active) => (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={active ? "var(--accent)" : "var(--text-muted)"}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <path d="M8 21h8M12 17v4" />
+        </svg>
+      ),
+    },
+    {
+      id: "analytics",
+      label: "Analytics",
+      icon: (active) => (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={active ? "var(--accent)" : "var(--text-muted)"}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      ),
+    },
+    {
+      id: "profile",
+      label: "Profile",
+      icon: (active) => (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={active ? "var(--accent)" : "var(--text-muted)"}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "100%",
+        maxWidth: 480,
+        zIndex: 100,
+      }}
+    >
+      <div
+        className="glass-bar"
+        style={{
+          display: "flex",
+          borderTop: "1px solid var(--border)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => onSwitch(tab.id)}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 4,
+              padding: "10px 0 12px",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              transition: "all var(--transition)",
+            }}
+          >
+            {tab.icon(activeTab === tab.id)}
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.08em",
+                color:
+                  activeTab === tab.id ? "var(--accent)" : "var(--text-muted)",
+                transition: "color var(--transition)",
+              }}
+            >
+              {tab.label.toUpperCase()}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsPlaceholder() {
+  return (
+    <div
+      style={{
+        height: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+      }}
+    >
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--text-muted)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+      <div
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 16,
+          fontWeight: 600,
+          color: "var(--text-primary)",
+        }}
+      >
+        Analytics
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 13,
+          color: "var(--text-muted)",
+        }}
+      >
+        Coming soon
+      </div>
+    </div>
+  );
+}
+
+function ProfilePlaceholder({ onLogout }) {
+  return (
+    <div
+      style={{
+        height: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 16,
+      }}
+    >
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--text-muted)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+      <div
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 16,
+          fontWeight: 600,
+          color: "var(--text-primary)",
+        }}
+      >
+        Profile
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 13,
+          color: "var(--text-muted)",
+        }}
+      >
+        Coming soon
+      </div>
+      <button
+        onClick={onLogout}
+        style={{
+          marginTop: 16,
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          letterSpacing: "0.06em",
+          color: "var(--text-muted)",
+          background: "none",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-btn)",
+          padding: "8px 16px",
+          cursor: "pointer",
+        }}
+      >
+        SIGN OUT
+      </button>
     </div>
   );
 }
@@ -286,7 +544,6 @@ function IntroScreen() {
     <div
       style={{
         height: "100dvh",
-        background: "var(--bg-base)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -399,7 +656,6 @@ function LoadingScreen({ label }) {
     <div
       style={{
         height: "100dvh",
-        background: "var(--bg-base)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

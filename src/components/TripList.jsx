@@ -7,7 +7,6 @@ export default function TripList({
   onCreate,
   onEdit,
   onDelete,
-  onLogout,
   theme,
   onToggleTheme,
 }) {
@@ -82,27 +81,6 @@ export default function TripList({
             }
           >
             {theme === "dark" ? "☀️" : "🌙"}
-          </button>
-          <button
-            onClick={onLogout}
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.06em",
-              color: "var(--text-muted)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "4px 0",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "var(--text-secondary)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "var(--text-muted)")
-            }
-          >
-            SIGN OUT
           </button>
         </div>
       </div>
