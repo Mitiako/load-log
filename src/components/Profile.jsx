@@ -1,30 +1,32 @@
 // Profile.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchProfile, saveProfile } from "../data/firestore";
 import Header from "./Header";
 
 export default function Profile({ user, onLogout, theme, onToggleTheme }) {
   const [profile, setProfile] = useState({
-    // Дані водія
     name: user?.displayName || "",
-    phone: "",
     email: user?.email || "",
-    // Компанія
+    phone: "",
+    address: "",
     company: "",
     companyAddress: "",
-    // Трак
     truckUnit: "",
-    truckModel: "",
     truckPlate: "",
-    // Трейлер
     trailerUnit: "",
     trailerPlate: "",
-    // Налаштування
     payMode: "pct",
     payVal: "87",
+    goalType: "",
+    goalVal: "",
+    cdlPhoto: null,
+    medPhoto: null,
   });
-  const [saved, setSaved] = useState(true);
+
+  const [modal, setModal] = useState(null); // який тайл відкритий
   const [saving, setSaving] = useState(false);
+  const cdlRef = useRef(null);
+  const medRef = useRef(null);
 
   useEffect(() => {
     fetchProfile(user.uid).then((data) => {
@@ -32,21 +34,36 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
     });
   }, [user.uid]);
 
-  function handleChange(field, value) {
-    setProfile((prev) => ({ ...prev, [field]: value }));
-    setSaved(false);
+  async function handleSave(updates) {
+    const updated = { ...profile, ...updates };
+    setProfile(updated);
+    setSaving(true);
+    await saveProfile(user.uid, updated);
+    setSaving(false);
+    setModal(null);
   }
 
-  async function handleSave() {
-    setSaving(true);
-    await saveProfile(user.uid, profile);
-    setSaving(false);
-    setSaved(true);
+  function handlePhotoCapture(field, ref) {
+    ref.current?.click();
   }
+
+  function handlePhotoChange(field, e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      handleSave({ [field]: ev.target.result });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  const tileStyle = {
+    cursor: "pointer",
+    transition: "border-color var(--transition), box-shadow var(--transition)",
+  };
 
   return (
-    <div style={{ minHeight: "100dvh", paddingBottom: 100 }}>
-      {/* Header */}
+    <div style={{ minHeight: "100dvh", paddingBottom: 120 }}>
       <Header
         title="Profile"
         right={
@@ -60,7 +77,6 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
               lineHeight: 1,
               padding: "4px",
               color: "var(--text-muted)",
-              transition: "color var(--transition)",
             }}
             onMouseEnter={(e) =>
               (e.currentTarget.style.color = "var(--accent)")
@@ -73,241 +89,764 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
           </button>
         }
       />
-      <div style={{ padding: "16px" }}>
-        {/* Аватар */}
-        {user?.photoURL && (
+
+      <div
+        style={{
+          padding: "12px 16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}
+      >
+        {/* Рядок 1: Photo + Name/Email/Phone + Address */}
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+        >
+          {/* Photo */}
           <div
+            className="glass"
             style={{
+              ...tileStyle,
+              padding: 16,
               display: "flex",
               alignItems: "center",
-              gap: 16,
-              marginBottom: 24,
+              justifyContent: "center",
+              minHeight: 160,
+              gridRow: "span 2",
             }}
+            onClick={() => setModal("photo")}
           >
-            <img
-              src={user.photoURL}
-              alt="avatar"
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 99,
-                objectFit: "cover",
-                border: "2px solid var(--accent)",
-              }}
-            />
-            <div>
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt="avatar"
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 99,
+                  objectFit: "cover",
+                  border: "2px solid var(--accent)",
+                }}
+              />
+            ) : (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>👤</div>
+                <div className="label">Photo</div>
+              </div>
+            )}
+          </div>
+
+          {/* Name/Email/Phone */}
+          <div
+            className="glass"
+            style={{ ...tileStyle, padding: 16, minHeight: 75 }}
+            onClick={() => setModal("driver")}
+          >
+            {profile.name || profile.phone ? (
+              <>
+                <div
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 600,
+                    fontSize: 14,
+                    color: "var(--text-primary)",
+                    marginBottom: 2,
+                  }}
+                >
+                  {profile.name || "—"}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--text-muted)",
+                    marginBottom: 2,
+                  }}
+                >
+                  {profile.email}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {profile.phone || "No phone"}
+                </div>
+              </>
+            ) : (
+              <EmptyTile icon="👤" label="Name · Email · Phone" />
+            )}
+          </div>
+
+          {/* Address */}
+          <div
+            className="glass"
+            style={{ ...tileStyle, padding: 16, minHeight: 75 }}
+            onClick={() => setModal("address")}
+          >
+            {profile.address ? (
+              <>
+                <div className="label" style={{ marginBottom: 4 }}>
+                  Home Address
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 13,
+                    color: "var(--text-primary)",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {profile.address}
+                </div>
+              </>
+            ) : (
+              <EmptyTile icon="🏠" label="Home Address" />
+            )}
+          </div>
+        </div>
+
+        {/* Company */}
+        <div
+          className="glass"
+          style={{ ...tileStyle, padding: 16 }}
+          onClick={() => setModal("company")}
+        >
+          {profile.company ? (
+            <>
               <div
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontWeight: 600,
-                  fontSize: 16,
+                  fontSize: 14,
                   color: "var(--text-primary)",
+                  marginBottom: 2,
                 }}
               >
-                {user.displayName}
+                {profile.company}
               </div>
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
                   color: "var(--text-muted)",
-                  marginTop: 2,
                 }}
               >
-                {user.email}
+                {profile.companyAddress || "No address"}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Driver */}
-        <Section label="DRIVER" />
-        <Field
-          label="Full name"
-          value={profile.name}
-          onChange={(v) => handleChange("name", v)}
-          placeholder="John Doe"
-        />
-        <Field
-          label="Phone"
-          value={profile.phone}
-          onChange={(v) => handleChange("phone", v)}
-          placeholder="+1 555 000 0000"
-          type="tel"
-        />
-
-        {/* Company */}
-        <Section label="COMPANY" />
-        <Field
-          label="Company name"
-          value={profile.company}
-          onChange={(v) => handleChange("company", v)}
-          placeholder="ABC Logistics"
-        />
-        <Field
-          label="Address"
-          value={profile.companyAddress}
-          onChange={(v) => handleChange("companyAddress", v)}
-          placeholder="123 Main St, Dallas, TX"
-        />
+            </>
+          ) : (
+            <EmptyTile icon="🏢" label="Company Name · Address" />
+          )}
+        </div>
 
         {/* Truck */}
-        <Section label="TRUCK" />
-        <Field
-          label="Unit number"
-          value={profile.truckUnit}
-          onChange={(v) => handleChange("truckUnit", v)}
-          placeholder="1042"
-        />
-        <Field
-          label="Model"
-          value={profile.truckModel}
-          onChange={(v) => handleChange("truckModel", v)}
-          placeholder="Freightliner Cascadia"
-        />
-        <Field
-          label="License plate"
-          value={profile.truckPlate}
-          onChange={(v) => handleChange("truckPlate", v)}
-          placeholder="TX-12345"
-        />
-
-        {/* Trailer */}
-        <Section label="TRAILER" />
-        <Field
-          label="Unit number"
-          value={profile.trailerUnit}
-          onChange={(v) => handleChange("trailerUnit", v)}
-          placeholder="T-4421"
-        />
-        <Field
-          label="Plate number"
-          value={profile.trailerPlate}
-          onChange={(v) => handleChange("trailerPlate", v)}
-          placeholder="TX-99887"
-        />
-
-        {/* Pay defaults */}
-        <Section label="PAY DEFAULTS" />
-        <div style={{ marginBottom: 12 }}>
-          <div className="label" style={{ marginBottom: 8 }}>
-            Pay mode
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+        >
+          <div
+            className="glass"
+            style={{ ...tileStyle, padding: 16 }}
+            onClick={() => setModal("truck")}
+          >
+            {profile.truckUnit ? (
+              <>
+                <div className="label" style={{ marginBottom: 4 }}>
+                  Truck #
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 600,
+                    fontSize: 15,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {profile.truckUnit}
+                </div>
+              </>
+            ) : (
+              <EmptyTile icon="🚛" label="Truck #" />
+            )}
           </div>
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              background: "var(--bg-elevated)",
-              backdropFilter: "var(--glass-blur)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-btn)",
-              overflow: "hidden",
-            }}
+            className="glass"
+            style={{ ...tileStyle, padding: 16 }}
+            onClick={() => setModal("truck")}
           >
-            {["pct", "cpm"].map((mode) => (
-              <button
-                key={mode}
-                onClick={() => handleChange("payMode", mode)}
-                style={{
-                  padding: "10px",
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  background:
-                    profile.payMode === mode ? "var(--accent)" : "transparent",
-                  color:
-                    profile.payMode === mode ? "#100F0C" : "var(--text-muted)",
-                  transition: "all var(--transition)",
-                }}
-              >
-                {mode === "pct" ? "% of gross" : "Cents per mile"}
-              </button>
-            ))}
+            {profile.truckPlate ? (
+              <>
+                <div className="label" style={{ marginBottom: 4 }}>
+                  Lic Plate
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 600,
+                    fontSize: 15,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {profile.truckPlate}
+                </div>
+              </>
+            ) : (
+              <EmptyTile icon="🪪" label="Truck Plate" />
+            )}
           </div>
         </div>
-        <Field
-          label={
-            profile.payMode === "pct" ? "Default share %" : "Default cents/mile"
-          }
-          value={profile.payVal}
-          onChange={(v) => handleChange("payVal", v)}
-          placeholder={profile.payMode === "pct" ? "87" : "90"}
-          type="number"
-        />
 
-        {/* Buttons */}
+        {/* Trailer */}
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+        >
+          <div
+            className="glass"
+            style={{ ...tileStyle, padding: 16 }}
+            onClick={() => setModal("trailer")}
+          >
+            {profile.trailerUnit ? (
+              <>
+                <div className="label" style={{ marginBottom: 4 }}>
+                  Trailer #
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 600,
+                    fontSize: 15,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {profile.trailerUnit}
+                </div>
+              </>
+            ) : (
+              <EmptyTile icon="🚂" label="Trailer #" />
+            )}
+          </div>
+          <div
+            className="glass"
+            style={{ ...tileStyle, padding: 16 }}
+            onClick={() => setModal("trailer")}
+          >
+            {profile.trailerPlate ? (
+              <>
+                <div className="label" style={{ marginBottom: 4 }}>
+                  Lic Plate
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 600,
+                    fontSize: 15,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {profile.trailerPlate}
+                </div>
+              </>
+            ) : (
+              <EmptyTile icon="🪪" label="Trailer Plate" />
+            )}
+          </div>
+        </div>
+
+        {/* Pay + Goal */}
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
             gap: 10,
-            marginTop: 24,
           }}
         >
-          <button
-            onClick={handleSave}
-            disabled={saved || saving}
-            style={{
-              width: "100%",
-              padding: "13px 20px",
-              background: saved ? "var(--bg-elevated)" : "var(--accent)",
-              border: `1px solid ${saved ? "var(--border)" : "transparent"}`,
-              borderRadius: "var(--radius-btn)",
-              color: saved ? "var(--text-muted)" : "#100F0C",
-              fontFamily: "var(--font-sans)",
-              fontWeight: 600,
-              fontSize: 15,
-              cursor: saved ? "not-allowed" : "pointer",
-              transition: "all var(--transition)",
-              backdropFilter: "var(--glass-blur)",
-            }}
+          <div
+            className="glass"
+            style={{ ...tileStyle, padding: 16 }}
+            onClick={() => setModal("pay")}
           >
-            {saving ? "Saving..." : saved ? "Saved" : "Save Changes"}
-          </button>
-          <button
-            onClick={onLogout}
-            style={{
-              width: "100%",
-              padding: "13px 20px",
-              background: "transparent",
-              border: "1px solid rgba(239,68,68,0.3)",
-              borderRadius: "var(--radius-btn)",
-              color: "#f87171",
-              fontFamily: "var(--font-sans)",
-              fontWeight: 500,
-              fontSize: 15,
-              cursor: "pointer",
-              transition: "all var(--transition)",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "rgba(239,68,68,0.1)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "transparent")
-            }
+            <div className="label" style={{ marginBottom: 4 }}>
+              Pay Mode
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontWeight: 600,
+                fontSize: 13,
+                color: "var(--accent)",
+              }}
+            >
+              {profile.payMode === "pct" ? "% Gross" : "¢/Mile"}
+            </div>
+          </div>
+          <div
+            className="glass"
+            style={{ ...tileStyle, padding: 16 }}
+            onClick={() => setModal("pay")}
           >
-            Sign Out
-          </button>
+            <div className="label" style={{ marginBottom: 4 }}>
+              Pay Val
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                fontSize: 15,
+                color: "var(--text-primary)",
+              }}
+            >
+              {profile.payVal
+                ? profile.payMode === "pct"
+                  ? `${profile.payVal}%`
+                  : `${profile.payVal}¢`
+                : "—"}
+            </div>
+          </div>
+          <div
+            className="glass"
+            style={{ ...tileStyle, padding: 16 }}
+            onClick={() => setModal("goal")}
+          >
+            {profile.goalType ? (
+              <>
+                <div className="label" style={{ marginBottom: 4 }}>
+                  {profile.goalType === "rpm" ? "RPM Goal" : "Weekly Goal"}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    color: "var(--accent)",
+                  }}
+                >
+                  {profile.goalType === "rpm"
+                    ? `$${profile.goalVal}/mi`
+                    : `$${profile.goalVal}`}
+                </div>
+              </>
+            ) : (
+              <EmptyTile icon="🎯" label="Goal" />
+            )}
+          </div>
         </div>
+
+        {/* CDL */}
+        <div
+          className="glass"
+          style={{
+            ...tileStyle,
+            padding: 16,
+            minHeight: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => handlePhotoCapture("cdlPhoto", cdlRef)}
+        >
+          {profile.cdlPhoto ? (
+            <img
+              src={profile.cdlPhoto}
+              alt="CDL"
+              style={{
+                width: "100%",
+                borderRadius: 12,
+                objectFit: "cover",
+                maxHeight: 160,
+              }}
+            />
+          ) : (
+            <EmptyTile icon="📄" label="CDL License Photo" />
+          )}
+          <input
+            ref={cdlRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: "none" }}
+            onChange={(e) => handlePhotoChange("cdlPhoto", e)}
+          />
+        </div>
+
+        {/* Med Card */}
+        <div
+          className="glass"
+          style={{
+            ...tileStyle,
+            padding: 16,
+            minHeight: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => handlePhotoCapture("medPhoto", medRef)}
+        >
+          {profile.medPhoto ? (
+            <img
+              src={profile.medPhoto}
+              alt="Med Card"
+              style={{
+                width: "100%",
+                borderRadius: 12,
+                objectFit: "cover",
+                maxHeight: 160,
+              }}
+            />
+          ) : (
+            <EmptyTile icon="🏥" label="Medical Card Photo" />
+          )}
+          <input
+            ref={medRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: "none" }}
+            onChange={(e) => handlePhotoChange("medPhoto", e)}
+          />
+        </div>
+
+        {/* Sign Out */}
+        <button
+          onClick={onLogout}
+          style={{
+            width: "100%",
+            padding: "13px 20px",
+            marginTop: 8,
+            background: "transparent",
+            border: "1px solid rgba(239,68,68,0.3)",
+            borderRadius: "var(--radius-btn)",
+            color: "#f87171",
+            fontFamily: "var(--font-sans)",
+            fontWeight: 500,
+            fontSize: 15,
+            cursor: "pointer",
+            transition: "all var(--transition)",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = "rgba(239,68,68,0.1)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background = "transparent")
+          }
+        >
+          Sign Out
+        </button>
+      </div>
+
+      {/* Модальні вікна */}
+      {modal && (
+        <Modal onClose={() => setModal(null)} saving={saving}>
+          {modal === "driver" && (
+            <DriverForm profile={profile} onSave={handleSave} />
+          )}
+          {modal === "address" && (
+            <AddressForm profile={profile} onSave={handleSave} />
+          )}
+          {modal === "company" && (
+            <CompanyForm profile={profile} onSave={handleSave} />
+          )}
+          {modal === "truck" && (
+            <TruckForm profile={profile} onSave={handleSave} />
+          )}
+          {modal === "trailer" && (
+            <TrailerForm profile={profile} onSave={handleSave} />
+          )}
+          {modal === "pay" && <PayForm profile={profile} onSave={handleSave} />}
+          {modal === "goal" && (
+            <GoalForm profile={profile} onSave={handleSave} />
+          )}
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ─── Empty tile ─── */
+function EmptyTile({ icon, label }) {
+  return (
+    <div style={{ textAlign: "center", width: "100%" }}>
+      <div style={{ fontSize: 24, marginBottom: 6 }}>{icon}</div>
+      <div className="label">{label}</div>
+    </div>
+  );
+}
+
+/* ─── Modal wrapper ─── */
+function Modal({ children, onClose, saving }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.5)",
+        backdropFilter: "blur(4px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          background: "var(--bg-elevated)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          borderRadius: "20px 20px 0 0",
+          border: "1px solid var(--border)",
+          padding: "24px 20px 48px",
+          boxShadow: "var(--glass-shadow)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {saving && (
+          <div
+            style={{
+              textAlign: "center",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--accent)",
+              marginBottom: 12,
+            }}
+          >
+            SAVING...
+          </div>
+        )}
+        {children}
       </div>
     </div>
   );
 }
 
-function Section({ label }) {
+/* ─── Forms ─── */
+function DriverForm({ profile, onSave }) {
+  const [name, setName] = useState(profile.name);
+  const [phone, setPhone] = useState(profile.phone);
+  return (
+    <div>
+      <ModalTitle>Driver Info</ModalTitle>
+      <Field
+        label="Full Name"
+        value={name}
+        onChange={setName}
+        placeholder="John Doe"
+      />
+      <Field
+        label="Phone"
+        value={phone}
+        onChange={setPhone}
+        placeholder="+1 555 000 0000"
+        type="tel"
+      />
+      <SaveBtn onClick={() => onSave({ name, phone })} />
+    </div>
+  );
+}
+
+function AddressForm({ profile, onSave }) {
+  const [address, setAddress] = useState(profile.address);
+  return (
+    <div>
+      <ModalTitle>Home Address</ModalTitle>
+      <Field
+        label="Address"
+        value={address}
+        onChange={setAddress}
+        placeholder="123 Main St, Dallas, TX"
+      />
+      <SaveBtn onClick={() => onSave({ address })} />
+    </div>
+  );
+}
+
+function CompanyForm({ profile, onSave }) {
+  const [company, setCompany] = useState(profile.company);
+  const [companyAddress, setCompanyAddress] = useState(profile.companyAddress);
+  return (
+    <div>
+      <ModalTitle>Company</ModalTitle>
+      <Field
+        label="Company Name"
+        value={company}
+        onChange={setCompany}
+        placeholder="ABC Logistics"
+      />
+      <Field
+        label="Address"
+        value={companyAddress}
+        onChange={setCompanyAddress}
+        placeholder="456 Freight Ave, Houston, TX"
+      />
+      <SaveBtn onClick={() => onSave({ company, companyAddress })} />
+    </div>
+  );
+}
+
+function TruckForm({ profile, onSave }) {
+  const [truckUnit, setTruckUnit] = useState(profile.truckUnit);
+  const [truckPlate, setTruckPlate] = useState(profile.truckPlate);
+  return (
+    <div>
+      <ModalTitle>Truck</ModalTitle>
+      <Field
+        label="Unit Number"
+        value={truckUnit}
+        onChange={setTruckUnit}
+        placeholder="1042"
+      />
+      <Field
+        label="License Plate"
+        value={truckPlate}
+        onChange={setTruckPlate}
+        placeholder="TX-12345"
+      />
+      <SaveBtn onClick={() => onSave({ truckUnit, truckPlate })} />
+    </div>
+  );
+}
+
+function TrailerForm({ profile, onSave }) {
+  const [trailerUnit, setTrailerUnit] = useState(profile.trailerUnit);
+  const [trailerPlate, setTrailerPlate] = useState(profile.trailerPlate);
+  return (
+    <div>
+      <ModalTitle>Trailer</ModalTitle>
+      <Field
+        label="Unit Number"
+        value={trailerUnit}
+        onChange={setTrailerUnit}
+        placeholder="T-4421"
+      />
+      <Field
+        label="License Plate"
+        value={trailerPlate}
+        onChange={setTrailerPlate}
+        placeholder="TX-99887"
+      />
+      <SaveBtn onClick={() => onSave({ trailerUnit, trailerPlate })} />
+    </div>
+  );
+}
+
+function PayForm({ profile, onSave }) {
+  const [payMode, setPayMode] = useState(profile.payMode);
+  const [payVal, setPayVal] = useState(profile.payVal);
+  return (
+    <div>
+      <ModalTitle>Pay Settings</ModalTitle>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          marginBottom: 16,
+          background: "var(--bg-base)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-btn)",
+          overflow: "hidden",
+        }}
+      >
+        {["pct", "cpm"].map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setPayMode(mode)}
+            style={{
+              padding: "10px",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-sans)",
+              fontSize: 13,
+              fontWeight: 500,
+              background: payMode === mode ? "var(--accent)" : "transparent",
+              color: payMode === mode ? "#100F0C" : "var(--text-muted)",
+              transition: "all var(--transition)",
+            }}
+          >
+            {mode === "pct" ? "% of gross" : "Cents per mile"}
+          </button>
+        ))}
+      </div>
+      <Field
+        label={payMode === "pct" ? "Your share %" : "Cents per mile"}
+        value={payVal}
+        onChange={setPayVal}
+        placeholder={payMode === "pct" ? "87" : "90"}
+        type="number"
+      />
+      <SaveBtn onClick={() => onSave({ payMode, payVal })} />
+    </div>
+  );
+}
+
+function GoalForm({ profile, onSave }) {
+  const [goalType, setGoalType] = useState(profile.goalType || "rpm");
+  const [goalVal, setGoalVal] = useState(profile.goalVal);
+  return (
+    <div>
+      <ModalTitle>My Goal</ModalTitle>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          marginBottom: 16,
+          background: "var(--bg-base)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-btn)",
+          overflow: "hidden",
+        }}
+      >
+        {[
+          { id: "rpm", label: "RPM Goal" },
+          { id: "weekly", label: "Weekly Goal" },
+        ].map((g) => (
+          <button
+            key={g.id}
+            onClick={() => setGoalType(g.id)}
+            style={{
+              padding: "10px",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-sans)",
+              fontSize: 13,
+              fontWeight: 500,
+              background: goalType === g.id ? "var(--accent)" : "transparent",
+              color: goalType === g.id ? "#100F0C" : "var(--text-muted)",
+              transition: "all var(--transition)",
+            }}
+          >
+            {g.label}
+          </button>
+        ))}
+      </div>
+      <Field
+        label={goalType === "rpm" ? "Target $ per mile" : "Target $ per week"}
+        value={goalVal}
+        onChange={setGoalVal}
+        placeholder={goalType === "rpm" ? "2.50" : "3000"}
+        type="number"
+      />
+      <SaveBtn onClick={() => onSave({ goalType, goalVal })} />
+    </div>
+  );
+}
+
+/* ─── Helpers ─── */
+function ModalTitle({ children }) {
   return (
     <div
       style={{
-        padding: "20px 0 8px",
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        letterSpacing: "0.2em",
-        color: "var(--text-muted)",
+        fontFamily: "var(--font-sans)",
+        fontWeight: 600,
+        fontSize: 17,
+        color: "var(--text-primary)",
+        marginBottom: 20,
+        letterSpacing: "-0.01em",
       }}
     >
-      {label}
+      {children}
     </div>
   );
 }
@@ -321,11 +860,23 @@ function Field({ label, value, onChange, placeholder, type = "text" }) {
       <input
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
         className="input"
         style={{ fontSize: 14, padding: "10px 12px" }}
       />
     </div>
+  );
+}
+
+function SaveBtn({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="btn-primary"
+      style={{ width: "100%", fontSize: 15, marginTop: 8 }}
+    >
+      Save
+    </button>
   );
 }
