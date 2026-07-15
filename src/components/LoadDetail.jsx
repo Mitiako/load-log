@@ -1,5 +1,6 @@
 // LoadDetail.jsx
 import { calcLoad, fmtDate, fmtMoney } from "../data/calc";
+import Header from "./Header";
 
 export default function LoadDetail({ load, onBack, onEdit }) {
   const c = calcLoad(load);
@@ -14,77 +15,55 @@ export default function LoadDetail({ load, onBack, onEdit }) {
       }}
     >
       {/* Header */}
-      <div
-        className="glass-bar"
-        style={{
-          padding: "16px 20px",
-          borderBottom: "1px solid var(--border)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexShrink: 0,
-        }}
-      >
-        <button
-          onClick={onEdit}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            color: "var(--text-muted)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--text-muted)")
-          }
-        >
-          EDIT
-        </button>
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 15,
-            color: "var(--text-primary)",
-            letterSpacing: "-0.01em",
-            flex: 1,
-            textAlign: "center",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            padding: "0 12px",
-          }}
-        >
-          {load.from} → {load.to}
-        </span>
-        <button
-          onClick={onBack}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            color: "var(--text-muted)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = "var(--text-secondary)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--text-muted)")
-          }
-        >
-          BACK →
-        </button>
-      </div>
+      <Header
+        left={
+          <button
+            onClick={onEdit}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              color: "var(--text-muted)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--accent)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-muted)")
+            }
+          >
+            EDIT
+          </button>
+        }
+        title={`${load.from} → ${load.to}`}
+        right={
+          <button
+            onClick={onBack}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              color: "var(--text-muted)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-secondary)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-muted)")
+            }
+          >
+            BACK →
+          </button>
+        }
+      />
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0 32px" }}>

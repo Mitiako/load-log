@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
+import Header from "./Header";
 
 export default function Monthly({ loads, onBack, onPrint }) {
   const settings = getSettings();
@@ -42,29 +43,9 @@ export default function Monthly({ loads, onBack, onPrint }) {
       }}
     >
       {/* Header */}
-      <div
-        className="glass-bar"
-        style={{
-          padding: "16px 20px",
-          borderBottom: "1px solid var(--border)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 15,
-            color: "var(--text-primary)",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          Trip Summary
-        </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <Header
+        title="Trip Summary"
+        left={
           <button
             onClick={onPrint}
             style={{
@@ -90,6 +71,8 @@ export default function Monthly({ loads, onBack, onPrint }) {
           >
             PRINT / PDF
           </button>
+        }
+        right={
           <button
             onClick={onBack}
             style={{
@@ -111,8 +94,8 @@ export default function Monthly({ loads, onBack, onPrint }) {
           >
             BACK →
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
         {/* Stat grid */}

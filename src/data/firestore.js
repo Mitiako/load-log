@@ -33,3 +33,24 @@ export async function deleteTrip(userId, tripId) {
   const ref = doc(db, "users", userId, "trips", tripId);
   await deleteDoc(ref);
 }
+
+export async function fetchProfile(userId) {
+  try {
+    const ref = doc(db, "users", userId, "profile", "data");
+    const { getDoc } = await import("firebase/firestore");
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() : null;
+  } catch (e) {
+    console.error("fetchProfile error", e);
+    return null;
+  }
+}
+
+export async function saveProfile(userId, profile) {
+  try {
+    const ref = doc(db, "users", userId, "profile", "data");
+    await setDoc(ref, profile);
+  } catch (e) {
+    console.error("saveProfile error", e);
+  }
+}

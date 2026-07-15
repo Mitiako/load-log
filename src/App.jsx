@@ -12,6 +12,7 @@ import LoadForm from "./components/LoadForm";
 import Monthly from "./components/Monthly";
 import PrintView from "./components/PrintView";
 import { Analytics } from "@vercel/analytics/react";
+import Profile from "./components/Profile";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -287,7 +288,14 @@ export default function App() {
           <PrintView loads={currentLoads} onClose={() => goTo("monthly")} />
         )}
         {screen === "analytics" && <AnalyticsPlaceholder />}
-        {screen === "profile" && <ProfilePlaceholder onLogout={handleLogout} />}
+        {screen === "profile" && (
+          <Profile
+            user={user}
+            onLogout={handleLogout}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+        )}
       </div>
 
       {showBottomNav && (
@@ -537,71 +545,6 @@ function AnalyticsPlaceholder() {
       >
         Coming soon
       </div>
-    </div>
-  );
-}
-
-function ProfilePlaceholder({ onLogout }) {
-  return (
-    <div
-      style={{
-        height: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 16,
-      }}
-    >
-      <svg
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--text-muted)"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-      </svg>
-      <div
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: 16,
-          fontWeight: 600,
-          color: "var(--text-primary)",
-        }}
-      >
-        Profile
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: 13,
-          color: "var(--text-muted)",
-        }}
-      >
-        Coming soon
-      </div>
-      <button
-        onClick={onLogout}
-        style={{
-          marginTop: 16,
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.06em",
-          color: "var(--text-muted)",
-          background: "none",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--radius-btn)",
-          padding: "8px 16px",
-          cursor: "pointer",
-        }}
-      >
-        SIGN OUT
-      </button>
     </div>
   );
 }

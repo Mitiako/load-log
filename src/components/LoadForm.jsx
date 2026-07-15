@@ -3,6 +3,7 @@ import { useState } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
 import LocationInput from "./LocationInput";
+import Header from "./Header";
 
 export default function LoadForm({ load, onSave, onBack }) {
   const settings = getSettings();
@@ -108,50 +109,32 @@ export default function LoadForm({ load, onSave, onBack }) {
       }}
     >
       {/* Header */}
-      <div
-        className="glass-bar"
-        style={{
-          padding: "16px 20px",
-          borderBottom: "1px solid var(--border)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 15,
-            color: "var(--text-primary)",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {load ? "Edit Load" : "New Load"}
-        </span>
-        <button
-          onClick={onBack}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            color: "var(--text-muted)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = "var(--text-secondary)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--text-muted)")
-          }
-        >
-          BACK →
-        </button>
-      </div>
+      <Header
+        title={load ? "Edit Load" : "New Load"}
+        right={
+          <button
+            onClick={onBack}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              color: "var(--text-muted)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-secondary)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-muted)")
+            }
+          >
+            BACK →
+          </button>
+        }
+      />
 
       {/* Form */}
       <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
