@@ -13,14 +13,7 @@ export default function TripList({
   onToggleTheme,
 }) {
   return (
-    <div
-      style={{
-        height: "100dvh",
-        background: "transparent",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
+    <div style={{ minHeight: "100dvh", background: "transparent" }}>
       <Header
         left={
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -101,7 +94,7 @@ export default function TripList({
       />
 
       {/* List */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+      <div style={{ padding: "4px 16px 200px" }}>
         {trips.length === 0 ? (
           <div
             style={{
@@ -133,13 +126,17 @@ export default function TripList({
         )}
       </div>
 
-      {/* Footer */}
+      {/* Floating кнопка */}
       <div
-        className="glass-bar"
         style={{
-          padding: "12px 16px 100px",
-          borderTop: "1px solid var(--border)",
-          flexShrink: 0,
+          position: "fixed",
+          bottom: 88,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "100%",
+          maxWidth: 480,
+          padding: "0 16px",
+          zIndex: 99,
         }}
       >
         <button
