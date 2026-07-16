@@ -12,6 +12,7 @@ import {
   CdlIcon,
   MedicalCardIcon,
   LicensePlateIcon,
+  CloseIcon,
 } from "./icons/ProfileIcons";
 
 export default function Profile({ user, onLogout, theme, onToggleTheme }) {
@@ -66,6 +67,11 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
       handleSave({ [field]: ev.target.result });
     };
     reader.readAsDataURL(file);
+  }
+
+  function handlePhotoRemove(field, e) {
+    e.stopPropagation();
+    handleSave({ [field]: null });
   }
 
   const tileStyle = {
@@ -199,7 +205,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
                 </div>
               </>
             ) : (
-              <EmptyTile icon={DriverIcon} label="Name · Phone" />
+              <EmptyTile icon={DriverIcon} label="Name · Email · Phone" />
             )}
           </div>
 
@@ -235,7 +241,6 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             )}
           </div>
         </div>
-
         {/* Company */}
         <div
           className="glass"
@@ -269,7 +274,6 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             <EmptyTile icon={CompanyIcon} label="Company Name · Address" />
           )}
         </div>
-
         {/* Truck */}
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
@@ -325,7 +329,6 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             )}
           </div>
         </div>
-
         {/* Trailer */}
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
@@ -381,7 +384,6 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             )}
           </div>
         </div>
-
         {/* Pay + Goal */}
         <div
           style={{
@@ -460,7 +462,6 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             )}
           </div>
         </div>
-
         {/* CDL */}
         <div
           className="glass"
@@ -471,20 +472,43 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            position: "relative",
           }}
           onClick={() => handlePhotoCapture("cdlPhoto", cdlRef)}
         >
           {profile.cdlPhoto ? (
-            <img
-              src={profile.cdlPhoto}
-              alt="CDL"
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                objectFit: "cover",
-                maxHeight: 160,
-              }}
-            />
+            <>
+              <img
+                src={profile.cdlPhoto}
+                alt="CDL"
+                style={{
+                  width: "100%",
+                  borderRadius: 12,
+                  objectFit: "cover",
+                  maxHeight: 160,
+                }}
+              />
+              <button
+                onClick={(e) => handlePhotoRemove("cdlPhoto", e)}
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 99,
+                  border: "none",
+                  background: "rgba(0,0,0,0.55)",
+                  backdropFilter: "blur(4px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <CloseIcon size={14} style={{ color: "#fff" }} />
+              </button>
+            </>
           ) : (
             <EmptyTile icon={CdlIcon} label="CDL License Photo" />
           )}
@@ -497,7 +521,6 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             onChange={(e) => handlePhotoChange("cdlPhoto", e)}
           />
         </div>
-
         {/* Med Card */}
         <div
           className="glass"
@@ -508,20 +531,43 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            position: "relative",
           }}
           onClick={() => handlePhotoCapture("medPhoto", medRef)}
         >
           {profile.medPhoto ? (
-            <img
-              src={profile.medPhoto}
-              alt="Med Card"
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                objectFit: "cover",
-                maxHeight: 160,
-              }}
-            />
+            <>
+              <img
+                src={profile.medPhoto}
+                alt="Med Card"
+                style={{
+                  width: "100%",
+                  borderRadius: 12,
+                  objectFit: "cover",
+                  maxHeight: 160,
+                }}
+              />
+              <button
+                onClick={(e) => handlePhotoRemove("medPhoto", e)}
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 99,
+                  border: "none",
+                  background: "rgba(0,0,0,0.55)",
+                  backdropFilter: "blur(4px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <CloseIcon size={14} style={{ color: "#fff" }} />
+              </button>
+            </>
           ) : (
             <EmptyTile icon={MedicalCardIcon} label="Medical Card Photo" />
           )}
@@ -534,7 +580,6 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             onChange={(e) => handlePhotoChange("medPhoto", e)}
           />
         </div>
-
         {/* Sign Out */}
         <button
           onClick={onLogout}
@@ -660,6 +705,7 @@ function Modal({ children, onClose, saving }) {
 /* ─── Forms ─── */
 function DriverForm({ profile, onSave }) {
   const [name, setName] = useState(profile.name);
+  const [email, setEmail] = useState(profile.email);
   const [phone, setPhone] = useState(profile.phone);
   return (
     <div>
@@ -671,13 +717,20 @@ function DriverForm({ profile, onSave }) {
         placeholder="John Doe"
       />
       <Field
+        label="Email"
+        value={email}
+        onChange={setEmail}
+        placeholder="john@example.com"
+        type="email"
+      />
+      <Field
         label="Phone"
         value={phone}
         onChange={setPhone}
         placeholder="+1 555 000 0000"
         type="tel"
       />
-      <SaveBtn onClick={() => onSave({ name, phone })} />
+      <SaveBtn onClick={() => onSave({ name, email, phone })} />
     </div>
   );
 }
