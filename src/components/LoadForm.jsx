@@ -4,7 +4,6 @@ import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
 import LocationInput from "./LocationInput";
 import Header from "./Header";
-import { stripCyrillic } from "../utils/textFilters";
 
 export default function LoadForm({ load, onSave, onBack }) {
   const settings = getSettings();
@@ -582,10 +581,6 @@ export default function LoadForm({ load, onSave, onBack }) {
 }
 
 function Field({ label, value, onChange, type = "text", placeholder }) {
-  function handleChange(e) {
-    const raw = e.target.value;
-    onChange(type === "text" ? stripCyrillic(raw) : raw);
-  }
   return (
     <div>
       <div className="label" style={{ marginBottom: 6 }}>
@@ -595,7 +590,7 @@ function Field({ label, value, onChange, type = "text", placeholder }) {
         type={type}
         value={value}
         placeholder={placeholder}
-        onChange={handleChange}
+        onChange={(e) => onChange(e.target.value)}
         className="input"
         style={{ fontSize: 14, padding: "10px 12px" }}
       />

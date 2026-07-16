@@ -13,6 +13,7 @@ import Monthly from "./components/Monthly";
 import PrintView from "./components/PrintView";
 import { Analytics } from "@vercel/analytics/react";
 import Profile from "./components/Profile";
+import AnalyticsScreen from "./components/AnalyticsScreen";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -287,7 +288,14 @@ export default function App() {
         {screen === "print" && currentTrip && (
           <PrintView loads={currentLoads} onClose={() => goTo("monthly")} />
         )}
-        {screen === "analytics" && <AnalyticsPlaceholder />}
+        {screen === "analytics" && (
+          <AnalyticsScreen
+            user={user}
+            trips={trips}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+        )}
         {screen === "profile" && (
           <Profile
             user={user}
@@ -497,53 +505,6 @@ function BottomNav({ activeTab, onSwitch, theme }) {
             </button>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function AnalyticsPlaceholder() {
-  return (
-    <div
-      style={{
-        height: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 12,
-      }}
-    >
-      <svg
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--text-muted)"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-      <div
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: 16,
-          fontWeight: 600,
-          color: "var(--text-primary)",
-        }}
-      >
-        Analytics
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: 13,
-          color: "var(--text-muted)",
-        }}
-      >
-        Coming soon
       </div>
     </div>
   );
