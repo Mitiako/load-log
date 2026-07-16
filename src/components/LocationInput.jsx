@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { getLocations } from "../data/store";
+import { stripCyrillic } from "../utils/textFilters";
 
 export default function LocationInput({ label, value, onChange, placeholder }) {
   const [suggestions, setSuggestions] = useState([]);
@@ -17,11 +18,12 @@ export default function LocationInput({ label, value, onChange, placeholder }) {
   }, []);
 
   function handleChange(val) {
-    onChange(val);
-    if (val.trim().length >= 1) {
+    const clean = stripCyrillic(val);
+    onChange(clean);
+    if (clean.trim().length >= 1) {
       const all = getLocations();
       const filtered = all.filter((l) =>
-        l.toLowerCase().includes(val.toLowerCase()),
+        l.toLowerCase().includes(clean.toLowerCase()),
       );
       setSuggestions(filtered);
       setShow(filtered.length > 0);
