@@ -2,6 +2,17 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchProfile, saveProfile } from "../data/firestore";
 import Header from "./Header";
+import {
+  DriverIcon,
+  HomeAddressIcon,
+  CompanyIcon,
+  TruckIcon,
+  TrailerIcon,
+  GoalIcon,
+  CdlIcon,
+  MedicalCardIcon,
+  LicensePlateIcon,
+} from "./icons/ProfileIcons";
 
 export default function Profile({ user, onLogout, theme, onToggleTheme }) {
   const [profile, setProfile] = useState({
@@ -98,7 +109,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
           gap: 10,
         }}
       >
-        {/* Рядок 1: Photo + Name/Email/Phone + Address */}
+        {/* Рядок 1: Photo + Name/Phone + Address */}
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
         >
@@ -130,16 +141,28 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
               />
             ) : (
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>👤</div>
+                <DriverIcon
+                  size={32}
+                  style={{
+                    display: "block",
+                    margin: "0 auto 8px",
+                    color: "var(--text-muted)",
+                  }}
+                />
                 <div className="label">Photo</div>
               </div>
             )}
           </div>
 
-          {/* Name/Email/Phone */}
+          {/* Name/Phone */}
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16, minHeight: 75 }}
+            style={{
+              ...tileStyle,
+              padding: 16,
+              minHeight: 75,
+              textAlign: "center",
+            }}
             onClick={() => setModal("driver")}
           >
             {profile.name || profile.phone ? (
@@ -176,14 +199,19 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
                 </div>
               </>
             ) : (
-              <EmptyTile icon="👤" label="Name · Email · Phone" />
+              <EmptyTile icon={DriverIcon} label="Name · Phone" />
             )}
           </div>
 
           {/* Address */}
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16, minHeight: 75 }}
+            style={{
+              ...tileStyle,
+              padding: 16,
+              minHeight: 75,
+              textAlign: "center",
+            }}
             onClick={() => setModal("address")}
           >
             {profile.address ? (
@@ -203,7 +231,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
                 </div>
               </>
             ) : (
-              <EmptyTile icon="🏠" label="Home Address" />
+              <EmptyTile icon={HomeAddressIcon} label="Home Address" />
             )}
           </div>
         </div>
@@ -211,7 +239,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
         {/* Company */}
         <div
           className="glass"
-          style={{ ...tileStyle, padding: 16 }}
+          style={{ ...tileStyle, padding: 16, textAlign: "center" }}
           onClick={() => setModal("company")}
         >
           {profile.company ? (
@@ -238,7 +266,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
               </div>
             </>
           ) : (
-            <EmptyTile icon="🏢" label="Company Name · Address" />
+            <EmptyTile icon={CompanyIcon} label="Company Name · Address" />
           )}
         </div>
 
@@ -248,7 +276,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
         >
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16 }}
+            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
             onClick={() => setModal("truck")}
           >
             {profile.truckUnit ? (
@@ -268,12 +296,12 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
                 </div>
               </>
             ) : (
-              <EmptyTile icon="🚛" label="Truck #" />
+              <EmptyTile icon={TruckIcon} label="Truck #" />
             )}
           </div>
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16 }}
+            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
             onClick={() => setModal("truck")}
           >
             {profile.truckPlate ? (
@@ -293,7 +321,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
                 </div>
               </>
             ) : (
-              <EmptyTile icon="🪪" label="Truck Plate" />
+              <EmptyTile icon={LicensePlateIcon} label="Truck Plate" />
             )}
           </div>
         </div>
@@ -304,7 +332,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
         >
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16 }}
+            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
             onClick={() => setModal("trailer")}
           >
             {profile.trailerUnit ? (
@@ -324,12 +352,12 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
                 </div>
               </>
             ) : (
-              <EmptyTile icon="🚂" label="Trailer #" />
+              <EmptyTile icon={TrailerIcon} label="Trailer #" />
             )}
           </div>
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16 }}
+            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
             onClick={() => setModal("trailer")}
           >
             {profile.trailerPlate ? (
@@ -349,7 +377,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
                 </div>
               </>
             ) : (
-              <EmptyTile icon="🪪" label="Trailer Plate" />
+              <EmptyTile icon={LicensePlateIcon} label="Trailer Plate" />
             )}
           </div>
         </div>
@@ -364,7 +392,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
         >
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16 }}
+            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
             onClick={() => setModal("pay")}
           >
             <div className="label" style={{ marginBottom: 4 }}>
@@ -383,7 +411,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
           </div>
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16 }}
+            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
             onClick={() => setModal("pay")}
           >
             <div className="label" style={{ marginBottom: 4 }}>
@@ -406,7 +434,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
           </div>
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16 }}
+            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
             onClick={() => setModal("goal")}
           >
             {profile.goalType ? (
@@ -428,7 +456,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
                 </div>
               </>
             ) : (
-              <EmptyTile icon="🎯" label="Goal" />
+              <EmptyTile icon={GoalIcon} label="Goal" />
             )}
           </div>
         </div>
@@ -458,7 +486,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
               }}
             />
           ) : (
-            <EmptyTile icon="📄" label="CDL License Photo" />
+            <EmptyTile icon={CdlIcon} label="CDL License Photo" />
           )}
           <input
             ref={cdlRef}
@@ -495,7 +523,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
               }}
             />
           ) : (
-            <EmptyTile icon="🏥" label="Medical Card Photo" />
+            <EmptyTile icon={MedicalCardIcon} label="Medical Card Photo" />
           )}
           <input
             ref={medRef}
@@ -564,10 +592,17 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
 }
 
 /* ─── Empty tile ─── */
-function EmptyTile({ icon, label }) {
+function EmptyTile({ icon: Icon, label }) {
   return (
     <div style={{ textAlign: "center", width: "100%" }}>
-      <div style={{ fontSize: 24, marginBottom: 6 }}>{icon}</div>
+      <Icon
+        size={24}
+        style={{
+          display: "block",
+          margin: "0 auto 6px",
+          color: "var(--text-muted)",
+        }}
+      />
       <div className="label">{label}</div>
     </div>
   );
