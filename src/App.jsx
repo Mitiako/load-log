@@ -161,6 +161,13 @@ export default function App() {
     sessionStorage.setItem("selectedLoadIdx", i);
     goTo("detail");
   }
+  function handleGoToLoadFromAnalytics(tripIdx, loadIdx) {
+    setSelectedTripIdx(tripIdx);
+    setSelectedLoadIdx(loadIdx);
+    sessionStorage.setItem("selectedTripIdx", tripIdx);
+    sessionStorage.setItem("selectedLoadIdx", loadIdx);
+    goTo("detail");
+  }
   function handleAddLoad() {
     setSelectedLoadIdx(null);
     goTo("form");
@@ -294,6 +301,7 @@ export default function App() {
             trips={trips}
             theme={theme}
             onToggleTheme={toggleTheme}
+            onGoToLoad={handleGoToLoadFromAnalytics}
           />
         )}
         {screen === "profile" && (

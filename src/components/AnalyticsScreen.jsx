@@ -1,5 +1,5 @@
 // AnalyticsScreen.jsx
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -30,12 +30,30 @@ function formatWeekRange(start, end) {
   )}`;
 }
 
-export default function AnalyticsScreen({ user, trips, theme, onToggleTheme }) {
+export default function AnalyticsScreen({
+  user,
+  trips,
+  theme,
+  onToggleTheme,
+  onGoToLoad,
+}) {
   const data = useMemo(() => getAnalytics(trips), [trips]);
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDay, setSelectedDay] = useState(null);
   const [expanded, setExpanded] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [showBreakdownModal, setShowBreakdownModal] = useState(false);
+  const chartCardRef = useRef(null);
+
+  useEffect(() => {
+    function handleOutsideClick(e) {
+      if (chartCardRef.current && !chartCardRef.current.contains(e.target)) {
+        setSelectedDay(null);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     if (user?.uid) fetchProfile(user.uid).then(setProfile);
@@ -73,7 +91,6 @@ export default function AnalyticsScreen({ user, trips, theme, onToggleTheme }) {
   const fuelPct = splitTotal > 0 ? Math.round((s.fuel / splitTotal) * 100) : 0;
   const otherPct =
     splitTotal > 0 ? Math.round((s.otherExp / splitTotal) * 100) : 0;
-  const [showBreakdownModal, setShowBreakdownModal] = useState(false);
 
   return (
     <div style={{ minHeight: "100dvh", paddingBottom: 32 }}>
@@ -124,7 +141,11 @@ export default function AnalyticsScreen({ user, trips, theme, onToggleTheme }) {
           }}
         >
           {/* ── Week Navigator ── */}
-          <div className="glass" style={{ padding: "16px 16px 8px" }}>
+          <div
+            ref={chartCardRef}
+            className="glass"
+            style={{ padding: "16px 16px 8px" }}
+          >
             <div
               style={{
                 display: "flex",
@@ -227,18 +248,69 @@ export default function AnalyticsScreen({ user, trips, theme, onToggleTheme }) {
             </ResponsiveContainer>
 
             {selectedDay !== null && (
-              <div
-                style={{
-                  textAlign: "center",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 12,
-                  color: "var(--text-secondary)",
-                  paddingBottom: 12,
-                }}
-              >
-                {week.days[selectedDay].label}{" "}
-                {week.days[selectedDay].dateLabel} ·{" "}
-                {fmtMoney(week.days[selectedDay].net)}
+              <div style={{ paddingBottom: 8 }}>
+                {week.days[selectedDay].loads.length === 0 ? (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      color: "var(--text-muted)",
+                      padding: "8px 0 12px",
+                    }}
+                  >
+                    No loads on {week.days[selectedDay].label}{" "}
+                    {week.days[selectedDay].dateLabel}
+                  </div>
+                ) : (
+                  week.days[selectedDay].loads.map((l, i) => (
+                    <div
+                      key={i}
+                      onClick={() => onGoToLoad(l.tripIdx, l.loadIdx)}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "10px 4px",
+                        borderTop: "1px solid var(--border)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          fontSize: 13,
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        {l.from} → {l.to}
+                      </span>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: l.net >= 0 ? "var(--accent)" : "#f87171",
+                          }}
+                        >
+                          {fmtMoney(l.net)}
+                        </span>
+                        <span
+                          style={{ color: "var(--text-muted)", fontSize: 12 }}
+                        >
+                          →
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -595,107 +667,6 @@ function LegendRow({ color, label, pct }) {
   );
 }
 
-/* ─── Секція порівняння періоду ─── */
-function PeriodSection({ title, current, previous }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div className="glass" style={{ padding: 20, textAlign: "center" }}>
-        <div className="label" style={{ marginBottom: 6 }}>
-          {title} · Net
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 32,
-            letterSpacing: "-0.02em",
-            color: current.net >= 0 ? "var(--accent)" : "#f87171",
-          }}
-        >
-          {fmtMoney(current.net)}
-        </div>
-        <DeltaBadge value={pctChange(current.net, previous.net)} />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <StatTile
-          label="Gross"
-          value={fmtMoney(current.gross)}
-          delta={pctChange(current.gross, previous.gross)}
-        />
-        <StatTile
-          label="Expenses"
-          value={fmtMoney(current.expenses)}
-          delta={pctChange(current.expenses, previous.expenses)}
-          invertDelta
-        />
-        <StatTile
-          label="RPM"
-          value={`$${current.rpm.toFixed(2)}`}
-          delta={pctChange(current.rpm, previous.rpm)}
-        />
-        <StatTile
-          label="Profit Margin"
-          value={`${current.margin.toFixed(0)}%`}
-          delta={pctChange(current.margin, previous.margin)}
-        />
-      </div>
-    </div>
-  );
-}
-
-function StatTile({ label, value, delta, invertDelta = false }) {
-  return (
-    <div className="glass" style={{ padding: 16, textAlign: "center" }}>
-      <div className="label" style={{ marginBottom: 4 }}>
-        {label}
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontWeight: 700,
-          fontSize: 16,
-          color: "var(--text-primary)",
-          marginBottom: 4,
-        }}
-      >
-        {value}
-      </div>
-      <DeltaBadge value={delta} invert={invertDelta} small />
-    </div>
-  );
-}
-
-function DeltaBadge({ value, invert = false, small = false }) {
-  if (value === null) {
-    return (
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: small ? 10 : 11,
-          color: "var(--text-muted)",
-        }}
-      >
-        no prior data
-      </div>
-    );
-  }
-  const isGood = invert ? value <= 0 : value >= 0;
-  const sign = value > 0 ? "+" : "";
-  return (
-    <div
-      style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: small ? 10 : 11,
-        color: isGood ? "var(--accent)" : "#f87171",
-      }}
-    >
-      {sign}
-      {value.toFixed(0)}% vs prior
-    </div>
-  );
-}
-
 function BreakdownModal({
   summary,
   netPct,
@@ -900,6 +871,107 @@ function BreakdownLine({ color, label, value, pct }) {
           {pct}%
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── Секція порівняння періоду ─── */
+function PeriodSection({ title, current, previous }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="glass" style={{ padding: 20, textAlign: "center" }}>
+        <div className="label" style={{ marginBottom: 6 }}>
+          {title} · Net
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontWeight: 700,
+            fontSize: 32,
+            letterSpacing: "-0.02em",
+            color: current.net >= 0 ? "var(--accent)" : "#f87171",
+          }}
+        >
+          {fmtMoney(current.net)}
+        </div>
+        <DeltaBadge value={pctChange(current.net, previous.net)} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <StatTile
+          label="Gross"
+          value={fmtMoney(current.gross)}
+          delta={pctChange(current.gross, previous.gross)}
+        />
+        <StatTile
+          label="Expenses"
+          value={fmtMoney(current.expenses)}
+          delta={pctChange(current.expenses, previous.expenses)}
+          invertDelta
+        />
+        <StatTile
+          label="RPM"
+          value={`$${current.rpm.toFixed(2)}`}
+          delta={pctChange(current.rpm, previous.rpm)}
+        />
+        <StatTile
+          label="Profit Margin"
+          value={`${current.margin.toFixed(0)}%`}
+          delta={pctChange(current.margin, previous.margin)}
+        />
+      </div>
+    </div>
+  );
+}
+
+function StatTile({ label, value, delta, invertDelta = false }) {
+  return (
+    <div className="glass" style={{ padding: 16, textAlign: "center" }}>
+      <div className="label" style={{ marginBottom: 4 }}>
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          fontSize: 16,
+          color: "var(--text-primary)",
+          marginBottom: 4,
+        }}
+      >
+        {value}
+      </div>
+      <DeltaBadge value={delta} invert={invertDelta} small />
+    </div>
+  );
+}
+
+function DeltaBadge({ value, invert = false, small = false }) {
+  if (value === null) {
+    return (
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: small ? 10 : 11,
+          color: "var(--text-muted)",
+        }}
+      >
+        no prior data
+      </div>
+    );
+  }
+  const isGood = invert ? value <= 0 : value >= 0;
+  const sign = value > 0 ? "+" : "";
+  return (
+    <div
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: small ? 10 : 11,
+        color: isGood ? "var(--accent)" : "#f87171",
+      }}
+    >
+      {sign}
+      {value.toFixed(0)}% vs prior
     </div>
   );
 }

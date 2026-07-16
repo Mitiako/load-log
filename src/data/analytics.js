@@ -5,9 +5,11 @@
 import { calcLoad } from "./calc";
 
 export function flattenLoads(trips) {
-  return (trips || []).flatMap((trip) =>
-    (trip.loads || []).map((load) => ({
+  return (trips || []).flatMap((trip, tripIdx) =>
+    (trip.loads || []).map((load, loadIdx) => ({
       ...load,
+      tripIdx,
+      loadIdx,
       ...calcLoad(load),
     })),
   );
@@ -153,6 +155,13 @@ export function getWeekBreakdown(trips, weekOffset = 0) {
       label: date.toLocaleDateString("en-US", { weekday: "short" }),
       dateLabel: `${date.getMonth() + 1}/${date.getDate()}`,
       net: Math.round(summarize(dayLoads).net),
+      loads: dayLoads.map((l) => ({
+        tripIdx: l.tripIdx,
+        loadIdx: l.loadIdx,
+        from: l.from,
+        to: l.to,
+        net: l.net,
+      })),
     };
   });
 

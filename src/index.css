@@ -327,3 +327,8 @@ a:hover {
         break-before: page;
     }
 }
+
+.recharts-surface:focus:not(:focus-visible),
+.recharts-wrapper:focus:not(:focus-visible) {
+    outline: none;
+}
