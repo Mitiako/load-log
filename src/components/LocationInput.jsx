@@ -38,8 +38,10 @@ export default function LocationInput({ label, value, onChange, placeholder }) {
   }
 
   return (
-    <div ref={ref} className="relative">
-      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+    <div ref={ref} style={{ position: "relative" }}>
+      <div className="label" style={{ marginBottom: 6 }}>
+        {label}
+      </div>
       <input
         type="text"
         value={value}
@@ -55,15 +57,52 @@ export default function LocationInput({ label, value, onChange, placeholder }) {
           }
         }}
         placeholder={placeholder}
-        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-gray-500"
+        className="input"
+        style={{ fontSize: 14, padding: "10px 12px" }}
       />
       {show && (
-        <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg overflow-hidden shadow-lg">
+        <div
+          style={{
+            position: "absolute",
+            zIndex: 50,
+            width: "100%",
+            marginTop: 4,
+            background: "var(--bg-elevated)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-btn)",
+            overflow: "hidden",
+            boxShadow: "var(--glass-shadow)",
+          }}
+        >
           {suggestions.slice(0, 5).map((loc, i) => (
             <button
               key={i}
               onClick={() => handleSelect(loc)}
-              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 border-b border-gray-700 last:border-0"
+              style={{
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                padding: "10px 12px",
+                fontFamily: "var(--font-sans)",
+                fontSize: 13,
+                color: "var(--text-secondary)",
+                background: "transparent",
+                border: "none",
+                borderBottom:
+                  i < suggestions.slice(0, 5).length - 1
+                    ? "1px solid var(--border)"
+                    : "none",
+                cursor: "pointer",
+                transition: "background var(--transition)",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "var(--accent-subtle)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "transparent")
+              }
             >
               {loc}
             </button>
