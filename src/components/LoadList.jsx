@@ -108,7 +108,7 @@ export default function LoadList({
       )}
 
       {/* List */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 140px" }}>
         {loadCount === 0 ? (
           <div
             style={{
@@ -139,16 +139,20 @@ export default function LoadList({
         )}
       </div>
 
-      {/* Footer */}
+      {/* Floating кнопки */}
       <div
-        className="glass-bar"
         style={{
-          padding: "12px 16px 32px",
-          borderTop: "1px solid var(--border)",
+          position: "fixed",
+          bottom: 24,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "100%",
+          maxWidth: 480,
+          padding: "0 16px",
           display: "flex",
           flexDirection: "column",
           gap: 8,
-          flexShrink: 0,
+          zIndex: 99,
         }}
       >
         <button
