@@ -11,8 +11,13 @@ import {
   Pie,
 } from "recharts";
 import Header from "./Header";
-import { fetchProfile } from "../data/firestore";
-import { getAnalytics, getWeekBreakdown, pctChange } from "../data/analytics";
+import { fetchProfile, saveProfile } from "../data/firestore";
+import {
+  getAnalytics,
+  getWeekBreakdown,
+  pctChange,
+  getRecentActiveWeeksAverage,
+} from "../data/analytics";
 import { fmtMoney } from "../data/calc";
 
 const SPLIT_COLORS = {
@@ -21,6 +26,46 @@ const SPLIT_COLORS = {
   fuel: "#5B8C87",
   other: "#8B6F8E",
 };
+
+function BreakEvenIcon({ size = 22, ...rest }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...rest}
+    >
+      <rect width="20" height="14" x="2" y="5" rx="2" />
+      <path d="M6 15l4-4 3 3 5-5" />
+      <line x1="6" x2="18" y1="12" y2="12" strokeDasharray="2 2" />
+    </svg>
+  );
+}
+
+function InfoIcon({ size = 12, ...rest }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...rest}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="11" />
+      <circle cx="12" cy="8" r="0.5" fill="currentColor" />
+    </svg>
+  );
+}
 
 function formatWeekRange(start, end) {
   const opts = { month: "short", day: "numeric" };
@@ -43,6 +88,8 @@ export default function AnalyticsScreen({
   const [expanded, setExpanded] = useState(null);
   const [profile, setProfile] = useState(null);
   const [showBreakdownModal, setShowBreakdownModal] = useState(false);
+  const [showBreakEvenModal, setShowBreakEvenModal] = useState(false);
+  const [showBreakEvenInfo, setShowBreakEvenInfo] = useState(false);
   const chartCardRef = useRef(null);
 
   useEffect(() => {
@@ -88,6 +135,24 @@ export default function AnalyticsScreen({
   const otherPct =
     splitTotal > 0 ? Math.round((s.otherExp / splitTotal) * 100) : 0;
 
+  const recentAvg = useMemo(
+    () => getRecentActiveWeeksAverage(trips, 4),
+    [trips],
+  );
+  const fixedWeekly = useMemo(() => {
+    const items = profile?.beCostItems || [];
+    const monthly = items.reduce(
+      (sum, it) => sum + (Number(it.amount) || 0),
+      0,
+    );
+    return monthly / (52 / 12);
+  }, [profile]);
+  const suggestedBreakEvenRpm =
+    recentAvg && recentAvg.avgMiles > 0
+      ? (fixedWeekly + recentAvg.avgFuel + recentAvg.avgOtherExp) /
+        recentAvg.avgMiles
+      : null;
+
   return (
     <div style={{ minHeight: "100dvh", paddingBottom: 32 }}>
       <Header
@@ -109,6 +174,99 @@ export default function AnalyticsScreen({
           </button>
         }
       />
+
+      <div style={{ padding: "12px 16px 0" }}>
+        <div
+          className="glass"
+          style={{
+            padding: "16px 20px",
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+          }}
+        >
+          <div
+            onClick={() => setShowBreakEvenModal(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              flex: 1,
+              cursor: "pointer",
+            }}
+          >
+            <BreakEvenIcon
+              size={22}
+              style={{ color: "var(--accent)", flexShrink: 0 }}
+            />
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "var(--text-primary)",
+                }}
+              >
+                Break-Even Rate (Net $/mi)
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 12,
+                  color: "var(--text-muted)",
+                  marginTop: 2,
+                }}
+              >
+                Your net share needs to clear this to be profitable
+              </div>
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                fontSize: 20,
+                color: "var(--accent)",
+                flexShrink: 0,
+              }}
+            >
+              {suggestedBreakEvenRpm !== null
+                ? `$${suggestedBreakEvenRpm.toFixed(2)}`
+                : "—"}
+            </div>
+          </div>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowBreakEvenInfo(true);
+            }}
+            style={{
+              position: "absolute",
+              top: 5,
+              right: 7,
+              background: "none",
+              border: "1px solid var(--border)",
+              borderRadius: 99,
+              width: 18,
+              height: 18,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            <InfoIcon size={11} />
+          </button>
+        </div>
+      </div>
+
+      {showBreakEvenInfo && (
+        <BreakEvenInfoModal onClose={() => setShowBreakEvenInfo(false)} />
+      )}
 
       {!data.hasData ? (
         <div
@@ -537,12 +695,23 @@ export default function AnalyticsScreen({
           </div>
 
           {/* ── Порівняння This Month vs Last Month ── */}
+          {/* ── Порівняння This Month vs Last Month ── */}
           <PeriodSection
             title="This Month"
             current={data.thisMonth}
             previous={data.lastMonth}
           />
         </div>
+      )}
+
+      {showBreakEvenModal && (
+        <BreakEvenModal
+          user={user}
+          trips={trips}
+          profile={profile}
+          onProfileSaved={setProfile}
+          onClose={() => setShowBreakEvenModal(false)}
+        />
       )}
     </div>
   );
@@ -1000,6 +1169,482 @@ function DeltaBadge({ value, invert = false, small = false }) {
     >
       {sign}
       {value.toFixed(0)}% vs prior
+    </div>
+  );
+}
+
+function BreakEvenModal({ user, trips, profile, onProfileSaved, onClose }) {
+  const recent = useMemo(() => getRecentActiveWeeksAverage(trips, 4), [trips]);
+
+  const [costItems, setCostItems] = useState(
+    profile?.beCostItems?.length
+      ? profile.beCostItems
+      : [{ id: 1, name: "", amount: "" }],
+  );
+  const [editingFixedCosts, setEditingFixedCosts] = useState(
+    !profile?.beCostItems?.length,
+  );
+  const [saving, setSaving] = useState(false);
+
+  function updateCostItem(id, field, value) {
+    setCostItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
+  }
+
+  function addCostItem() {
+    setCostItems((prev) => [...prev, { id: Date.now(), name: "", amount: "" }]);
+  }
+
+  function removeCostItem(id) {
+    setCostItems((prev) => prev.filter((item) => item.id !== id));
+  }
+
+  const WEEKS_PER_MONTH = 52 / 12;
+  const fcMonthly = costItems.reduce(
+    (s, item) => s + (Number(item.amount) || 0),
+    0,
+  );
+  const fc = fcMonthly / WEEKS_PER_MONTH;
+  const avgFuel = recent?.avgFuel || 0;
+  const avgOther = recent?.avgOtherExp || 0;
+  const avgMiles = recent?.avgMiles || 0;
+
+  const totalCostWeek = fc + avgFuel + avgOther;
+  const suggestedRpm = avgMiles > 0 ? totalCostWeek / avgMiles : 0;
+
+  async function handleSaveFixedCosts() {
+    setSaving(true);
+    const updated = { ...profile, beCostItems: costItems };
+    await saveProfile(user.uid, updated);
+    onProfileSaved(updated);
+    setSaving(false);
+    setEditingFixedCosts(false);
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.5)",
+        backdropFilter: "blur(4px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          maxHeight: "90dvh",
+          overflowY: "auto",
+          background: "var(--bg-elevated)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          borderRadius: "20px 20px 0 0",
+          border: "1px solid var(--border)",
+          padding: "24px 20px 40px",
+          boxShadow: "var(--glass-shadow)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 17,
+            color: "var(--text-primary)",
+            marginBottom: 4,
+          }}
+        >
+          Break-Even Calculator
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
+            color: "var(--text-muted)",
+            marginBottom: 12,
+          }}
+        >
+          The minimum $/mile you need to cover costs
+        </div>
+
+        {/* Методологічна підказка */}
+        <div
+          style={{
+            background: "rgba(255,138,61,0.1)",
+            border: "1px solid rgba(255,138,61,0.25)",
+            borderRadius: "var(--radius-btn)",
+            padding: "10px 12px",
+            marginBottom: 20,
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
+            color: "var(--accent)",
+            lineHeight: 1.4,
+          }}
+        >
+          {recent
+            ? `Based on your average costs over your last ${recent.weeksUsed} active week${recent.weeksUsed > 1 ? "s" : ""}.`
+            : "No recent load data found yet — log a few loads to get a suggested rate."}
+        </div>
+
+        {/* Fixed Costs */}
+        <div className="glass" style={{ padding: 16, marginBottom: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: editingFixedCosts ? 4 : 8,
+            }}
+          >
+            <div className="label">Fixed Costs / Month</div>
+            {!editingFixedCosts && (
+              <button
+                onClick={() => setEditingFixedCosts(true)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--accent)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                Edit
+              </button>
+            )}
+          </div>
+
+          {editingFixedCosts ? (
+            <>
+              <div
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  marginBottom: 8,
+                }}
+              >
+                Truck payment, insurance, ELD, permits — enter your{" "}
+                <strong>monthly</strong> amounts, they carry over month to month
+                so you only set them up once.
+              </div>
+              {costItems.map((item, i) => (
+                <div
+                  key={item.id}
+                  style={{ display: "flex", gap: 8, marginBottom: 8 }}
+                >
+                  <input
+                    type="text"
+                    value={item.name}
+                    placeholder={
+                      i === 0 ? "e.g. Truck Payment" : "e.g. Insurance"
+                    }
+                    onChange={(e) =>
+                      updateCostItem(item.id, "name", e.target.value)
+                    }
+                    className="input"
+                    style={{ fontSize: 13, padding: "10px 12px", flex: 1.4 }}
+                  />
+                  <input
+                    type="number"
+                    value={item.amount}
+                    placeholder="$"
+                    onChange={(e) =>
+                      updateCostItem(item.id, "amount", e.target.value)
+                    }
+                    className="input"
+                    style={{ fontSize: 13, padding: "10px 12px", flex: 1 }}
+                  />
+                  {costItems.length > 1 && (
+                    <button
+                      onClick={() => removeCostItem(item.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        fontSize: 16,
+                        cursor: "pointer",
+                        padding: "0 6px",
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={addCostItem}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--accent)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  padding: 0,
+                  marginBottom: 12,
+                }}
+              >
+                + Add one more
+              </button>
+              <button
+                onClick={handleSaveFixedCosts}
+                className="btn-primary"
+                style={{ width: "100%", fontSize: 14 }}
+                disabled={saving}
+              >
+                {saving ? "Saving..." : "Save Fixed Costs"}
+              </button>
+            </>
+          ) : (
+            <>
+              {costItems
+                .filter((item) => item.name || item.amount)
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "4px 0",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontSize: 13,
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {item.name || "Untitled"}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 13,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {fmtMoney(Number(item.amount) || 0)}
+                    </span>
+                  </div>
+                ))}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "8px 0 0",
+                  marginTop: 6,
+                  borderTop: "1px solid var(--border)",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  Total ({fmtMoney(fcMonthly)}/mo)
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {fmtMoney(fc)}/wk
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Recent Averages */}
+        {recent && (
+          <div className="glass" style={{ padding: 16, marginBottom: 10 }}>
+            <div className="label" style={{ marginBottom: 8 }}>
+              Recent Averages ({recent.weeksUsed}-week)
+            </div>
+            <SubRow label="Fuel" value={`${fmtMoney(avgFuel)}/wk`} />
+            <SubRow label="Other Expenses" value={`${fmtMoney(avgOther)}/wk`} />
+            <SubRow label="Miles" value={`${Math.round(avgMiles)}/wk`} />
+          </div>
+        )}
+
+        {/* Suggested RPM */}
+        <div
+          className="glass"
+          style={{ padding: 20, textAlign: "center", marginTop: 6 }}
+        >
+          <div className="label" style={{ marginBottom: 6 }}>
+            Suggested Break-Even Rate (Net $/mi)
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 30,
+              color: "var(--accent)",
+              marginBottom: 12,
+            }}
+          >
+            ${suggestedRpm.toFixed(2)}/mi
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--text-muted)",
+            }}
+          >
+            Total Cost: {fmtMoney(totalCostWeek)}/wk
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BreakEvenInfoModal({ onClose }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 210,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.5)",
+        backdropFilter: "blur(4px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          maxHeight: "80dvh",
+          overflowY: "auto",
+          background: "var(--bg-elevated)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          borderRadius: "20px 20px 0 0",
+          border: "1px solid var(--border)",
+          padding: "24px 20px 40px",
+          boxShadow: "var(--glass-shadow)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 17,
+            color: "var(--text-primary)",
+            marginBottom: 16,
+          }}
+        >
+          How this is calculated
+        </div>
+
+        <InfoStep
+          num="1"
+          title="Fixed Costs"
+          text="The total of the rows you entered (Truck Payment, Insurance, ELD, etc.) — saved to your profile, carries over every week."
+        />
+        <InfoStep
+          num="2"
+          title="Fuel"
+          text="Real fuel spend (amount minus discount) from your logged diesel entries, averaged over your last 4 active weeks."
+        />
+        <InfoStep
+          num="3"
+          title="Other Expenses"
+          text="Real amounts from Other Expenses on your loads, averaged over the same period."
+        />
+        <InfoStep
+          num="4"
+          title="Miles"
+          text="Real mileage (loaded + deadhead) from those same weeks, averaged."
+        />
+        <InfoStep
+          num="5"
+          title="Suggested Rate"
+          text="(Fixed Costs + Avg Fuel + Avg Other Expenses) ÷ Avg Miles — this is your NET break-even rate, not the gross rate a broker offers."
+          last
+        />
+      </div>
+    </div>
+  );
+}
+
+function InfoStep({ num, title, text, last = false }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 12,
+        paddingBottom: 14,
+        marginBottom: last ? 0 : 14,
+        borderBottom: last ? "none" : "1px solid var(--border)",
+      }}
+    >
+      <div
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 99,
+          background: "var(--accent)",
+          color: "#100F0C",
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          fontSize: 12,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        {num}
+      </div>
+      <div>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 13,
+            color: "var(--text-primary)",
+            marginBottom: 3,
+          }}
+        >
+          {title}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
+            color: "var(--text-muted)",
+            lineHeight: 1.5,
+          }}
+        >
+          {text}
+        </div>
+      </div>
     </div>
   );
 }

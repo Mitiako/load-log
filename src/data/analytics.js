@@ -180,3 +180,46 @@ export function getWeekBreakdown(trips, weekOffset = 0) {
     otherExpenseItems,
   };
 }
+
+// Середні Fuel/Other/Miles за останні N АКТИВНИХ тижнів (тільки ті, де були лоуди),
+// а не просто останні N календарних тижнів — щоб не рахувати порожні тижні простою.
+export function getRecentActiveWeeksAverage(
+  trips,
+  weeksNeeded = 4,
+  maxLookback = 26,
+) {
+  const loads = flattenLoads(trips).filter((l) => l.date);
+  const now = new Date();
+  const currentWeekStart = startOfWeek(now);
+
+  const found = [];
+  for (let i = 1; i <= maxLookback && found.length < weeksNeeded; i++) {
+    const weekStart = addDays(currentWeekStart, -i * 7);
+    const weekEnd = addDays(weekStart, 7);
+    const weekLoads = loads.filter((l) => {
+      const d = parseLoadDate(l.date);
+      return d && d >= weekStart && d < weekEnd;
+    });
+    if (weekLoads.length > 0) {
+      found.push(summarize(weekLoads));
+    }
+  }
+
+  if (found.length === 0) return null;
+
+  const totals = found.reduce(
+    (acc, w) => ({
+      fuel: acc.fuel + w.fuel,
+      otherExp: acc.otherExp + w.otherExp,
+      miles: acc.miles + w.miles,
+    }),
+    { fuel: 0, otherExp: 0, miles: 0 },
+  );
+
+  return {
+    weeksUsed: found.length,
+    avgFuel: totals.fuel / found.length,
+    avgOtherExp: totals.otherExp / found.length,
+    avgMiles: totals.miles / found.length,
+  };
+}
