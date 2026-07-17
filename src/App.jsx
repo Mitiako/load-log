@@ -245,6 +245,7 @@ export default function App() {
             onLogout={handleLogout}
             theme={theme}
             onToggleTheme={toggleTheme}
+            onOpenSettings={() => goTo("settings")}
           />
         )}
         {screen === "tripForm" && (
@@ -304,6 +305,7 @@ export default function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
             onGoToLoad={handleGoToLoadFromAnalytics}
+            onOpenSettings={() => goTo("settings")}
           />
         )}
         {screen === "profile" && (

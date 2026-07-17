@@ -85,6 +85,9 @@ html[data-theme="light"] {
 }
 
 /* ─── Backgrounds via ::before ──────────────────────────── */
+/* transform: translateZ(0) примусово переносить фон на власний
+   GPU-шар — це прибирає мікро-дрижання під час скролу на мобільних
+   браузерах (типова проблема position:fixed + важкий blur-фільтр) */
 html:not([data-theme="light"])::before {
     content: '';
     position: fixed;
@@ -95,6 +98,9 @@ html:not([data-theme="light"])::before {
     background-repeat: no-repeat;
     filter: blur(10px) brightness(0.8) grayscale(0.45);
     z-index: -1;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
 }
 
 html[data-theme="light"]::before {
@@ -107,6 +113,9 @@ html[data-theme="light"]::before {
     background-repeat: no-repeat;
     filter: blur(4px) grayscale(0.45);
     z-index: -1;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
 }
 
 /* ─── Body ──────────────────────────────────────────────── */

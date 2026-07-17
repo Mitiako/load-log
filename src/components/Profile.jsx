@@ -1,6 +1,7 @@
 // Profile.jsx
 import { useState, useEffect, useRef } from "react";
 import { fetchProfile, saveProfile } from "../data/firestore";
+import { useLockBodyScroll } from "../hooks/useLockBodyScroll";
 import Header from "./Header";
 import {
   DriverIcon,
@@ -53,7 +54,17 @@ export default function Profile({
 
   useEffect(() => {
     fetchProfile(user.uid).then((data) => {
-      if (data) setProfile((prev) => ({ ...prev, ...data }));
+      if (data) {
+        // Не даємо порожнім полям з бази затерти хороші початкові
+        // значення (наприклад ім'я/email з Google-акаунту) —
+        // перезаписуємо тільки те, що в базі реально заповнено.
+        const nonEmpty = Object.fromEntries(
+          Object.entries(data).filter(
+            ([, v]) => v !== "" && v !== null && v !== undefined,
+          ),
+        );
+        setProfile((prev) => ({ ...prev, ...nonEmpty }));
+      }
     });
   }, [user.uid]);
 
@@ -787,6 +798,7 @@ function EmptyTile({ icon: Icon, label }) {
 
 /* ─── Modal wrapper ─── */
 function Modal({ children, onClose, saving }) {
+  useLockBodyScroll();
   return (
     <div
       style={{

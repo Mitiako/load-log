@@ -11,7 +11,9 @@ import {
   Pie,
 } from "recharts";
 import Header from "./Header";
+import { SettingsIcon } from "./icons/ProfileIcons";
 import { fetchProfile, saveProfile } from "../data/firestore";
+import { useLockBodyScroll } from "../hooks/useLockBodyScroll";
 import {
   getAnalytics,
   getWeekBreakdown,
@@ -81,6 +83,7 @@ export default function AnalyticsScreen({
   theme,
   onToggleTheme,
   onGoToLoad,
+  onOpenSettings,
 }) {
   const data = useMemo(() => getAnalytics(trips), [trips]);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -158,20 +161,41 @@ export default function AnalyticsScreen({
       <Header
         title="Analytics"
         right={
-          <button
-            onClick={onToggleTheme}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 18,
-              lineHeight: 1,
-              padding: "4px",
-              color: "var(--text-muted)",
-            }}
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              onClick={onOpenSettings}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                color: "var(--text-muted)",
+                display: "flex",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "var(--accent)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "var(--text-muted)")
+              }
+            >
+              <SettingsIcon size={18} />
+            </button>
+            <button
+              onClick={onToggleTheme}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 18,
+                lineHeight: 1,
+                padding: "4px",
+                color: "var(--text-muted)",
+              }}
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+          </div>
         }
       />
 
@@ -873,6 +897,7 @@ function BreakdownModal({
   otherExpenseItems,
   onClose,
 }) {
+  useLockBodyScroll();
   return (
     <div
       style={{
@@ -1174,6 +1199,7 @@ function DeltaBadge({ value, invert = false, small = false }) {
 }
 
 function BreakEvenModal({ user, trips, profile, onProfileSaved, onClose }) {
+  useLockBodyScroll();
   const recent = useMemo(() => getRecentActiveWeeksAverage(trips, 4), [trips]);
 
   const [costItems, setCostItems] = useState(
@@ -1520,6 +1546,7 @@ function BreakEvenModal({ user, trips, profile, onProfileSaved, onClose }) {
 }
 
 function BreakEvenInfoModal({ onClose }) {
+  useLockBodyScroll();
   return (
     <div
       style={{

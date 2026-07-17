@@ -1,6 +1,7 @@
 // TripList.jsx
 import TripCard from "./TripCard";
 import Header from "./Header";
+import { SettingsIcon } from "./icons/ProfileIcons";
 
 export default function TripList({
   trips,
@@ -11,6 +12,7 @@ export default function TripList({
   onLogout,
   theme,
   onToggleTheme,
+  onOpenSettings,
 }) {
   return (
     <div style={{ minHeight: "100dvh", background: "transparent" }}>
@@ -48,6 +50,25 @@ export default function TripList({
         }
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              onClick={onOpenSettings}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                color: "var(--text-muted)",
+                display: "flex",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "var(--accent)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "var(--text-muted)")
+              }
+            >
+              <SettingsIcon size={18} />
+            </button>
             <button
               onClick={onToggleTheme}
               style={{
