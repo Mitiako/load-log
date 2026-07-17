@@ -71,12 +71,8 @@ export default function AnalyticsScreen({
     goalDailyTarget = Number(profile.goalVal) / 7;
   }
 
-  function handleBarClick(e) {
-    if (e && e.activeTooltipIndex !== undefined) {
-      setSelectedDay((prev) =>
-        prev === e.activeTooltipIndex ? null : e.activeTooltipIndex,
-      );
-    }
+  function handleDayClick(index) {
+    setSelectedDay((prev) => (prev === index ? null : index));
   }
 
   function toggle(section) {
@@ -203,49 +199,75 @@ export default function AnalyticsScreen({
               {fmtMoney(s.net)}
             </div>
 
-            <ResponsiveContainer width="100%" height={130}>
-              <BarChart data={week.days} onClick={handleBarClick}>
-                {goalDailyTarget > 0 && (
-                  <ReferenceLine
-                    y={goalDailyTarget}
-                    stroke="var(--accent)"
-                    strokeDasharray="4 4"
-                    strokeOpacity={0.6}
-                    label={{
-                      value: `Goal ${fmtMoney(goalDailyTarget)}/day`,
-                      position: "insideTopLeft",
-                      fill: "var(--text-muted)",
+            <div style={{ position: "relative" }}>
+              <ResponsiveContainer width="100%" height={130}>
+                <BarChart data={week.days}>
+                  {goalDailyTarget > 0 && (
+                    <ReferenceLine
+                      y={goalDailyTarget}
+                      stroke="var(--accent)"
+                      strokeDasharray="4 4"
+                      strokeOpacity={0.6}
+                      label={{
+                        value: `Goal ${fmtMoney(goalDailyTarget)}/day`,
+                        position: "insideTopLeft",
+                        fill: "var(--text-muted)",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 10,
+                      }}
+                    />
+                  )}
+                  <XAxis
+                    dataKey="label"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
                       fontFamily: "var(--font-mono)",
                       fontSize: 10,
+                      fill: "var(--text-muted)",
                     }}
                   />
-                )}
-                <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    fill: "var(--text-muted)",
-                  }}
-                />
-                <Bar dataKey="net" radius={[4, 4, 0, 0]}>
-                  {week.days.map((entry, i) => {
-                    const dimmed = selectedDay !== null && selectedDay !== i;
-                    const color = entry.net >= 0 ? "var(--accent)" : "#f87171";
-                    return (
-                      <Cell
-                        key={i}
-                        fill={color}
-                        fillOpacity={dimmed ? 0.25 : 1}
-                        cursor="pointer"
-                      />
-                    );
-                  })}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                  <Bar dataKey="net" radius={[4, 4, 0, 0]}>
+                    {week.days.map((entry, i) => {
+                      const dimmed = selectedDay !== null && selectedDay !== i;
+                      const color =
+                        entry.net >= 0 ? "var(--accent)" : "#f87171";
+                      return (
+                        <Cell
+                          key={i}
+                          fill={color}
+                          fillOpacity={dimmed ? 0.25 : 1}
+                        />
+                      );
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+
+              {/* Прозорий шар кнопок поверх графіка — обходить глюки тач-кліків recharts */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                }}
+              >
+                {week.days.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleDayClick(i)}
+                    style={{
+                      flex: 1,
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                    }}
+                    aria-label={`Select ${week.days[i].label}`}
+                  />
+                ))}
+              </div>
+            </div>
 
             {selectedDay !== null && (
               <div style={{ paddingBottom: 8 }}>
@@ -497,12 +519,18 @@ export default function AnalyticsScreen({
                   }}
                 />
                 <Bar dataKey="net" radius={[4, 4, 0, 0]}>
-                  {data.weeklyChart.map((entry, i) => (
-                    <Cell
-                      key={i}
-                      fill={entry.net >= 0 ? "var(--accent)" : "#f87171"}
-                    />
-                  ))}
+                  {week.days.map((entry, i) => {
+                    const dimmed = selectedDay !== null && selectedDay !== i;
+                    const color = entry.net >= 0 ? "var(--accent)" : "#f87171";
+                    return (
+                      <Cell
+                        key={i}
+                        fill={color}
+                        fillOpacity={dimmed ? 0.25 : 1}
+                        cursor="pointer"
+                      />
+                    );
+                  })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
