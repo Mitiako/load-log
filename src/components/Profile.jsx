@@ -38,12 +38,16 @@ export default function Profile({
     payVal: "87",
     goalType: "",
     goalVal: "",
+    truckPhoto: null,
+    trailerPhoto: null,
     cdlPhoto: null,
     medPhoto: null,
   });
 
   const [modal, setModal] = useState(null); // який тайл відкритий
   const [saving, setSaving] = useState(false);
+  const truckPhotoRef = useRef(null);
+  const trailerPhotoRef = useRef(null);
   const cdlRef = useRef(null);
   const medRef = useRef(null);
 
@@ -308,53 +312,112 @@ export default function Profile({
         >
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
+            style={{ ...tileStyle, padding: 16 }}
             onClick={() => setModal("truck")}
           >
-            {profile.truckUnit ? (
+            {profile.truckUnit || profile.truckPlate ? (
               <>
-                <div className="label" style={{ marginBottom: 4 }}>
-                  Truck #
-                </div>
                 <div
                   style={{
-                    fontFamily: "var(--font-sans)",
-                    fontWeight: 600,
-                    fontSize: 15,
-                    color: "var(--text-primary)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 8,
                   }}
                 >
-                  {profile.truckUnit}
+                  <TruckIcon
+                    size={16}
+                    style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {profile.truckUnit || "—"}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <LicensePlateIcon
+                    size={16}
+                    style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {profile.truckPlate || "—"}
+                  </span>
                 </div>
               </>
             ) : (
-              <EmptyTile icon={TruckIcon} label="Truck #" />
+              <EmptyTile icon={TruckIcon} label="Truck # · Plate" />
             )}
           </div>
+
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
-            onClick={() => setModal("truck")}
+            style={{
+              ...tileStyle,
+              minHeight: 100,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+            }}
+            onClick={() => handlePhotoCapture("truckPhoto", truckPhotoRef)}
           >
-            {profile.truckPlate ? (
+            {profile.truckPhoto ? (
               <>
-                <div className="label" style={{ marginBottom: 4 }}>
-                  Lic Plate
-                </div>
-                <div
+                <img
+                  src={profile.truckPhoto}
+                  alt="Truck"
                   style={{
-                    fontFamily: "var(--font-sans)",
-                    fontWeight: 600,
-                    fontSize: 15,
-                    color: "var(--text-primary)",
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "var(--radius-card)",
+                    objectFit: "cover",
+                  }}
+                />
+                <button
+                  onClick={(e) => handlePhotoRemove("truckPhoto", e)}
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    width: 26,
+                    height: 26,
+                    borderRadius: 99,
+                    border: "none",
+                    background: "rgba(0,0,0,0.55)",
+                    backdropFilter: "blur(4px)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
                   }}
                 >
-                  {profile.truckPlate}
-                </div>
+                  <CloseIcon size={13} style={{ color: "#fff" }} />
+                </button>
               </>
             ) : (
-              <EmptyTile icon={LicensePlateIcon} label="Truck Plate" />
+              <EmptyTile icon={TruckIcon} label="Truck Photo" />
             )}
+            <input
+              ref={truckPhotoRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={(e) => handlePhotoChange("truckPhoto", e)}
+            />
           </div>
         </div>
         {/* Trailer */}
@@ -363,60 +426,119 @@ export default function Profile({
         >
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
+            style={{ ...tileStyle, padding: 16 }}
             onClick={() => setModal("trailer")}
           >
-            {profile.trailerUnit ? (
+            {profile.trailerUnit || profile.trailerPlate ? (
               <>
-                <div className="label" style={{ marginBottom: 4 }}>
-                  Trailer #
-                </div>
                 <div
                   style={{
-                    fontFamily: "var(--font-sans)",
-                    fontWeight: 600,
-                    fontSize: 15,
-                    color: "var(--text-primary)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 8,
                   }}
                 >
-                  {profile.trailerUnit}
+                  <TrailerIcon
+                    size={16}
+                    style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {profile.trailerUnit || "—"}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <LicensePlateIcon
+                    size={16}
+                    style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {profile.trailerPlate || "—"}
+                  </span>
                 </div>
               </>
             ) : (
-              <EmptyTile icon={TrailerIcon} label="Trailer #" />
+              <EmptyTile icon={TrailerIcon} label="Trailer # · Plate" />
             )}
           </div>
+
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
-            onClick={() => setModal("trailer")}
+            style={{
+              ...tileStyle,
+              minHeight: 100,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+            }}
+            onClick={() => handlePhotoCapture("trailerPhoto", trailerPhotoRef)}
           >
-            {profile.trailerPlate ? (
+            {profile.trailerPhoto ? (
               <>
-                <div className="label" style={{ marginBottom: 4 }}>
-                  Lic Plate
-                </div>
-                <div
+                <img
+                  src={profile.trailerPhoto}
+                  alt="Trailer"
                   style={{
-                    fontFamily: "var(--font-sans)",
-                    fontWeight: 600,
-                    fontSize: 15,
-                    color: "var(--text-primary)",
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "var(--radius-card)",
+                    objectFit: "cover",
+                  }}
+                />
+                <button
+                  onClick={(e) => handlePhotoRemove("trailerPhoto", e)}
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    width: 26,
+                    height: 26,
+                    borderRadius: 99,
+                    border: "none",
+                    background: "rgba(0,0,0,0.55)",
+                    backdropFilter: "blur(4px)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
                   }}
                 >
-                  {profile.trailerPlate}
-                </div>
+                  <CloseIcon size={13} style={{ color: "#fff" }} />
+                </button>
               </>
             ) : (
-              <EmptyTile icon={LicensePlateIcon} label="Trailer Plate" />
+              <EmptyTile icon={TrailerIcon} label="Trailer Photo" />
             )}
+            <input
+              ref={trailerPhotoRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={(e) => handlePhotoChange("trailerPhoto", e)}
+            />
           </div>
         </div>
         {/* Pay + Goal */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
+            gridTemplateColumns: "1fr 1fr",
             gap: 10,
           }}
         >
@@ -426,39 +548,20 @@ export default function Profile({
             onClick={() => setModal("pay")}
           >
             <div className="label" style={{ marginBottom: 4 }}>
-              Pay Mode
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 600,
-                fontSize: 13,
-                color: "var(--accent)",
-              }}
-            >
-              {profile.payMode === "pct" ? "% Gross" : "¢/Mile"}
-            </div>
-          </div>
-          <div
-            className="glass"
-            style={{ ...tileStyle, padding: 16, textAlign: "center" }}
-            onClick={() => setModal("pay")}
-          >
-            <div className="label" style={{ marginBottom: 4 }}>
-              Pay Val
+              Pay Rate
             </div>
             <div
               style={{
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 15,
-                color: "var(--text-primary)",
+                fontSize: 16,
+                color: "var(--accent)",
               }}
             >
               {profile.payVal
                 ? profile.payMode === "pct"
-                  ? `${profile.payVal}%`
-                  : `${profile.payVal}¢`
+                  ? `${profile.payVal}% of Gross`
+                  : `${profile.payVal}¢/Mile`
                 : "—"}
             </div>
           </div>
@@ -476,7 +579,7 @@ export default function Profile({
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontWeight: 700,
-                    fontSize: 14,
+                    fontSize: 16,
                     color: "var(--accent)",
                   }}
                 >
