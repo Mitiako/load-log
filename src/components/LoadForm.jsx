@@ -1,11 +1,12 @@
 // LoadForm.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
+import { fetchProfile } from "../data/firestore";
 import LocationInput from "./LocationInput";
 import Header from "./Header";
 
-export default function LoadForm({ load, onSave, onBack }) {
+export default function LoadForm({ load, onSave, onBack, user }) {
   const settings = getSettings();
 
   const [from, setFrom] = useState(load?.from || "");
@@ -21,6 +22,20 @@ export default function LoadForm({ load, onSave, onBack }) {
     load?.payMode || settings.payMode || "pct",
   );
   const [payVal, setPayVal] = useState(load?.payVal || settings.payVal || "");
+
+  // Для нового лоуда поля Pay Mode/Val підставляються з Profile.
+  // Показуємо це драйверу явно — щоб не заповнював лоуд застарілими
+  // даними мовчки, якщо забув оновити Profile.
+  const [payAutofilled] = useState(!load);
+
+  useEffect(() => {
+    if (!load && user?.uid) {
+      fetchProfile(user.uid).then((profile) => {
+        if (profile?.payMode) setPayMode(profile.payMode);
+        if (profile?.payVal) setPayVal(String(profile.payVal));
+      });
+    }
+  }, [load, user]);
   const [weight, setWeight] = useState(load?.weight || "");
   const [diesel, setDiesel] = useState(load?.diesel?.length ? load.diesel : []);
   const [expenses, setExpenses] = useState(
@@ -215,6 +230,25 @@ export default function LoadForm({ load, onSave, onBack }) {
           style={{ height: 1, background: "var(--border)", margin: "4px 0" }}
         />
         <FormSection label="PAY" />
+
+        {payAutofilled && (
+          <div
+            style={{
+              background: "rgba(255,138,61,0.1)",
+              border: "1px solid rgba(255,138,61,0.25)",
+              borderRadius: "var(--radius-btn)",
+              padding: "10px 12px",
+              margin: "0 16px 12px",
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              color: "var(--accent)",
+              lineHeight: 1.4,
+            }}
+          >
+            Auto-filled from your Profile — double-check it's still correct for
+            this load.
+          </div>
+        )}
 
         {/* Toggle */}
         <div

@@ -284,6 +284,7 @@ export default function App() {
             }
             onSave={handleSaveLoad}
             onBack={handleBack}
+            user={user}
           />
         )}
         {screen === "monthly" && currentTrip && (
