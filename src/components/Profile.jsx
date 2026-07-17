@@ -13,9 +13,16 @@ import {
   MedicalCardIcon,
   LicensePlateIcon,
   CloseIcon,
+  SettingsIcon,
 } from "./icons/ProfileIcons";
 
-export default function Profile({ user, onLogout, theme, onToggleTheme }) {
+export default function Profile({
+  user,
+  onLogout,
+  theme,
+  onToggleTheme,
+  onOpenSettings,
+}) {
   const [profile, setProfile] = useState({
     name: user?.displayName || "",
     email: user?.email || "",
@@ -84,26 +91,47 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
       <Header
         title="Profile"
         right={
-          <button
-            onClick={onToggleTheme}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 18,
-              lineHeight: 1,
-              padding: "4px",
-              color: "var(--text-muted)",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "var(--accent)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "var(--text-muted)")
-            }
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button
+              onClick={onOpenSettings}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                color: "var(--text-muted)",
+                display: "flex",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "var(--accent)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "var(--text-muted)")
+              }
+            >
+              <SettingsIcon size={18} />
+            </button>
+            <button
+              onClick={onToggleTheme}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 18,
+                lineHeight: 1,
+                padding: "4px",
+                color: "var(--text-muted)",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "var(--accent)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "var(--text-muted)")
+              }
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+          </div>
         }
       />
 
@@ -580,6 +608,7 @@ export default function Profile({ user, onLogout, theme, onToggleTheme }) {
             onChange={(e) => handlePhotoChange("medPhoto", e)}
           />
         </div>
+
         {/* Sign Out */}
         <button
           onClick={onLogout}

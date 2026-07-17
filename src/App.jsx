@@ -14,6 +14,7 @@ import PrintView from "./components/PrintView";
 import { Analytics } from "@vercel/analytics/react";
 import Profile from "./components/Profile";
 import AnalyticsScreen from "./components/AnalyticsScreen";
+import Settings from "./components/Settings";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -310,9 +311,12 @@ export default function App() {
             onLogout={handleLogout}
             theme={theme}
             onToggleTheme={toggleTheme}
+            onOpenSettings={() => goTo("settings")}
           />
         )}
       </div>
+
+      {screen === "settings" && <Settings onBack={() => history.back()} />}
 
       {showBottomNav && (
         <BottomNav activeTab={activeTab} onSwitch={switchTab} theme={theme} />
