@@ -46,6 +46,7 @@ export default function Profile({
   });
 
   const [modal, setModal] = useState(null); // який тайл відкритий
+  const [viewingPhoto, setViewingPhoto] = useState(null); // фото на весь екран
   const [saving, setSaving] = useState(false);
   const truckPhotoRef = useRef(null);
   const trailerPhotoRef = useRef(null);
@@ -323,7 +324,14 @@ export default function Profile({
         >
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16 }}
+            style={{
+              ...tileStyle,
+              height: 120,
+              padding: 16,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
             onClick={() => setModal("truck")}
           >
             {profile.truckUnit || profile.truckPlate ? (
@@ -377,13 +385,18 @@ export default function Profile({
             className="glass"
             style={{
               ...tileStyle,
-              minHeight: 100,
+              height: 120,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               position: "relative",
+              overflow: "hidden",
             }}
-            onClick={() => handlePhotoCapture("truckPhoto", truckPhotoRef)}
+            onClick={() =>
+              profile.truckPhoto
+                ? setViewingPhoto(profile.truckPhoto)
+                : handlePhotoCapture("truckPhoto", truckPhotoRef)
+            }
           >
             {profile.truckPhoto ? (
               <>
@@ -393,7 +406,6 @@ export default function Profile({
                   style={{
                     width: "100%",
                     height: "100%",
-                    borderRadius: "var(--radius-card)",
                     objectFit: "cover",
                   }}
                 />
@@ -437,7 +449,14 @@ export default function Profile({
         >
           <div
             className="glass"
-            style={{ ...tileStyle, padding: 16 }}
+            style={{
+              ...tileStyle,
+              height: 120,
+              padding: 16,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
             onClick={() => setModal("trailer")}
           >
             {profile.trailerUnit || profile.trailerPlate ? (
@@ -491,13 +510,18 @@ export default function Profile({
             className="glass"
             style={{
               ...tileStyle,
-              minHeight: 100,
+              height: 120,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               position: "relative",
+              overflow: "hidden",
             }}
-            onClick={() => handlePhotoCapture("trailerPhoto", trailerPhotoRef)}
+            onClick={() =>
+              profile.trailerPhoto
+                ? setViewingPhoto(profile.trailerPhoto)
+                : handlePhotoCapture("trailerPhoto", trailerPhotoRef)
+            }
           >
             {profile.trailerPhoto ? (
               <>
@@ -507,7 +531,6 @@ export default function Profile({
                   style={{
                     width: "100%",
                     height: "100%",
-                    borderRadius: "var(--radius-card)",
                     objectFit: "cover",
                   }}
                 />
@@ -609,14 +632,18 @@ export default function Profile({
           className="glass"
           style={{
             ...tileStyle,
-            padding: 16,
-            minHeight: 100,
+            height: 130,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             position: "relative",
+            overflow: "hidden",
           }}
-          onClick={() => handlePhotoCapture("cdlPhoto", cdlRef)}
+          onClick={() =>
+            profile.cdlPhoto
+              ? setViewingPhoto(profile.cdlPhoto)
+              : handlePhotoCapture("cdlPhoto", cdlRef)
+          }
         >
           {profile.cdlPhoto ? (
             <>
@@ -625,9 +652,9 @@ export default function Profile({
                 alt="CDL"
                 style={{
                   width: "100%",
-                  borderRadius: 12,
+                  height: "100%",
+                  borderRadius: "var(--radius-card)",
                   objectFit: "cover",
-                  maxHeight: 160,
                 }}
               />
               <button
@@ -668,14 +695,18 @@ export default function Profile({
           className="glass"
           style={{
             ...tileStyle,
-            padding: 16,
-            minHeight: 100,
+            height: 130,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             position: "relative",
+            overflow: "hidden",
           }}
-          onClick={() => handlePhotoCapture("medPhoto", medRef)}
+          onClick={() =>
+            profile.medPhoto
+              ? setViewingPhoto(profile.medPhoto)
+              : handlePhotoCapture("medPhoto", medRef)
+          }
         >
           {profile.medPhoto ? (
             <>
@@ -684,9 +715,9 @@ export default function Profile({
                 alt="Med Card"
                 style={{
                   width: "100%",
-                  borderRadius: 12,
+                  height: "100%",
+                  borderRadius: "var(--radius-card)",
                   objectFit: "cover",
-                  maxHeight: 160,
                 }}
               />
               <button
@@ -775,6 +806,10 @@ export default function Profile({
           )}
         </Modal>
       )}
+
+      {viewingPhoto && (
+        <PhotoViewer src={viewingPhoto} onClose={() => setViewingPhoto(null)} />
+      )}
     </div>
   );
 }
@@ -792,6 +827,56 @@ function EmptyTile({ icon: Icon, label }) {
         }}
       />
       <div className="label">{label}</div>
+    </div>
+  );
+}
+
+/* ─── Повноекранний перегляд фото ─── */
+function PhotoViewer({ src, onClose }) {
+  useLockBodyScroll();
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 300,
+        background: "rgba(0,0,0,0.9)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={onClose}
+    >
+      <img
+        src={src}
+        alt="Full size"
+        style={{
+          maxWidth: "92%",
+          maxHeight: "88dvh",
+          objectFit: "contain",
+          borderRadius: 12,
+        }}
+      />
+      <button
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          top: 20,
+          right: 20,
+          width: 36,
+          height: 36,
+          borderRadius: 99,
+          border: "none",
+          background: "rgba(255,255,255,0.15)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <CloseIcon size={16} style={{ color: "#fff" }} />
+      </button>
     </div>
   );
 }
