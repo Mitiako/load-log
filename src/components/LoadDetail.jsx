@@ -2,7 +2,7 @@
 import { calcLoad, fmtDate, fmtMoney } from "../data/calc";
 import Header from "./Header";
 
-export default function LoadDetail({ load, onBack, onEdit }) {
+export default function LoadDetail({ load, onBack, onEdit, theme }) {
   const c = calcLoad(load);
 
   return (
@@ -68,6 +68,12 @@ export default function LoadDetail({ load, onBack, onEdit }) {
       {/* Content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0 32px" }}>
         <Section label="ROUTE" />
+        <RouteMap
+          from={load.from}
+          to={load.to}
+          miles={load.miles}
+          theme={theme}
+        />
         <Row label="Date" value={fmtDate(load.date)} />
         <Row label="Loaded miles" value={`${load.miles.toLocaleString()} mi`} />
         {load.dh > 0 && <Row label="Deadhead" value={`${load.dh} mi`} />}
@@ -196,6 +202,82 @@ function Section({ label }) {
       }}
     >
       {label}
+    </div>
+  );
+}
+
+function RouteMap({ from, to, miles, theme }) {
+  // hl=en примусово задає англійську (без цього мапа підлаштовується
+  // під мову Google-акаунту/браузера користувача).
+  const src = `https://www.google.com/maps?saddr=${encodeURIComponent(
+    from,
+  )}&daddr=${encodeURIComponent(to)}&output=embed&hl=en`;
+  const openUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+    from,
+  )}&destination=${encodeURIComponent(to)}`;
+
+  // Google Embed (без API-ключа) не має офіційного dark-mode параметра.
+  // invert+hue-rotate — поширений CSS-хак, який імітує темну мапу:
+  // інвертує яскравість (світлі дороги/вода стають темними), а
+  // hue-rotate повертає кольори (щоб вода знову була синьою, а не
+  // жовтогарячою після інверсії).
+  const mapFilter =
+    theme === "light"
+      ? "none"
+      : "invert(90%) hue-rotate(180deg) brightness(0.95) contrast(0.9)";
+
+  return (
+    <div style={{ margin: "0 16px 16px" }}>
+      <div
+        className="glass"
+        style={{
+          padding: 0,
+          overflow: "hidden",
+          borderRadius: "var(--radius-card)",
+          background: theme === "light" ? "transparent" : "#1a1a1a",
+        }}
+      >
+        <iframe
+          title="Route map"
+          src={src}
+          width="100%"
+          height="200"
+          style={{ border: 0, display: "block", filter: mapFilter }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "8px 4px 0",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 11,
+            color: "var(--text-muted)",
+          }}
+        >
+          Approximate route · Your entry: {miles.toLocaleString()} mi
+        </span>
+        <a
+          href={openUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--accent)",
+            textDecoration: "none",
+          }}
+        >
+          Open in Maps →
+        </a>
+      </div>
     </div>
   );
 }

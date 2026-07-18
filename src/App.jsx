@@ -276,6 +276,7 @@ export default function App() {
             load={currentLoads[selectedLoadIdx]}
             onBack={handleBack}
             onEdit={handleEditLoad}
+            theme={theme}
           />
         )}
         {screen === "form" && currentTrip && (
