@@ -91,7 +91,14 @@ html[data-theme="light"] {
 html:not([data-theme="light"])::before {
     content: '';
     position: fixed;
-    inset: -20px;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    /* 100svh ("small viewport height") — стабільна висота, розрахована
+       так, ніби панель браузера завжди видима. На відміну від "vh" за
+       замовчуванням, вона НЕ перераховується коли адресний рядок
+       ховається/з'являється при скролі — це і прибирає стрибок фону. */
+    height: calc(100svh + 40px);
     background-image: url('/bg-dark.png');
     background-size: 100% auto;
     background-position: center center;
@@ -106,7 +113,10 @@ html:not([data-theme="light"])::before {
 html[data-theme="light"]::before {
     content: '';
     position: fixed;
-    inset: -20px;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    height: calc(100svh + 40px);
     background-image: url('/bg-light.png');
     background-size: 100% auto;
     background-position: center center;
