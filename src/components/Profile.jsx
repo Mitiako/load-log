@@ -103,7 +103,7 @@ export default function Profile({
   };
 
   return (
-    <div style={{ minHeight: "100dvh", paddingBottom: 120 }}>
+    <div style={{ minHeight: "100svh", paddingBottom: 120 }}>
       <Header
         title="Profile"
         right={

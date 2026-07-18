@@ -8,7 +8,7 @@ export default function LoadDetail({ load, onBack, onEdit }) {
   return (
     <div
       style={{
-        height: "100dvh",
+        height: "100svh",
         background: "transparent",
         display: "flex",
         flexDirection: "column",

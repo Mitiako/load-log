@@ -117,7 +117,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   return (
     <div
       style={{
-        height: "100dvh",
+        height: "100svh",
         background: "transparent",
         display: "flex",
         flexDirection: "column",

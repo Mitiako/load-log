@@ -15,7 +15,7 @@ export default function TripList({
   onOpenSettings,
 }) {
   return (
-    <div style={{ minHeight: "100dvh", background: "transparent" }}>
+    <div style={{ minHeight: "100svh", background: "transparent" }}>
       <Header
         left={
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

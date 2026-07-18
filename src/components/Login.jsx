@@ -13,7 +13,7 @@ export default function Login() {
   return (
     <div
       style={{
-        height: "100dvh",
+        height: "100svh",
         background: "var(--bg-base)",
         display: "flex",
         flexDirection: "column",

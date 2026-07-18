@@ -157,7 +157,7 @@ export default function AnalyticsScreen({
       : null;
 
   return (
-    <div style={{ minHeight: "100dvh", paddingBottom: 32 }}>
+    <div style={{ minHeight: "100svh", paddingBottom: 32 }}>
       <Header
         title="Analytics"
         right={

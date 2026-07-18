@@ -132,13 +132,13 @@ html[data-theme="light"]::before {
 body {
     font-family: var(--font-sans);
     color: var(--text-primary);
-    min-height: 100dvh;
+    min-height: 100svh;
     line-height: 1.5;
     background: transparent;
 }
 
 #root {
-    min-height: 100dvh;
+    min-height: 100svh;
     display: flex;
     flex-direction: column;
 }

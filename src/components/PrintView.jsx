@@ -8,7 +8,7 @@ export default function PrintView({ loads, onClose }) {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#ffffff" }}>
+    <div style={{ minHeight: "100svh", background: "#ffffff" }}>
       <style>{`
         @media print {
           .no-print { display: none !important; }

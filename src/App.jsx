@@ -227,7 +227,7 @@ export default function App() {
         width: "100%",
         maxWidth: 480,
         margin: "0 auto",
-        minHeight: "100dvh",
+        minHeight: "100svh",
         display: "flex",
         flexDirection: "column",
       }}
@@ -541,7 +541,7 @@ function IntroScreen() {
   return (
     <div
       style={{
-        height: "100dvh",
+        height: "100svh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -653,7 +653,7 @@ function LoadingScreen({ label }) {
   return (
     <div
       style={{
-        height: "100dvh",
+        height: "100svh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

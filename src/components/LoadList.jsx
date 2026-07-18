@@ -22,7 +22,7 @@ export default function LoadList({
   return (
     <div
       style={{
-        height: "100dvh",
+        height: "100svh",
         background: "transparent",
         display: "flex",
         flexDirection: "column",
