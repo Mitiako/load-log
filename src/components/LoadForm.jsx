@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
 import { fetchProfile } from "../data/firestore";
+import CityStateInput from "./CityStateInput";
 import LocationInput from "./LocationInput";
 import Header from "./Header";
 
@@ -37,6 +38,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     }
   }, [load, user]);
   const [weight, setWeight] = useState(load?.weight || "");
+  const [locationError, setLocationError] = useState(false);
   const [diesel, setDiesel] = useState(load?.diesel?.length ? load.diesel : []);
   const [expenses, setExpenses] = useState(
     load?.expenses?.length ? load.expenses : [],
@@ -99,6 +101,11 @@ export default function LoadForm({ load, onSave, onBack, user }) {
 
   function handleSave() {
     if (!gross) return;
+    if (!from.includes(",") || !to.includes(",")) {
+      setLocationError(true);
+      return;
+    }
+    setLocationError(false);
     onSave({
       from: from || "Unknown",
       to: to || "Unknown",
@@ -163,19 +170,37 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             padding: "0 16px 12px",
           }}
         >
-          <LocationInput
+          <CityStateInput
             label="From"
             value={from}
             onChange={setFrom}
-            placeholder="Chicago, IL"
+            placeholder="Chicago"
           />
-          <LocationInput
+          <CityStateInput
             label="To"
             value={to}
             onChange={setTo}
-            placeholder="Dallas, TX"
+            placeholder="Dallas"
           />
         </div>
+        {locationError && (
+          <div
+            style={{
+              margin: "0 16px 12px",
+              padding: "10px 12px",
+              background: "rgba(248,113,113,0.1)",
+              border: "1px solid rgba(248,113,113,0.3)",
+              borderRadius: "var(--radius-btn)",
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              color: "#f87171",
+              lineHeight: 1.4,
+            }}
+          >
+            Please select a state for both From and To — this keeps your route
+            accurate.
+          </div>
+        )}
         <div
           style={{
             display: "grid",
