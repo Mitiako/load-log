@@ -1,9 +1,75 @@
 // LoadDetail.jsx
+import { useState, useRef } from "react";
 import { calcLoad, fmtDate, fmtMoney } from "../data/calc";
+import { compressImage } from "../utils/compressImage";
+import { BolIcon, CloseIcon } from "./icons/ProfileIcons";
 import Header from "./Header";
 
-export default function LoadDetail({ load, onBack, onEdit, theme }) {
+export default function LoadDetail({
+  load,
+  onBack,
+  onEdit,
+  theme,
+  onUpdatePhoto,
+}) {
   const c = calcLoad(load);
+  const [scanningBol, setScanningBol] = useState(false);
+  const [bolToast, setBolToast] = useState(null);
+  const bolRef = useRef(null);
+
+  function showBolToast(message) {
+    setBolToast(message);
+    setTimeout(() => setBolToast(null), 5000);
+  }
+
+  async function handleBolCapture(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanningBol(true);
+    try {
+      const compressed = await compressImage(file);
+
+      const res = await fetch("/api/scan-bol", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: compressed }),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        showBolToast("Couldn't check the document, but photo was saved.");
+      } else if (data.notABol) {
+        showBolToast(
+          "This doesn't look like a shipping document — check the photo before relying on it.",
+        );
+      } else {
+        const issues = [];
+        if (!data.hasSignature) issues.push("no signature visible");
+        if (!data.hasStamp) issues.push("no stamp visible");
+        if (!data.isClear) issues.push("photo may be too blurry/dark");
+        if (issues.length > 0) {
+          showBolToast(
+            `Heads up: ${issues.join(", ")}. Factoring may reject this — consider retaking.`,
+          );
+        } else {
+          showBolToast("Looks good — signature and stamp are visible.");
+        }
+      }
+
+      await onUpdatePhoto("bolPhoto", compressed);
+    } catch (err) {
+      console.error("BOL scan failed:", err);
+      showBolToast("Couldn't check the document, please try again.");
+    } finally {
+      setScanningBol(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleBolRemove(e) {
+    e.stopPropagation();
+    await onUpdatePhoto("bolPhoto", null);
+  }
 
   return (
     <div
@@ -151,6 +217,121 @@ export default function LoadDetail({ load, onBack, onEdit, theme }) {
             </span>
           </div>
         </div>
+
+        <Section label="BOL PHOTO" />
+        <div style={{ margin: "0 16px" }}>
+          <div
+            className="glass"
+            style={{
+              height: 160,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+              overflow: "hidden",
+              cursor: "pointer",
+            }}
+            onClick={() => bolRef.current?.click()}
+          >
+            {scanningBol ? (
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12,
+                  color: "var(--text-muted)",
+                }}
+              >
+                Checking document...
+              </div>
+            ) : load.bolPhoto ? (
+              <>
+                <img
+                  src={load.bolPhoto}
+                  alt="Bill of Lading"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <button
+                  onClick={handleBolRemove}
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    width: 28,
+                    height: 28,
+                    borderRadius: 99,
+                    border: "none",
+                    background: "rgba(0,0,0,0.55)",
+                    backdropFilter: "blur(4px)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <CloseIcon size={14} style={{ color: "#fff" }} />
+                </button>
+              </>
+            ) : (
+              <div style={{ textAlign: "center" }}>
+                <BolIcon
+                  size={24}
+                  style={{
+                    display: "block",
+                    margin: "0 auto 6px",
+                    color: "var(--text-muted)",
+                  }}
+                />
+                <div className="label">Add BOL Photo</div>
+              </div>
+            )}
+            <input
+              ref={bolRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={handleBolCapture}
+            />
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: 11,
+              color: "var(--text-muted)",
+              padding: "8px 4px 0",
+            }}
+          >
+            AI checks for signature and stamp — for your own review before
+            sending to factoring, not a guarantee of approval.
+          </div>
+        </div>
+
+        {bolToast && (
+          <div
+            style={{
+              position: "fixed",
+              bottom: 24,
+              left: "50%",
+              transform: "translateX(-50%)",
+              maxWidth: "calc(100% - 32px)",
+              zIndex: 300,
+              padding: "12px 18px",
+              background: "var(--bg-elevated)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-btn)",
+              boxShadow: "var(--glass-shadow)",
+              fontFamily: "var(--font-sans)",
+              fontSize: 13,
+              color: "var(--text-primary)",
+              textAlign: "center",
+              lineHeight: 1.4,
+            }}
+          >
+            {bolToast}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -161,3 +161,15 @@ export function SettingsIcon(props) {
     </IconBase>
   );
 }
+
+// Bill of Lading / Signed Document
+export function BolIcon(props) {
+  return (
+    <IconBase {...props}>
+      <rect width="16" height="20" x="4" y="2" rx="2" />
+      <line x1="8" y1="7" x2="16" y2="7" />
+      <line x1="8" y1="11" x2="16" y2="11" />
+      <path d="M8 16c1 1 2 1.5 3 1.5s2.5-1 4-1" />
+    </IconBase>
+  );
+}

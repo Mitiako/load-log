@@ -202,6 +202,15 @@ export default function App() {
     await saveTrip(user.uid, updatedTrip);
   }
 
+  async function handleUpdateLoadPhoto(field, value) {
+    const updatedLoads = currentLoads.map((l, i) =>
+      i === selectedLoadIdx ? { ...l, [field]: value } : l,
+    );
+    const updatedTrip = { ...currentTrip, loads: updatedLoads };
+    setTrips(trips.map((t, i) => (i === selectedTripIdx ? updatedTrip : t)));
+    await saveTrip(user.uid, updatedTrip);
+  }
+
   function handleBack() {
     history.back();
   }
@@ -277,6 +286,7 @@ export default function App() {
             onBack={handleBack}
             onEdit={handleEditLoad}
             theme={theme}
+            onUpdatePhoto={handleUpdateLoadPhoto}
           />
         )}
         {screen === "form" && currentTrip && (
