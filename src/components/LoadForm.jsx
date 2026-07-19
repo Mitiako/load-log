@@ -41,6 +41,8 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   const [locationError, setLocationError] = useState(false);
   const [scanning, setScanning] = useState(false);
   const scanReceiptRef = useRef(null);
+  const scanExpenseRef = useRef(null);
+  const [scanningExpense, setScanningExpense] = useState(false);
   const [diesel, setDiesel] = useState(load?.diesel?.length ? load.diesel : []);
   const [expenses, setExpenses] = useState(
     load?.expenses?.length ? load.expenses : [],
@@ -104,6 +106,10 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         const data = await res.json();
         if (data.error) {
           alert("Couldn't read the receipt — please enter details manually.");
+        } else if (data.notFuelReceipt) {
+          alert(
+            'This doesn\'t look like a fuel receipt. Use "Scan Receipt" in Other Expenses instead.',
+          );
         } else {
           setDiesel((prev) => [
             ...prev,
@@ -121,6 +127,48 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         alert("Couldn't read the receipt — please enter details manually.");
       } finally {
         setScanning(false);
+        e.target.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+  async function handleScanExpense(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanningExpense(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const res = await fetch("/api/scan-expense", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: ev.target.result }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert("Couldn't read the receipt — please enter details manually.");
+        } else if (data.isFuelReceipt) {
+          alert(
+            'This looks like a fuel receipt. Use "Scan Receipt" in the Diesel section instead.',
+          );
+        } else if (data.notAReceipt) {
+          alert(
+            "Couldn't recognize this as a receipt — please enter details manually.",
+          );
+        } else {
+          setExpenses((prev) => [
+            ...prev,
+            {
+              name: data.name || "",
+              amount: data.amount ?? "",
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Scan failed:", err);
+        alert("Couldn't read the receipt — please enter details manually.");
+      } finally {
+        setScanningExpense(false);
         e.target.value = "";
       }
     };
@@ -593,34 +641,65 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             </button>
           </div>
         ))}
-        <button
-          onClick={addExpense}
+        <div
           style={{
-            display: "block",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 8,
             margin: "0 16px 12px",
-            width: "calc(100% - 32px)",
-            padding: "10px",
-            border: "1px dashed var(--border)",
-            borderRadius: "var(--radius-btn)",
-            background: "transparent",
-            color: "var(--text-muted)",
-            fontFamily: "var(--font-sans)",
-            fontSize: 13,
-            cursor: "pointer",
-            transition:
-              "border-color var(--transition), color var(--transition)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "var(--accent)";
-            e.currentTarget.style.color = "var(--accent)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "var(--border)";
-            e.currentTarget.style.color = "var(--text-muted)";
           }}
         >
-          + Add expense
-        </button>
+          <button
+            onClick={addExpense}
+            style={{
+              padding: "10px",
+              border: "1px dashed var(--border)",
+              borderRadius: "var(--radius-btn)",
+              background: "transparent",
+              color: "var(--text-muted)",
+              fontFamily: "var(--font-sans)",
+              fontSize: 13,
+              cursor: "pointer",
+              transition:
+                "border-color var(--transition), color var(--transition)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--accent)";
+              e.currentTarget.style.color = "var(--accent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border)";
+              e.currentTarget.style.color = "var(--text-muted)";
+            }}
+          >
+            + Add expense
+          </button>
+          <button
+            onClick={() => scanExpenseRef.current?.click()}
+            disabled={scanningExpense}
+            style={{
+              padding: "10px",
+              border: "1px dashed var(--accent)",
+              borderRadius: "var(--radius-btn)",
+              background: "rgba(255,138,61,0.08)",
+              color: "var(--accent)",
+              fontFamily: "var(--font-sans)",
+              fontSize: 13,
+              cursor: scanningExpense ? "default" : "pointer",
+              opacity: scanningExpense ? 0.6 : 1,
+            }}
+          >
+            {scanningExpense ? "Scanning..." : "📷 Scan Receipt"}
+          </button>
+          <input
+            ref={scanExpenseRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: "none" }}
+            onChange={handleScanExpense}
+          />
+        </div>
 
         {/* Live result */}
         {c && (

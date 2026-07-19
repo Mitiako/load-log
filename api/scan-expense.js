@@ -1,7 +1,6 @@
-// api/scan-receipt.js
-// Vercel Serverless Function — приймає фото чека, повертає розпізнані
-// дані через GPT-4o-mini. Ключ OpenAI живе тільки тут, на сервері,
-// ніколи не потрапляє в клієнтський код.
+// api/scan-expense.js
+// Vercel Serverless Function — сканує чек НЕ пального (запчастини,
+// lumper, tolls, ремонт тощо) для секції Other Expenses.
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -25,14 +24,14 @@ export default async function handler(req, res) {
           {
             role: "system",
             content:
-              "You are a fuel receipt scanner for a trucking app. First check: is this actually a DIESEL FUEL receipt (truck stop, gas station, showing gallons pumped)? Respond with ONLY a JSON object, no other text, no markdown. If it is NOT a fuel receipt (e.g. it's a parts store, restaurant, or unrelated document), respond with exactly: {\"notFuelReceipt\": true}. If it IS a fuel receipt, extract: location (truck stop name and city/state if visible, e.g. 'Loves - Oklahoma City, OK'), date (YYYY-MM-DD format), gallons (number), amount (total dollar amount paid, number), discount (any discount/rebate shown, number, 0 if none visible). If a field is not visible or unclear, use null for that field. Never guess or invent values — only extract what is actually printed on the receipt.",
+              "You are a business expense receipt scanner for a trucking app (NOT for fuel receipts — those are handled elsewhere). Respond with ONLY a JSON object, no other text, no markdown. If this is actually a diesel fuel receipt, respond with exactly: {\"isFuelReceipt\": true}. Otherwise extract: name (short description of the expense, e.g. 'Lumper fee', 'Truck parts - O\\'Reilly Auto', 'Tolls'), amount (total dollar amount paid, number), date (YYYY-MM-DD format, null if not visible). Never guess or invent values — only extract what is actually printed on the receipt. If the image doesn't look like any kind of receipt, respond with exactly: {\"notAReceipt\": true}.",
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Extract the fuel receipt data from this image.",
+                text: "Extract the expense data from this receipt image.",
               },
               { type: "image_url", image_url: { url: image } },
             ],
@@ -54,7 +53,7 @@ export default async function handler(req, res) {
     const parsed = JSON.parse(content);
     return res.status(200).json(parsed);
   } catch (err) {
-    console.error("Scan receipt error:", err);
+    console.error("Scan expense error:", err);
     return res.status(500).json({ error: "Failed to process receipt" });
   }
 }
