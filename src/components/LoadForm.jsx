@@ -43,6 +43,13 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   const scanReceiptRef = useRef(null);
   const scanExpenseRef = useRef(null);
   const [scanningExpense, setScanningExpense] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  function showToast(message) {
+    setToast(message);
+    setTimeout(() => setToast(null), 4000);
+  }
+
   const [diesel, setDiesel] = useState(load?.diesel?.length ? load.diesel : []);
   const [expenses, setExpenses] = useState(
     load?.expenses?.length ? load.expenses : [],
@@ -105,10 +112,12 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         });
         const data = await res.json();
         if (data.error) {
-          alert("Couldn't read the receipt — please enter details manually.");
+          showToast(
+            "Couldn't read the receipt — please enter details manually.",
+          );
         } else if (data.notFuelReceipt) {
-          alert(
-            'This doesn\'t look like a fuel receipt. Use "Scan Receipt" in Other Expenses instead.',
+          showToast(
+            "This doesn't look like a fuel receipt — try Scan Receipt in Other Expenses instead.",
           );
         } else {
           setDiesel((prev) => [
@@ -124,7 +133,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         }
       } catch (err) {
         console.error("Scan failed:", err);
-        alert("Couldn't read the receipt — please enter details manually.");
+        showToast("Couldn't read the receipt — please enter details manually.");
       } finally {
         setScanning(false);
         e.target.value = "";
@@ -132,6 +141,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     };
     reader.readAsDataURL(file);
   }
+
   async function handleScanExpense(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -146,13 +156,15 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         });
         const data = await res.json();
         if (data.error) {
-          alert("Couldn't read the receipt — please enter details manually.");
+          showToast(
+            "Couldn't read the receipt — please enter details manually.",
+          );
         } else if (data.isFuelReceipt) {
-          alert(
-            'This looks like a fuel receipt. Use "Scan Receipt" in the Diesel section instead.',
+          showToast(
+            "This looks like a fuel receipt — try Scan Receipt in the Diesel section instead.",
           );
         } else if (data.notAReceipt) {
-          alert(
+          showToast(
             "Couldn't recognize this as a receipt — please enter details manually.",
           );
         } else {
@@ -166,7 +178,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         }
       } catch (err) {
         console.error("Scan failed:", err);
-        alert("Couldn't read the receipt — please enter details manually.");
+        showToast("Couldn't read the receipt — please enter details manually.");
       } finally {
         setScanningExpense(false);
         e.target.value = "";
@@ -784,6 +796,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
           </button>
         </div>
       </div>
+      {toast && <Toast message={toast} />}
     </div>
   );
 }
@@ -850,6 +863,35 @@ function FormSection({ label }) {
       }}
     >
       {label}
+    </div>
+  );
+}
+
+function Toast({ message }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 24,
+        left: "50%",
+        transform: "translateX(-50%)",
+        maxWidth: "calc(100% - 32px)",
+        zIndex: 300,
+        padding: "12px 18px",
+        background: "var(--bg-elevated)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-btn)",
+        boxShadow: "var(--glass-shadow)",
+        fontFamily: "var(--font-sans)",
+        fontSize: 13,
+        color: "var(--text-primary)",
+        textAlign: "center",
+        lineHeight: 1.4,
+      }}
+    >
+      {message}
     </div>
   );
 }
