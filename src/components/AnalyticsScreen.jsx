@@ -13,6 +13,7 @@ import {
 import Header from "./Header";
 import { SettingsIcon } from "./icons/ProfileIcons";
 import { fetchProfile, saveProfile } from "../data/firestore";
+import RateEvaluatorModal from "./RateEvaluatorModal";
 import { useLockBodyScroll } from "../hooks/useLockBodyScroll";
 import {
   getAnalytics,
@@ -92,6 +93,7 @@ export default function AnalyticsScreen({
   const [profile, setProfile] = useState(null);
   const [showBreakdownModal, setShowBreakdownModal] = useState(false);
   const [showBreakEvenModal, setShowBreakEvenModal] = useState(false);
+  const [showRateEvaluator, setShowRateEvaluator] = useState(false);
   const [showBreakEvenInfo, setShowBreakEvenInfo] = useState(false);
   const chartCardRef = useRef(null);
 
@@ -290,6 +292,53 @@ export default function AnalyticsScreen({
 
       {showBreakEvenInfo && (
         <BreakEvenInfoModal onClose={() => setShowBreakEvenInfo(false)} />
+      )}
+
+      <div style={{ padding: "0 16px" }}>
+        <div
+          className="glass"
+          style={{
+            padding: "16px 20px",
+            marginTop: 10,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+          }}
+          onClick={() => setShowRateEvaluator(true)}
+        >
+          <div style={{ flex: 1 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontWeight: 600,
+                fontSize: 14,
+                color: "var(--text-primary)",
+              }}
+            >
+              Rate Evaluator
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 12,
+                color: "var(--text-muted)",
+                marginTop: 2,
+              }}
+            >
+              Scan a RateCon before you accept a load
+            </div>
+          </div>
+          <span style={{ color: "var(--text-muted)", fontSize: 16 }}>→</span>
+        </div>
+      </div>
+
+      {showRateEvaluator && (
+        <RateEvaluatorModal
+          profile={profile}
+          breakEvenRpm={suggestedBreakEvenRpm}
+          onClose={() => setShowRateEvaluator(false)}
+        />
       )}
 
       {!data.hasData ? (
