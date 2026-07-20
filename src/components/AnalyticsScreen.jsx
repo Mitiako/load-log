@@ -175,7 +175,7 @@ export default function AnalyticsScreen({
                 display: "flex",
               }}
             >
-              <AssistantIcon size={29} />
+              <AssistantIcon size={30} />
             </button>
             <button
               onClick={onOpenSettings}

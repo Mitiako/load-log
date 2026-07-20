@@ -61,7 +61,7 @@ export default function TripList({
                 display: "flex",
               }}
             >
-              <AssistantIcon size={29} />
+              <AssistantIcon size={30} />
             </button>
             <button
               onClick={onOpenSettings}

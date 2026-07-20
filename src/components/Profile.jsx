@@ -120,7 +120,7 @@ export default function Profile({
                 display: "flex",
               }}
             >
-              <AssistantIcon size={29} />
+              <AssistantIcon size={30} />
             </button>
             <button
               onClick={onOpenSettings}
