@@ -15,11 +15,11 @@ export default function LoadDetail({
   const c = calcLoad(load);
   const [scanningBol, setScanningBol] = useState(false);
   const [bolToast, setBolToast] = useState(null);
+  const [viewingBol, setViewingBol] = useState(false);
   const bolRef = useRef(null);
 
   function showBolToast(message) {
     setBolToast(message);
-    setTimeout(() => setBolToast(null), 5000);
   }
 
   async function handleBolCapture(e) {
@@ -231,7 +231,13 @@ export default function LoadDetail({
               overflow: "hidden",
               cursor: "pointer",
             }}
-            onClick={() => bolRef.current?.click()}
+            onClick={() =>
+              scanningBol
+                ? null
+                : load.bolPhoto
+                  ? setViewingBol(true)
+                  : bolRef.current?.click()
+            }
           >
             {scanningBol ? (
               <div
@@ -310,26 +316,96 @@ export default function LoadDetail({
           <div
             style={{
               position: "fixed",
-              bottom: 24,
-              left: "50%",
-              transform: "translateX(-50%)",
-              maxWidth: "calc(100% - 32px)",
+              inset: 0,
               zIndex: 300,
-              padding: "12px 18px",
-              background: "var(--bg-elevated)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-btn)",
-              boxShadow: "var(--glass-shadow)",
-              fontFamily: "var(--font-sans)",
-              fontSize: 13,
-              color: "var(--text-primary)",
-              textAlign: "center",
-              lineHeight: 1.4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0,0,0,0.6)",
+              padding: 20,
             }}
+            onClick={() => setBolToast(null)}
           >
-            {bolToast}
+            <div
+              style={{
+                maxWidth: 400,
+                padding: "20px 22px",
+                background: "var(--bg-elevated)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                border: "1px solid var(--accent)",
+                borderRadius: "var(--radius-card)",
+                boxShadow:
+                  "0 0 24px rgba(255,138,61,0.35), 0 0 48px rgba(255,138,61,0.15)",
+                fontFamily: "var(--font-sans)",
+                fontSize: 15,
+                color: "var(--text-primary)",
+                textAlign: "center",
+                lineHeight: 1.5,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {bolToast}
+              <div
+                style={{
+                  marginTop: 16,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.08em",
+                  color: "var(--accent)",
+                  cursor: "pointer",
+                }}
+                onClick={() => setBolToast(null)}
+              >
+                TAP TO DISMISS
+              </div>
+            </div>
+          </div>
+        )}
+
+        {viewingBol && load.bolPhoto && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 300,
+              background: "rgba(0,0,0,0.9)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={() => setViewingBol(false)}
+          >
+            <img
+              src={load.bolPhoto}
+              alt="BOL full size"
+              style={{
+                maxWidth: "92%",
+                maxHeight: "88dvh",
+                objectFit: "contain",
+                borderRadius: 12,
+              }}
+            />
+            <button
+              onClick={() => setViewingBol(false)}
+              style={{
+                position: "absolute",
+                top: 20,
+                right: 20,
+                width: 36,
+                height: 36,
+                borderRadius: 99,
+                border: "none",
+                background: "rgba(255,255,255,0.15)",
+                backdropFilter: "blur(4px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <CloseIcon size={16} style={{ color: "#fff" }} />
+            </button>
           </div>
         )}
       </div>
@@ -388,8 +464,6 @@ function Section({ label }) {
 }
 
 function RouteMap({ from, to, miles, theme }) {
-  // hl=en примусово задає англійську (без цього мапа підлаштовується
-  // під мову Google-акаунту/браузера користувача).
   const src = `https://www.google.com/maps?saddr=${encodeURIComponent(
     from,
   )}&daddr=${encodeURIComponent(to)}&output=embed&hl=en`;
@@ -397,11 +471,6 @@ function RouteMap({ from, to, miles, theme }) {
     from,
   )}&destination=${encodeURIComponent(to)}`;
 
-  // Google Embed (без API-ключа) не має офіційного dark-mode параметра.
-  // invert+hue-rotate — поширений CSS-хак, який імітує темну мапу:
-  // інвертує яскравість (світлі дороги/вода стають темними), а
-  // hue-rotate повертає кольори (щоб вода знову була синьою, а не
-  // жовтогарячою після інверсії).
   const mapFilter =
     theme === "light"
       ? "none"
