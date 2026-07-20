@@ -1,6 +1,7 @@
 // Profile.jsx
 import { useState, useEffect, useRef } from "react";
 import { fetchProfile, saveProfile } from "../data/firestore";
+import ZoomableImage from "./ZoomableImage";
 import { useLockBodyScroll } from "../hooks/useLockBodyScroll";
 import Header from "./Header";
 import {
@@ -841,22 +842,9 @@ function PhotoViewer({ src, onClose }) {
         inset: 0,
         zIndex: 300,
         background: "rgba(0,0,0,0.9)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
-      onClick={onClose}
     >
-      <img
-        src={src}
-        alt="Full size"
-        style={{
-          maxWidth: "92%",
-          maxHeight: "88dvh",
-          objectFit: "contain",
-          borderRadius: 12,
-        }}
-      />
+      <ZoomableImage src={src} alt="Full size" />
       <button
         onClick={onClose}
         style={{
@@ -873,6 +861,7 @@ function PhotoViewer({ src, onClose }) {
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
+          zIndex: 301,
         }}
       >
         <CloseIcon size={16} style={{ color: "#fff" }} />

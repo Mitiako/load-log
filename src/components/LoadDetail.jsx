@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { calcLoad, fmtDate, fmtMoney } from "../data/calc";
 import { compressImage } from "../utils/compressImage";
 import { BolIcon, CloseIcon } from "./icons/ProfileIcons";
+import ZoomableImage from "./ZoomableImage";
 import Header from "./Header";
 
 export default function LoadDetail({
@@ -370,22 +371,9 @@ export default function LoadDetail({
               inset: 0,
               zIndex: 300,
               background: "rgba(0,0,0,0.9)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
             }}
-            onClick={() => setViewingBol(false)}
           >
-            <img
-              src={load.bolPhoto}
-              alt="BOL full size"
-              style={{
-                maxWidth: "92%",
-                maxHeight: "88dvh",
-                objectFit: "contain",
-                borderRadius: 12,
-              }}
-            />
+            <ZoomableImage src={load.bolPhoto} alt="BOL full size" />
             <button
               onClick={() => setViewingBol(false)}
               style={{
@@ -402,6 +390,7 @@ export default function LoadDetail({
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
+                zIndex: 301,
               }}
             >
               <CloseIcon size={16} style={{ color: "#fff" }} />
