@@ -1,6 +1,7 @@
 // Profile.jsx
 import { useState, useEffect, useRef } from "react";
 import { fetchProfile, saveProfile } from "../data/firestore";
+import { AssistantIcon } from "./icons/AssistantIcon";
 import ZoomableImage from "./ZoomableImage";
 import { useLockBodyScroll } from "../hooks/useLockBodyScroll";
 import Header from "./Header";
@@ -109,6 +110,18 @@ export default function Profile({
         title="Profile"
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button
+              onClick={() => alert("Chat coming soon!")}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                display: "flex",
+              }}
+            >
+              <AssistantIcon size={29} />
+            </button>
             <button
               onClick={onOpenSettings}
               style={{

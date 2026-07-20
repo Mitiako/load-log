@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import Header from "./Header";
 import { SettingsIcon } from "./icons/ProfileIcons";
+import { AssistantIcon } from "./icons/AssistantIcon";
 import { fetchProfile, saveProfile } from "../data/firestore";
 import RateEvaluatorModal from "./RateEvaluatorModal";
 import { useLockBodyScroll } from "../hooks/useLockBodyScroll";
@@ -164,6 +165,18 @@ export default function AnalyticsScreen({
         title="Analytics"
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              onClick={() => alert("Chat coming soon!")}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                display: "flex",
+              }}
+            >
+              <AssistantIcon size={29} />
+            </button>
             <button
               onClick={onOpenSettings}
               style={{

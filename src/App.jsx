@@ -15,6 +15,7 @@ import { Analytics } from "@vercel/analytics/react";
 import Profile from "./components/Profile";
 import AnalyticsScreen from "./components/AnalyticsScreen";
 import Settings from "./components/Settings";
+import { AssistantIcon } from "./components/icons/AssistantIcon";
 
 export default function App() {
   const [user, setUser] = useState(null);
