@@ -256,6 +256,7 @@ export default function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
             onOpenSettings={() => goTo("settings")}
+            onOpenChat={() => goTo("chat")}
           />
         )}
         {screen === "tripForm" && (
@@ -318,6 +319,7 @@ export default function App() {
             onToggleTheme={toggleTheme}
             onGoToLoad={handleGoToLoadFromAnalytics}
             onOpenSettings={() => goTo("settings")}
+            onOpenChat={() => goTo("chat")}
           />
         )}
         {screen === "profile" && (
@@ -327,6 +329,7 @@ export default function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
             onOpenSettings={() => goTo("settings")}
+            onOpenChat={() => goTo("chat")}
           />
         )}
         {screen === "chat" && (

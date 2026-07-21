@@ -13,6 +13,7 @@ export default function TripList({
   theme,
   onToggleTheme,
   onOpenSettings,
+  onOpenChat,
 }) {
   return (
     <div style={{ minHeight: "100svh", background: "transparent" }}>
@@ -51,7 +52,7 @@ export default function TripList({
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
-              onClick={() => alert("Chat coming soon!")}
+              onClick={onOpenChat}
               style={{
                 background: "none",
                 border: "none",
