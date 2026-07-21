@@ -223,3 +223,41 @@ export function getRecentActiveWeeksAverage(
     avgMiles: totals.miles / found.length,
   };
 }
+
+// Прогрес довільної тимчасової цілі асистента (не плутати з постійною
+// Profile Goal) — рахується наново щоразу з реальних лоудів від дати
+// старту цілі до сьогодні, нічого не "запам'ятовується" з чату.
+export function getAssistantGoalProgress(trips, assistantGoal) {
+  if (!assistantGoal?.amount || !assistantGoal?.startDate) return null;
+
+  const loads = flattenLoads(trips).filter((l) => l.date);
+  const start = new Date(assistantGoal.startDate + "T00:00:00");
+  const now = new Date();
+  const durationDays = Number(assistantGoal.durationDays) || 7;
+  const end = new Date(start);
+  end.setDate(end.getDate() + durationDays);
+
+  const relevantLoads = loads.filter((l) => {
+    const d = parseLoadDate(l.date);
+    return d && d >= start && d < end;
+  });
+
+  const netSoFar = summarize(relevantLoads).net;
+  const daysElapsed = Math.max(
+    1,
+    Math.min(durationDays, Math.ceil((now - start) / 86400000)),
+  );
+  const daysRemaining = Math.max(0, durationDays - daysElapsed);
+  const projectedTotal = (netSoFar / daysElapsed) * durationDays;
+
+  return {
+    targetAmount: Number(assistantGoal.amount),
+    durationDays,
+    startDate: assistantGoal.startDate,
+    daysElapsed,
+    daysRemaining,
+    netSoFar: Math.round(netSoFar),
+    projectedTotal: Math.round(projectedTotal),
+    onTrack: projectedTotal >= Number(assistantGoal.amount),
+  };
+}

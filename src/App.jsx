@@ -15,7 +15,7 @@ import { Analytics } from "@vercel/analytics/react";
 import Profile from "./components/Profile";
 import AnalyticsScreen from "./components/AnalyticsScreen";
 import Settings from "./components/Settings";
-import { AssistantIcon } from "./components/icons/AssistantIcon";
+import ChatScreen from "./components/ChatScreen";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -328,6 +328,9 @@ export default function App() {
             onToggleTheme={toggleTheme}
             onOpenSettings={() => goTo("settings")}
           />
+        )}
+        {screen === "chat" && (
+          <ChatScreen user={user} trips={trips} onBack={handleBack} />
         )}
       </div>
 
