@@ -261,3 +261,48 @@ export function getAssistantGoalProgress(trips, assistantGoal) {
     onTrack: projectedTotal >= Number(assistantGoal.amount),
   };
 }
+
+// Помісячна розкладка за останні N місяців + підсумок за весь час —
+// дає AI-асистенту змогу відповідати на будь-яке питання про
+// конкретний місяць чи "скільки всього", без дампу кожного лоуда
+// (що було б і дорого в токенах, і непотрібно детально).
+export function getMonthlyBreakdown(trips, monthsBack = 12) {
+  const loads = flattenLoads(trips).filter((l) => l.date);
+  const now = new Date();
+
+  const months = [];
+  for (let i = 0; i < monthsBack; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthStart = d;
+    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const monthLoads = loads.filter((l) => {
+      const ld = parseLoadDate(l.date);
+      return ld && ld >= monthStart && ld < monthEnd;
+    });
+    if (monthLoads.length === 0) continue;
+    const s = summarize(monthLoads);
+    months.push({
+      month: `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, "0")}`,
+      label: monthStart.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      }),
+      net: Math.round(s.net),
+      gross: Math.round(s.gross),
+      miles: Math.round(s.miles),
+      loadCount: s.loadCount,
+    });
+  }
+
+  const allTime = summarize(loads);
+
+  return {
+    monthlyBreakdown: months,
+    allTime: {
+      net: Math.round(allTime.net),
+      gross: Math.round(allTime.gross),
+      miles: Math.round(allTime.miles),
+      loadCount: allTime.loadCount,
+    },
+  };
+}

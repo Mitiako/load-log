@@ -6,6 +6,7 @@ import {
   getAnalytics,
   getRecentActiveWeeksAverage,
   getAssistantGoalProgress,
+  getMonthlyBreakdown,
 } from "./analytics";
 
 export function buildChatContext(trips, profile) {
@@ -29,6 +30,8 @@ export function buildChatContext(trips, profile) {
     ? getAssistantGoalProgress(trips, profile.assistantGoal)
     : null;
 
+  const history = getMonthlyBreakdown(trips, 12);
+
   return {
     thisWeekNet: Math.round(analytics.thisWeek?.net || 0),
     thisMonthNet: Math.round(analytics.thisMonth?.net || 0),
@@ -40,5 +43,7 @@ export function buildChatContext(trips, profile) {
     assistantGoal: assistantGoalProgress,
     payMode: profile?.payMode || null,
     payVal: profile?.payVal || null,
+    monthlyBreakdown: history.monthlyBreakdown,
+    allTimeTotals: history.allTime,
   };
 }
