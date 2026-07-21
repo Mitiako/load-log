@@ -86,6 +86,7 @@ export default function AnalyticsScreen({
   onToggleTheme,
   onGoToLoad,
   onOpenSettings,
+  onOpenChat,
 }) {
   const data = useMemo(() => getAnalytics(trips), [trips]);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -166,7 +167,7 @@ export default function AnalyticsScreen({
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
-              onClick={() => alert("Chat coming soon!")}
+              onClick={onOpenChat}
               style={{
                 background: "none",
                 border: "none",
@@ -175,7 +176,7 @@ export default function AnalyticsScreen({
                 display: "flex",
               }}
             >
-              <AssistantIcon size={30} />
+              <AssistantIcon size={26} />
             </button>
             <button
               onClick={onOpenSettings}

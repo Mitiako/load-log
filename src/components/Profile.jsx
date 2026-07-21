@@ -25,6 +25,7 @@ export default function Profile({
   theme,
   onToggleTheme,
   onOpenSettings,
+  onOpenChat,
 }) {
   const [profile, setProfile] = useState({
     name: user?.displayName || "",
@@ -111,7 +112,7 @@ export default function Profile({
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <button
-              onClick={() => alert("Chat coming soon!")}
+              onClick={onOpenChat}
               style={{
                 background: "none",
                 border: "none",
@@ -120,7 +121,7 @@ export default function Profile({
                 display: "flex",
               }}
             >
-              <AssistantIcon size={30} />
+              <AssistantIcon size={26} />
             </button>
             <button
               onClick={onOpenSettings}
