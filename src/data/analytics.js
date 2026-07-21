@@ -289,6 +289,8 @@ export function getMonthlyBreakdown(trips, monthsBack = 12) {
       }),
       net: Math.round(s.net),
       gross: Math.round(s.gross),
+      fuel: Math.round(s.fuel),
+      otherExpenses: Math.round(s.otherExp),
       miles: Math.round(s.miles),
       loadCount: s.loadCount,
     });
@@ -301,6 +303,8 @@ export function getMonthlyBreakdown(trips, monthsBack = 12) {
     allTime: {
       net: Math.round(allTime.net),
       gross: Math.round(allTime.gross),
+      fuel: Math.round(allTime.fuel),
+      otherExpenses: Math.round(allTime.otherExp),
       miles: Math.round(allTime.miles),
       loadCount: allTime.loadCount,
     },

@@ -34,7 +34,11 @@ export function buildChatContext(trips, profile) {
 
   return {
     thisWeekNet: Math.round(analytics.thisWeek?.net || 0),
+    thisWeekFuel: Math.round(analytics.thisWeek?.fuel || 0),
+    thisWeekOtherExpenses: Math.round(analytics.thisWeek?.otherExp || 0),
     thisMonthNet: Math.round(analytics.thisMonth?.net || 0),
+    thisMonthFuel: Math.round(analytics.thisMonth?.fuel || 0),
+    thisMonthOtherExpenses: Math.round(analytics.thisMonth?.otherExp || 0),
     breakEvenRpm:
       breakEvenRpm !== null ? Number(breakEvenRpm.toFixed(2)) : null,
     profileLongTermGoal: profile?.goalType
