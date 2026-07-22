@@ -310,3 +310,47 @@ export function getMonthlyBreakdown(trips, monthsBack = 12) {
     },
   };
 }
+
+// Список конкретних рядків витрат (не агрегат!) за останні N місяців —
+// кожен fuel-запис і кожен Other Expense окремо, з назвою і сумою.
+// Без цього AI-асистент бачить тільки суму за місяць і не може сказати
+// "на що саме" пішли гроші чи виділити конкретний нетипово-трекінговий
+// запис.
+export function getExpenseLineItems(trips, monthsBack = 3, limit = 100) {
+  const now = new Date();
+  const cutoff = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+  const loads = flattenLoads(trips).filter((l) => l.date);
+
+  const items = [];
+  loads.forEach((l) => {
+    const d = parseLoadDate(l.date);
+    if (!d || d < cutoff) return;
+
+    (l.diesel || []).forEach((f) => {
+      const amt = (Number(f.amount) || 0) - (Number(f.discount) || 0);
+      if (amt > 0) {
+        items.push({
+          date: f.date || l.date,
+          type: "fuel",
+          label: f.location ? `Fuel — ${f.location}` : "Fuel",
+          amount: Math.round(amt),
+        });
+      }
+    });
+
+    (l.expenses || []).forEach((e) => {
+      const amt = Number(e.amount) || 0;
+      if (amt > 0) {
+        items.push({
+          date: l.date,
+          type: "other",
+          label: e.name || "Unnamed expense",
+          amount: Math.round(amt),
+        });
+      }
+    });
+  });
+
+  items.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return items.slice(0, limit);
+}

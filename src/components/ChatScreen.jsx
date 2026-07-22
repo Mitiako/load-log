@@ -97,6 +97,19 @@ export default function ChatScreen({ user, trips, onBack }) {
       />
 
       <div
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 11,
+          color: "var(--text-muted)",
+          textAlign: "center",
+          padding: "8px 16px",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        For your security and performance, I only have access to your last 3
+        months of data.
+      </div>
+      <div
         ref={scrollRef}
         style={{
           flex: 1,
