@@ -38,6 +38,25 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     }
   }, [load, user]);
   const [weight, setWeight] = useState(load?.weight || "");
+
+  // Нові поля Route-секції — Address/Zip/Shipper/Receiver окремо для
+  // From і To, на додачу до існуючого City+State (from/to).
+  const [fromAddress, setFromAddress] = useState(load?.fromAddress || "");
+  const [fromZip, setFromZip] = useState(load?.fromZip || "");
+  const [fromShipperName, setFromShipperName] = useState(
+    load?.fromShipperName || "",
+  );
+  const [fromShipperContact, setFromShipperContact] = useState(
+    load?.fromShipperContact || "",
+  );
+  const [toAddress, setToAddress] = useState(load?.toAddress || "");
+  const [toZip, setToZip] = useState(load?.toZip || "");
+  const [toReceiverName, setToReceiverName] = useState(
+    load?.toReceiverName || "",
+  );
+  const [toReceiverContact, setToReceiverContact] = useState(
+    load?.toReceiverContact || "",
+  );
   const [locationError, setLocationError] = useState(false);
   const [scanning, setScanning] = useState(false);
   const scanReceiptRef = useRef(null);
@@ -208,6 +227,14 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     onSave({
       from: from || "Unknown",
       to: to || "Unknown",
+      fromAddress,
+      fromZip,
+      fromShipperName,
+      fromShipperContact,
+      toAddress,
+      toZip,
+      toReceiverName,
+      toReceiverContact,
       miles: Number(miles) || 0,
       dh: showDh ? Number(dh) || 0 : 0,
       gross: Number(gross),
@@ -261,27 +288,147 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
         {/* Route */}
         <FormSection label="ROUTE" />
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 12,
-            padding: "0 16px 12px",
-          }}
-        >
-          <CityStateInput
-            label="From"
-            value={from}
-            onChange={setFrom}
-            placeholder="Chicago"
-          />
-          <CityStateInput
-            label="To"
-            value={to}
-            onChange={setTo}
-            placeholder="Dallas"
-          />
+        <div style={{ margin: "0 16px 12px", display: "flex", gap: 12 }}>
+          {/* Візуальна лінія маршруту: крапки + пунктир */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              paddingTop: 18,
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: "#35C46A",
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                width: 0,
+                flex: 1,
+                minHeight: 80,
+                borderLeft: "2px dashed var(--border)",
+                margin: "4px 0",
+              }}
+            />
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: "var(--accent)",
+                flexShrink: 0,
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              minWidth: 0,
+            }}
+          >
+            {/* FROM */}
+            <div className="glass" style={{ padding: 16 }}>
+              <div className="label" style={{ marginBottom: 10 }}>
+                From · Pickup
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <Field
+                  label="Address"
+                  value={fromAddress}
+                  onChange={setFromAddress}
+                  placeholder="592 Yucca Ct"
+                />
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <CityStateInput
+                  label="City / State / ZIP"
+                  value={from}
+                  onChange={setFrom}
+                  placeholder="Princeton"
+                  zip={fromZip}
+                  onZipChange={setFromZip}
+                />
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 8,
+                }}
+              >
+                <Field
+                  label="Shipper name"
+                  value={fromShipperName}
+                  onChange={setFromShipperName}
+                  placeholder="Advanced Cold Storage"
+                />
+                <Field
+                  label="Shipper contact"
+                  value={fromShipperContact}
+                  onChange={setFromShipperContact}
+                  placeholder="773-710-1345"
+                />
+              </div>
+            </div>
+
+            {/* TO */}
+            <div className="glass" style={{ padding: 16 }}>
+              <div className="label" style={{ marginBottom: 10 }}>
+                To · Delivery
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <Field
+                  label="Address"
+                  value={toAddress}
+                  onChange={setToAddress}
+                  placeholder="10913 W 6th Ave"
+                />
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <CityStateInput
+                  label="City / State / ZIP"
+                  value={to}
+                  onChange={setTo}
+                  placeholder="Airway Heights"
+                  zip={toZip}
+                  onZipChange={setToZip}
+                />
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 8,
+                }}
+              >
+                <Field
+                  label="Receiver name"
+                  value={toReceiverName}
+                  onChange={setToReceiverName}
+                  placeholder="Walmart"
+                />
+                <Field
+                  label="Receiver contact"
+                  value={toReceiverContact}
+                  onChange={setToReceiverContact}
+                  placeholder="385-419-7572"
+                />
+              </div>
+            </div>
+          </div>
         </div>
+
         {locationError && (
           <div
             style={{

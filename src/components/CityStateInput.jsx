@@ -24,6 +24,8 @@ export default function CityStateInput({
   value,
   onChange,
   placeholder,
+  zip,
+  onZipChange,
 }) {
   const initial = splitValue(value);
   const [city, setCity] = useState(initial.city);
@@ -80,7 +82,13 @@ export default function CityStateInput({
       <div className="label" style={{ marginBottom: 6 }}>
         {label}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 78px", gap: 8 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: onZipChange ? "1.6fr 0.8fr 1fr" : "1fr 78px",
+          gap: 8,
+        }}
+      >
         <div ref={ref} style={{ position: "relative" }}>
           <input
             type="text"
@@ -164,6 +172,17 @@ export default function CityStateInput({
             </option>
           ))}
         </select>
+        {onZipChange && (
+          <input
+            type="text"
+            inputMode="numeric"
+            value={zip || ""}
+            onChange={(e) => onZipChange(e.target.value)}
+            placeholder="ZIP"
+            className="input"
+            style={{ fontSize: 14, padding: "10px 12px" }}
+          />
+        )}
       </div>
     </div>
   );
