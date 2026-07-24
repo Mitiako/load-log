@@ -4,8 +4,8 @@
 // з приглушеною пульсацією "хвилею" вздовж лінії.
 import { useMemo } from "react";
 
-const GREEN = [53, 196, 106];
-const ORANGE = [255, 138, 61];
+const GREEN = [86, 168, 118];
+const ORANGE = [214, 138, 92];
 
 function mixColor(t) {
   const r = Math.round(GREEN[0] + (ORANGE[0] - GREEN[0]) * t);
@@ -47,7 +47,7 @@ export default function RouteConnector({ top, height }) {
           width: 10,
           height: 10,
           borderRadius: "50%",
-          background: "#35C46A",
+          background: "rgb(86, 168, 118)",
           transform: "translate(-50%, -50%)",
           animation: "route-dot-green 3s ease-in-out infinite",
           zIndex: 2,
@@ -92,14 +92,14 @@ export default function RouteConnector({ top, height }) {
           100% { opacity: 0.18; filter: drop-shadow(0 0 0 transparent); }
         }
         @keyframes route-dot-green {
-          0% { box-shadow: 0 0 0 0 rgba(53,196,106,0.3); }
-          4% { box-shadow: 0 0 0 6px rgba(53,196,106,0); }
-          100% { box-shadow: 0 0 0 6px rgba(53,196,106,0); }
+          0% { box-shadow: 0 0 0 0 rgba(86,168,118,0.22); }
+          4% { box-shadow: 0 0 0 6px rgba(86,168,118,0); }
+          100% { box-shadow: 0 0 0 6px rgba(86,168,118,0); }
         }
         @keyframes route-dot-orange {
-          0% { box-shadow: 0 0 0 0 rgba(255,138,61,0.3); }
-          4% { box-shadow: 0 0 0 6px rgba(255,138,61,0); }
-          100% { box-shadow: 0 0 0 6px rgba(255,138,61,0); }
+          0% { box-shadow: 0 0 0 0 rgba(214,138,92,0.22); }
+          4% { box-shadow: 0 0 0 6px rgba(214,138,92,0); }
+          100% { box-shadow: 0 0 0 6px rgba(214,138,92,0); }
         }
       `}</style>
     </div>

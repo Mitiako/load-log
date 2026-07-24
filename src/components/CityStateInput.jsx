@@ -79,7 +79,17 @@ export default function CityStateInput({
 
   return (
     <div>
-      <div className="label" style={{ marginBottom: 6 }}>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.6875rem",
+          fontWeight: 500,
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          color: "var(--text-primary)",
+          marginBottom: 6,
+        }}
+      >
         {label}
       </div>
       <div
@@ -90,6 +100,7 @@ export default function CityStateInput({
         }}
       >
         <div ref={ref} style={{ position: "relative" }}>
+          <RequiredBadge />
           <input
             type="text"
             value={city}
@@ -148,42 +159,70 @@ export default function CityStateInput({
             </div>
           )}
         </div>
-        <select
-          value={state}
-          onChange={(e) => handleStateChange(e.target.value)}
-          className="input"
-          style={{
-            fontSize: 14,
-            padding: "10px 6px",
-            textAlign: "center",
-            color: "var(--text-primary)",
-          }}
-        >
-          <option value="" style={{ color: "#111218", background: "#fff" }}>
-            St
-          </option>
-          {US_STATES.map((s) => (
-            <option
-              key={s}
-              value={s}
-              style={{ color: "#111218", background: "#fff" }}
-            >
-              {s}
-            </option>
-          ))}
-        </select>
-        {onZipChange && (
-          <input
-            type="text"
-            inputMode="numeric"
-            value={zip || ""}
-            onChange={(e) => onZipChange(e.target.value)}
-            placeholder="ZIP"
+        <div style={{ position: "relative" }}>
+          <RequiredBadge />
+          <select
+            value={state}
+            onChange={(e) => handleStateChange(e.target.value)}
             className="input"
-            style={{ fontSize: 14, padding: "10px 12px" }}
-          />
+            style={{
+              width: "100%",
+              fontSize: 14,
+              padding: "10px 6px",
+              textAlign: "center",
+              color: "var(--text-primary)",
+            }}
+          >
+            <option value="" style={{ color: "#111218", background: "#fff" }}>
+              St
+            </option>
+            {US_STATES.map((s) => (
+              <option
+                key={s}
+                value={s}
+                style={{ color: "#111218", background: "#fff" }}
+              >
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+        {onZipChange && (
+          <div style={{ position: "relative" }}>
+            <RequiredBadge />
+            <input
+              type="text"
+              inputMode="numeric"
+              value={zip || ""}
+              onChange={(e) => onZipChange(e.target.value)}
+              placeholder="ZIP"
+              className="input"
+              style={{ fontSize: 14, padding: "10px 12px" }}
+            />
+          </div>
         )}
       </div>
     </div>
+  );
+}
+
+function RequiredBadge() {
+  return (
+    <span
+      style={{
+        position: "absolute",
+        top: -6,
+        right: -4,
+        color: "#f87171",
+        fontFamily: "var(--font-sans)",
+        fontWeight: 700,
+        fontSize: 14,
+        lineHeight: 1,
+        zIndex: 1,
+        pointerEvents: "none",
+      }}
+    >
+      *
+    </span>
   );
 }

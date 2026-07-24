@@ -346,7 +346,16 @@ export default function LoadForm({ load, onSave, onBack, user }) {
           >
             {/* FROM */}
             <div ref={fromAnchorRef} className="glass" style={{ padding: 16 }}>
-              <div className="label" style={{ marginBottom: 10 }}>
+              <div
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  letterSpacing: "0.02em",
+                  color: "var(--text-primary)",
+                  marginBottom: 12,
+                }}
+              >
                 From · Pickup
               </div>
               <div style={{ marginBottom: 10 }}>
@@ -354,7 +363,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   label="Address"
                   value={fromAddress}
                   onChange={setFromAddress}
-                  placeholder="592 Yucca Ct"
+                  placeholder="1600 Pennsylvania Ave NW"
                 />
               </div>
               <div style={{ marginBottom: 10 }}>
@@ -362,7 +371,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   label="City / State / ZIP"
                   value={from}
                   onChange={setFrom}
-                  placeholder="Princeton"
+                  placeholder="Washington"
                   zip={fromZip}
                   onZipChange={setFromZip}
                 />
@@ -378,20 +387,29 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   label="Shipper name"
                   value={fromShipperName}
                   onChange={setFromShipperName}
-                  placeholder="Advanced Cold Storage"
+                  placeholder="The White House"
                 />
                 <Field
                   label="Shipper contact"
                   value={fromShipperContact}
                   onChange={setFromShipperContact}
-                  placeholder="773-710-1345"
+                  placeholder="+12024567041"
                 />
               </div>
             </div>
 
             {/* TO */}
             <div ref={toAnchorRef} className="glass" style={{ padding: 16 }}>
-              <div className="label" style={{ marginBottom: 10 }}>
+              <div
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  letterSpacing: "0.02em",
+                  color: "var(--text-primary)",
+                  marginBottom: 12,
+                }}
+              >
                 To · Delivery
               </div>
               <div style={{ marginBottom: 10 }}>
@@ -399,7 +417,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   label="Address"
                   value={toAddress}
                   onChange={setToAddress}
-                  placeholder="10913 W 6th Ave"
+                  placeholder="10600 N Tantau Ave"
                 />
               </div>
               <div style={{ marginBottom: 10 }}>
@@ -407,7 +425,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   label="City / State / ZIP"
                   value={to}
                   onChange={setTo}
-                  placeholder="Airway Heights"
+                  placeholder="Cupertino"
                   zip={toZip}
                   onZipChange={setToZip}
                 />
@@ -423,13 +441,13 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   label="Receiver name"
                   value={toReceiverName}
                   onChange={setToReceiverName}
-                  placeholder="Walmart"
+                  placeholder="Apple Park Visitor Center"
                 />
                 <Field
                   label="Receiver contact"
                   value={toReceiverContact}
                   onChange={setToReceiverContact}
-                  placeholder="385-419-7572"
+                  placeholder="+14089611560"
                 />
               </div>
             </div>
@@ -958,7 +976,17 @@ export default function LoadForm({ load, onSave, onBack, user }) {
 function Field({ label, value, onChange, type = "text", placeholder }) {
   return (
     <div>
-      <div className="label" style={{ marginBottom: 6 }}>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.6875rem",
+          fontWeight: 500,
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          color: "var(--text-primary)",
+          marginBottom: 6,
+        }}
+      >
         {label}
       </div>
       <input
@@ -1011,9 +1039,10 @@ function FormSection({ label }) {
       style={{
         padding: "16px 16px 8px",
         fontFamily: "var(--font-mono)",
+        fontWeight: 700,
         fontSize: 10,
         letterSpacing: "0.2em",
-        color: "var(--text-muted)",
+        color: "var(--text-primary)",
       }}
     >
       {label}
