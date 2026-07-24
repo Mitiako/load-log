@@ -1,11 +1,12 @@
 // LoadForm.jsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
 import { fetchProfile } from "../data/firestore";
 import CityStateInput from "./CityStateInput";
 import LocationInput from "./LocationInput";
 import Header from "./Header";
+import RouteConnector from "./RouteConnector";
 
 export default function LoadForm({ load, onSave, onBack, user }) {
   const settings = getSettings();
@@ -54,6 +55,37 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   const [toReceiverName, setToReceiverName] = useState(
     load?.toReceiverName || "",
   );
+  // Позиція лінії-конектора між зеленою і помаранчевою крапками —
+  // вимірюється реальними координатами DOM (не приблизною CSS-математикою),
+  // бо висота FROM-картки змінюється залежно від довжини введеного тексту.
+  const routeWrapRef = useRef(null);
+  const fromAnchorRef = useRef(null); // вся картка FROM
+  const toAnchorRef = useRef(null); // вся картка TO
+  const [dotsY, setDotsY] = useState({ from: 18, to: 18 });
+
+  useLayoutEffect(() => {
+    function measure() {
+      if (
+        !routeWrapRef.current ||
+        !fromAnchorRef.current ||
+        !toAnchorRef.current
+      )
+        return;
+      const wrapRect = routeWrapRef.current.getBoundingClientRect();
+      const fromRect = fromAnchorRef.current.getBoundingClientRect();
+      const toRect = toAnchorRef.current.getBoundingClientRect();
+      // Центр по всій висоті картки (не заголовка) — крапка тепер
+      // сидить по центру блоку FROM/TO, а не прив'язана до заголовка.
+      setDotsY({
+        from: fromRect.top - wrapRect.top + fromRect.height / 2,
+        to: toRect.top - wrapRect.top + toRect.height / 2,
+      });
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (routeWrapRef.current) ro.observe(routeWrapRef.current);
+    return () => ro.disconnect();
+  }, []);
   const [toReceiverContact, setToReceiverContact] = useState(
     load?.toReceiverContact || "",
   );
@@ -288,45 +320,20 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
         {/* Route */}
         <FormSection label="ROUTE" />
-        <div style={{ margin: "0 16px 12px", display: "flex", gap: 12 }}>
-          {/* Візуальна лінія маршруту: крапки + пунктир */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              paddingTop: 18,
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                background: "#35C46A",
-                flexShrink: 0,
-              }}
-            />
-            <div
-              style={{
-                width: 0,
-                flex: 1,
-                minHeight: 80,
-                borderLeft: "2px dashed var(--border)",
-                margin: "4px 0",
-              }}
-            />
-            <div
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                background: "var(--accent)",
-                flexShrink: 0,
-              }}
-            />
-          </div>
+        <div
+          ref={routeWrapRef}
+          style={{
+            margin: "0 16px 12px",
+            display: "flex",
+            gap: 12,
+            position: "relative",
+          }}
+        >
+          <RouteConnector
+            top={dotsY.from}
+            height={Math.max(0, dotsY.to - dotsY.from)}
+          />
+          <div style={{ width: 10, flexShrink: 0 }} />
 
           <div
             style={{
@@ -338,7 +345,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             }}
           >
             {/* FROM */}
-            <div className="glass" style={{ padding: 16 }}>
+            <div ref={fromAnchorRef} className="glass" style={{ padding: 16 }}>
               <div className="label" style={{ marginBottom: 10 }}>
                 From · Pickup
               </div>
@@ -383,7 +390,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             </div>
 
             {/* TO */}
-            <div className="glass" style={{ padding: 16 }}>
+            <div ref={toAnchorRef} className="glass" style={{ padding: 16 }}>
               <div className="label" style={{ marginBottom: 10 }}>
                 To · Delivery
               </div>
