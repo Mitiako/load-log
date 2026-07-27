@@ -242,6 +242,33 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     reader.readAsDataURL(file);
   }
 
+  async function fetchRouteMiles(
+    originCity,
+    originState,
+    destinationCity,
+    destinationState,
+  ) {
+    try {
+      const res = await fetch("/api/route-miles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          originCity,
+          originState,
+          destinationCity,
+          destinationState,
+        }),
+      });
+      const data = await res.json();
+      if (data.miles) {
+        setMiles(String(data.miles));
+      }
+    } catch (err) {
+      console.error("Route miles fetch failed:", err);
+      // Тихо ігноруємо — водій довводить милі вручну, як і зараз.
+    }
+  }
+
   async function handleScanRateCon(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -295,8 +322,25 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         if (data.receiverName) setToReceiverName(data.receiverName);
         if (data.receiverContact) setToReceiverContact(data.receiverContact);
         if (data.rate) setGross(String(data.rate));
-        if (data.miles) setMiles(String(data.miles));
         if (data.weight) setWeight(String(data.weight));
+
+        if (data.miles) {
+          // RateCon сам вказав милі — довіряємо документу, не рахуємо повторно.
+          setMiles(String(data.miles));
+        } else if (
+          data.originCity &&
+          data.originState &&
+          data.destinationCity &&
+          data.destinationState
+        ) {
+          // Документ не дав миль — рахуємо орієнтовно через безкоштовний маршрут.
+          fetchRouteMiles(
+            data.originCity,
+            data.originState,
+            data.destinationCity,
+            data.destinationState,
+          );
+        }
         showToast("Route filled from RateCon — double-check before saving.");
       }
     } catch (err) {
