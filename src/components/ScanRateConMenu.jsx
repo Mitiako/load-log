@@ -30,7 +30,27 @@ export default function ScanRateConMenu({ onScan, scanning }) {
   }
 
   return (
-    <div ref={wrapRef} style={{ position: "relative" }}>
+    <div
+      ref={wrapRef}
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      {scanning && (
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.05em",
+            color: "var(--accent)",
+          }}
+        >
+          Scanning...
+        </span>
+      )}
       <button
         onClick={() => !scanning && setOpen((o) => !o)}
         disabled={scanning}
@@ -40,7 +60,7 @@ export default function ScanRateConMenu({ onScan, scanning }) {
           border: "none",
           padding: 0,
           cursor: scanning ? "default" : "pointer",
-          opacity: scanning ? 0.5 : 1,
+          opacity: 1,
           display: "flex",
           alignItems: "center",
           lineHeight: 0,
@@ -64,11 +84,7 @@ export default function ScanRateConMenu({ onScan, scanning }) {
             stroke="var(--accent)"
             strokeWidth="9"
             strokeLinejoin="round"
-            style={{
-              animation: scanning
-                ? "scanGlow 1.1s ease-in-out infinite"
-                : "none",
-            }}
+            style={{ animation: "scanGlow 1.1s ease-in-out infinite" }}
           />
           <path
             d="M196 33V77C196 85.8366 203.163 93 212 93H256L196 33Z"
@@ -77,18 +93,15 @@ export default function ScanRateConMenu({ onScan, scanning }) {
             strokeWidth="9"
             strokeLinejoin="round"
           />
-          <text
-            x="160"
-            y="172"
-            textAnchor="middle"
-            fontFamily="var(--font-sans)"
-            fontSize="28"
-            fontWeight="700"
-            letterSpacing="2"
-            fill="var(--accent)"
-          >
-            DOC INFO
-          </text>
+          <line
+            x1="103"
+            y1="172"
+            x2="217"
+            y2="172"
+            stroke="var(--accent)"
+            strokeWidth="8"
+            strokeLinecap="round"
+          />
           <line
             x1="103"
             y1="200"
@@ -114,11 +127,10 @@ export default function ScanRateConMenu({ onScan, scanning }) {
               width="200"
               height="18"
               fill="var(--accent)"
-              opacity=".55"
+              opacity="0"
               style={{
-                animation: scanning
-                  ? "scanMove 1.1s ease-in-out infinite, scanFade 1.1s ease-in-out infinite"
-                  : "none",
+                animation:
+                  "scanMove 1.1s ease-in-out infinite, scanFade 1.1s ease-in-out infinite",
               }}
             />
           </g>
