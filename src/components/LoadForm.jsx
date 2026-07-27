@@ -7,6 +7,7 @@ import CityStateInput from "./CityStateInput";
 import LocationInput from "./LocationInput";
 import Header from "./Header";
 import RouteConnector from "./RouteConnector";
+import { pdfToImageBase64 } from "../utils/pdfToImage";
 
 export default function LoadForm({ load, onSave, onBack, user }) {
   const settings = getSettings();
@@ -94,6 +95,8 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   const scanReceiptRef = useRef(null);
   const scanExpenseRef = useRef(null);
   const [scanningExpense, setScanningExpense] = useState(false);
+  const [scanningRateCon, setScanningRateCon] = useState(false);
+  const scanRateConRef = useRef(null);
   const [toast, setToast] = useState(null);
 
   function showToast(message) {
@@ -237,6 +240,73 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     };
     reader.readAsDataURL(file);
   }
+
+  async function handleScanRateCon(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanningRateCon(true);
+    try {
+      // PDF конвертуємо в JPEG-картинку локально в браузері перед відправкою —
+      // OpenAI vision API приймає лише зображення, не PDF напряму.
+      let imageDataUrl;
+      if (file.type === "application/pdf") {
+        const base64 = await pdfToImageBase64(file);
+        imageDataUrl = `data:image/jpeg;base64,${base64}`;
+      } else {
+        imageDataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const res = await fetch("/api/scan-ratecon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imageDataUrl }),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        showToast(
+          "Couldn't read the document — please enter details manually.",
+        );
+      } else if (data.notARateCon) {
+        showToast(
+          "This doesn't look like a Rate Confirmation — please enter details manually.",
+        );
+      } else {
+        // Заповнюємо тільки те, що AI реально знайшов — решта полів
+        // лишається як є, водій сам довводить чого бракує.
+        if (data.originCity && data.originState) {
+          setFrom(`${data.originCity}, ${data.originState}`);
+        }
+        if (data.originAddress) setFromAddress(data.originAddress);
+        if (data.originZip) setFromZip(data.originZip);
+        if (data.shipperName) setFromShipperName(data.shipperName);
+        if (data.shipperContact) setFromShipperContact(data.shipperContact);
+        if (data.destinationCity && data.destinationState) {
+          setTo(`${data.destinationCity}, ${data.destinationState}`);
+        }
+        if (data.destinationAddress) setToAddress(data.destinationAddress);
+        if (data.destinationZip) setToZip(data.destinationZip);
+        if (data.receiverName) setToReceiverName(data.receiverName);
+        if (data.receiverContact) setToReceiverContact(data.receiverContact);
+        if (data.rate) setGross(String(data.rate));
+        if (data.miles) setMiles(String(data.miles));
+        if (data.weight) setWeight(String(data.weight));
+        showToast("Route filled from RateCon — double-check before saving.");
+      }
+    } catch (err) {
+      console.error("Scan RateCon failed:", err);
+      showToast("Couldn't read the document — please enter details manually.");
+    } finally {
+      setScanningRateCon(false);
+      e.target.value = "";
+    }
+  }
+
   function addExpense() {
     setExpenses([...expenses, { name: "", amount: "" }]);
   }
@@ -320,6 +390,33 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
         {/* Route */}
         <FormSection label="ROUTE" />
+        <div style={{ margin: "0 16px 12px" }}>
+          <button
+            onClick={() => scanRateConRef.current?.click()}
+            disabled={scanningRateCon}
+            style={{
+              width: "100%",
+              padding: "10px",
+              border: "1px dashed var(--accent)",
+              borderRadius: "var(--radius-btn)",
+              background: "rgba(255,138,61,0.08)",
+              color: "var(--accent)",
+              fontFamily: "var(--font-sans)",
+              fontSize: 13,
+              cursor: scanningRateCon ? "default" : "pointer",
+              opacity: scanningRateCon ? 0.6 : 1,
+            }}
+          >
+            {scanningRateCon ? "Scanning..." : "📄 Scan Rate Confirmation"}
+          </button>
+          <input
+            ref={scanRateConRef}
+            type="file"
+            accept="image/*,application/pdf"
+            style={{ display: "none" }}
+            onChange={handleScanRateCon}
+          />
+        </div>
         <div
           ref={routeWrapRef}
           style={{

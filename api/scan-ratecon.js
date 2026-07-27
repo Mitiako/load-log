@@ -24,7 +24,7 @@ export default async function handler(req, res) {
           {
             role: "system",
             content:
-              'You are a Rate Confirmation (RateCon) document scanner for a trucking app. Respond with ONLY a JSON object, no other text, no markdown. If this is NOT a rate confirmation / load tender document, respond with exactly: {"notARateCon": true}. Otherwise extract: origin (pickup city/state), destination (delivery city/state), rate (total dollar amount the broker pays, number), miles (trip/loaded miles if printed on the document, number, null if not shown), weight (in lbs if shown, number, null if not shown). Never guess or invent values — only extract what is actually printed on the document.',
+              'You are a Rate Confirmation (RateCon) document scanner for a trucking app. Respond with ONLY a JSON object, no other text, no markdown. If this is NOT a rate confirmation / load tender document, respond with exactly: {"notARateCon": true}. Otherwise extract: originCity (pickup city, string), originState (pickup 2-letter state abbreviation), originAddress (pickup street address if shown, string, null if not shown), originZip (pickup ZIP code if shown, string, null if not shown), shipperName (company name at pickup, string, null if not shown), shipperContact (phone number or contact person at pickup if shown, string, null if not shown), destinationCity (delivery city, string), destinationState (delivery 2-letter state abbreviation), destinationAddress (delivery street address if shown, string, null if not shown), destinationZip (delivery ZIP code if shown, string, null if not shown), receiverName (company name at delivery, string, null if not shown), receiverContact (phone number or contact person at delivery if shown, string, null if not shown), rate (total dollar amount the broker pays, number), miles (trip/loaded miles if printed on the document, number, null if not shown), weight (in lbs if shown, number, null if not shown). Never guess or invent values — only extract what is actually printed on the document. If a field is not visible or not present, use null, never an empty string or a guess.',
           },
           {
             role: "user",
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
             ],
           },
         ],
-        max_tokens: 300,
+        max_tokens: 500,
         response_format: { type: "json_object" },
       }),
     });
