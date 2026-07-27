@@ -30,6 +30,20 @@ export default function CityStateInput({
   const initial = splitValue(value);
   const [city, setCity] = useState(initial.city);
   const [state, setState] = useState(initial.state);
+  // Запам'ятовуємо value з попереднього рендеру, щоб відрізнити
+  // "value змінився ЗЗОВНІ" (RateCon-скан) від "я сама щойно це набрала"
+  // (коли emit() відправив зміну наверх і вона повернулась тим же рядком).
+  const [prevValue, setPrevValue] = useState(value);
+
+  // Синхронізація під час рендеру замість useEffect — офіційний React-патерн
+  // для "скинути локальний стан коли зовнішній проп змінився ззовні",
+  // без зайвого ре-рендер-циклу і без eslint-попередження.
+  if (value !== prevValue) {
+    const parsed = splitValue(value);
+    setCity(parsed.city);
+    setState(parsed.state);
+    setPrevValue(value);
+  }
   const [suggestions, setSuggestions] = useState([]);
   const [show, setShow] = useState(false);
   const ref = useRef(null);
