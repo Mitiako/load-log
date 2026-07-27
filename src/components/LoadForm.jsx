@@ -7,6 +7,7 @@ import CityStateInput from "./CityStateInput";
 import LocationInput from "./LocationInput";
 import Header from "./Header";
 import RouteConnector from "./RouteConnector";
+import ScanRateConMenu from "./ScanRateConMenu";
 import { pdfToImageBase64 } from "../utils/pdfToImage";
 
 export default function LoadForm({ load, onSave, onBack, user }) {
@@ -96,7 +97,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   const scanExpenseRef = useRef(null);
   const [scanningExpense, setScanningExpense] = useState(false);
   const [scanningRateCon, setScanningRateCon] = useState(false);
-  const scanRateConRef = useRef(null);
+
   const [toast, setToast] = useState(null);
 
   function showToast(message) {
@@ -389,34 +390,15 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       {/* Form */}
       <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
         {/* Route */}
-        <FormSection label="ROUTE" />
-        <div style={{ margin: "0 16px 12px" }}>
-          <button
-            onClick={() => scanRateConRef.current?.click()}
-            disabled={scanningRateCon}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px dashed var(--accent)",
-              borderRadius: "var(--radius-btn)",
-              background: "rgba(255,138,61,0.08)",
-              color: "var(--accent)",
-              fontFamily: "var(--font-sans)",
-              fontSize: 13,
-              cursor: scanningRateCon ? "default" : "pointer",
-              opacity: scanningRateCon ? 0.6 : 1,
-            }}
-          >
-            {scanningRateCon ? "Scanning..." : "📄 Scan Rate Confirmation"}
-          </button>
-          <input
-            ref={scanRateConRef}
-            type="file"
-            accept="image/*,application/pdf"
-            style={{ display: "none" }}
-            onChange={handleScanRateCon}
-          />
-        </div>
+        <FormSection
+          label="ROUTE"
+          right={
+            <ScanRateConMenu
+              onScan={handleScanRateCon}
+              scanning={scanningRateCon}
+            />
+          }
+        />
         <div
           ref={routeWrapRef}
           style={{
@@ -1130,19 +1112,28 @@ function ResultRow({ label, value }) {
   );
 }
 
-function FormSection({ label }) {
+function FormSection({ label, right }) {
   return (
     <div
       style={{
         padding: "16px 16px 8px",
-        fontFamily: "var(--font-mono)",
-        fontWeight: 700,
-        fontSize: 10,
-        letterSpacing: "0.2em",
-        color: "var(--text-primary)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
       }}
     >
-      {label}
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          fontSize: 10,
+          letterSpacing: "0.2em",
+          color: "var(--text-primary)",
+        }}
+      >
+        {label}
+      </div>
+      {right}
     </div>
   );
 }
