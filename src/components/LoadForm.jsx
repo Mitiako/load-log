@@ -1,4 +1,6 @@
 // LoadForm.jsx
+
+import { authFetch } from "../utils/authFetch";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { calcLoad, fmtMoney } from "../data/calc";
 import { getSettings, saveSettings } from "../data/store";
@@ -160,7 +162,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
-        const res = await fetch("/api/scan-receipt", {
+        const res = await authFetch("/api/scan-receipt", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: ev.target.result }),
@@ -204,7 +206,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
-        const res = await fetch("/api/scan-expense", {
+        const res = await authFetch("/api/scan-expense", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: ev.target.result }),
@@ -249,7 +251,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     destinationState,
   ) {
     try {
-      const res = await fetch("/api/route-miles", {
+      const res = await authFetch("/api/route-miles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

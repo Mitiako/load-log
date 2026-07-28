@@ -1,4 +1,5 @@
 // LoadDetail.jsx
+import { authFetch } from "../utils/authFetch";
 import { useState, useRef } from "react";
 import { calcLoad, fmtDate, fmtMoney } from "../data/calc";
 import { compressImage } from "../utils/compressImage";
@@ -30,7 +31,7 @@ export default function LoadDetail({
     try {
       const compressed = await compressImage(file);
 
-      const res = await fetch("/api/scan-bol", {
+      const res = await authFetch("/api/scan-bol", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: compressed }),

@@ -1,9 +1,17 @@
 // api/scan-expense.js
 // Vercel Serverless Function — сканує чек НЕ пального (запчастини,
 // lumper, tolls, ремонт тощо) для секції Other Expenses.
+import { verifyAuth } from "./_lib/verifyAuth.js";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    await verifyAuth(req);
+  } catch {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const { image } = req.body;

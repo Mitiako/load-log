@@ -1,9 +1,17 @@
 // api/scan-ratecon.js
 // Vercel Serverless Function — витягує дані з фото/фото RateCon
 // (Rate Confirmation), який водій отримує від диспетчера/брокера.
+import { verifyAuth } from "./_lib/verifyAuth.js";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    await verifyAuth(req);
+  } catch {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const { image } = req.body;

@@ -3,9 +3,17 @@
 // точками через безкоштовний ланцюжок: Nominatim (геокодування City/State
 // в координати) → OSRM (публічний демо-сервер маршрутизації).
 // Без API-ключа, без білінгу — обидва сервіси безкоштовні (OpenStreetMap-based).
+import { verifyAuth } from "./_lib/verifyAuth.js";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    await verifyAuth(req);
+  } catch {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const { originCity, originState, destinationCity, destinationState } =

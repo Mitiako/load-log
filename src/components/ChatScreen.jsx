@@ -1,4 +1,5 @@
 // ChatScreen.jsx
+import { authFetch } from "../utils/authFetch";
 import { useState, useEffect, useRef } from "react";
 import Header from "./Header";
 import { buildChatContext } from "../data/chatContext";
@@ -33,7 +34,7 @@ export default function ChatScreen({ user, trips, onBack }) {
 
     try {
       const context = buildChatContext(trips, profile);
-      const res = await fetch("/api/chat", {
+      const res = await authFetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: nextMessages, context }),

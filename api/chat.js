@@ -3,9 +3,17 @@
 // на дані водія в застосунку (Analytics, Break-Even) і базові
 // trucking-теми. Ввічливо відмовляє на офтопік (навушники, історичні
 // особи тощо) — не через фільтр слів, а через системний промпт.
+import { verifyAuth } from "./_lib/verifyAuth.js";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    await verifyAuth(req);
+  } catch {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const { messages, context } = req.body;
