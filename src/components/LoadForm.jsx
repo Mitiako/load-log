@@ -341,9 +341,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             data.destinationState,
           );
         }
-        showToast(
-          `DEBUG city=${data.originCity ?? "null"} state=${data.originState ?? "null"}`,
-        );
+        showToast("Route filled from RateCon — double-check before saving.");
       }
     } catch (err) {
       console.error("Scan RateCon failed:", err);
