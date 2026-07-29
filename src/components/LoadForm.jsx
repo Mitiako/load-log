@@ -299,9 +299,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       const data = await res.json();
 
       if (data.error) {
-        showToast(
-          "Couldn't read the document — please enter details manually.",
-        );
+        showToast(`DEBUG server error: ${data.error}`);
       } else if (data.notARateCon) {
         showToast(
           "This doesn't look like a Rate Confirmation — please enter details manually.",
