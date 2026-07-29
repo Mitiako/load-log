@@ -345,7 +345,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       }
     } catch (err) {
       console.error("Scan RateCon failed:", err);
-      showToast("Couldn't read the document — please enter details manually.");
+      showToast(`DEBUG catch error: ${err.message}`);
     } finally {
       setScanningRateCon(false);
       e.target.value = "";
