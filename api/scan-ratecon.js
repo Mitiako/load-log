@@ -10,9 +10,8 @@ export default async function handler(req, res) {
 
   try {
     await verifyAuth(req);
-  } catch (err) {
-    console.error("Auth error:", err);
-    return res.status(401).json({ error: `Auth failed: ${err.message}` });
+  } catch {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const { image } = req.body;

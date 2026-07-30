@@ -299,7 +299,9 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       const data = await res.json();
 
       if (data.error) {
-        showToast(`DEBUG server error: ${data.error}`);
+        showToast(
+          "Couldn't read the document — please enter details manually.",
+        );
       } else if (data.notARateCon) {
         showToast(
           "This doesn't look like a Rate Confirmation — please enter details manually.",
@@ -345,7 +347,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       }
     } catch (err) {
       console.error("Scan RateCon failed:", err);
-      showToast(`DEBUG catch error: ${err.message}`);
+      showToast("Couldn't read the document — please enter details manually.");
     } finally {
       setScanningRateCon(false);
       e.target.value = "";
