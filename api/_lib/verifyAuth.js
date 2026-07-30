@@ -4,15 +4,16 @@
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 
-// Ініціалізуємо Admin SDK лише один раз (Vercel може перевикористовувати
-// той самий процес між викликами — повторна ініціалізація впаде з помилкою).
-if (!getApps().length) {
+// Ініціалізація винесена в окрему функцію і викликається ЛІНИВО, всередині
+// verifyAuth() — не на верхньому рівні модуля. Якщо ключ невалідний,
+// помилка тепер потрапляє в наш власний try/catch (JSON-відповідь),
+// а не валить увесь модуль до необробленого краху (FUNCTION_INVOCATION_FAILED).
+function ensureInitialized() {
+  if (getApps().length) return;
   initializeApp({
     credential: cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      // Vercel зберігає \n як буквальні два символи в env-змінній —
-      // повертаємо їх у справжні переноси рядка, інакше ключ невалідний.
       privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
     }),
   });
@@ -25,6 +26,8 @@ if (!getApps().length) {
  * @throws {Error} якщо токен відсутній або невалідний
  */
 export async function verifyAuth(req) {
+  ensureInitialized();
+
   const authHeader = req.headers.authorization || "";
   const match = authHeader.match(/^Bearer (.+)$/);
   if (!match) {
