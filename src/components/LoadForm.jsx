@@ -291,7 +291,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         });
       }
 
-      const res = await fetch("/api/scan-ratecon", {
+      const res = await authFetch("/api/scan-ratecon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: imageDataUrl }),
