@@ -1,13 +1,10 @@
 // api/_lib/verifyAuth.js
-// Спільна утиліта перевірки Firebase ID token — підключається на початку
-// кожної serverless-функції, яка має бути доступна лише залогіненим водіям.
+// Спільна утиліта перевірки Firebase ID token + App Check token —
+// підключається на початку кожної serverless-функції.
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getAppCheck } from "firebase-admin/app-check";
 
-// Ініціалізація винесена в окрему функцію і викликається ЛІНИВО, всередині
-// verifyAuth() — не на верхньому рівні модуля. Якщо ключ невалідний,
-// помилка тепер потрапляє в наш власний try/catch (JSON-відповідь),
-// а не валить увесь модуль до необробленого краху (FUNCTION_INVOCATION_FAILED).
 function ensureInitialized() {
   if (getApps().length) return;
   initializeApp({
@@ -20,13 +17,20 @@ function ensureInitialized() {
 }
 
 /**
- * Перевіряє Authorization: Bearer <idToken> заголовок запиту.
+ * Перевіряє App Check token (ЩО це реальний застосунок) і
+ * Authorization: Bearer <idToken> (ХТО робить запит).
  * @param {import('http').IncomingMessage} req
  * @returns {Promise<string>} uid залогіненого користувача
- * @throws {Error} якщо токен відсутній або невалідний
+ * @throws {Error} якщо будь-яка з перевірок не пройшла
  */
 export async function verifyAuth(req) {
   ensureInitialized();
+
+  const appCheckToken = req.headers["x-firebase-appcheck"];
+  if (!appCheckToken) {
+    throw new Error("Missing App Check token");
+  }
+  await getAppCheck().verifyToken(appCheckToken);
 
   const authHeader = req.headers.authorization || "";
   const match = authHeader.match(/^Bearer (.+)$/);

@@ -15,7 +15,7 @@ const app = initializeApp(firebaseConfig);
 
 // App Check — доводить бекенду що запити йдуть з реального застосунку,
 // а не зі стороннього скрипта, який використовує наші публічні ключі.
-initializeAppCheck(app, {
+export const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
   isTokenAutoRefreshEnabled: true,
 });
