@@ -19,6 +19,15 @@ export default async function handler(req, res) {
   if (!image) {
     return res.status(400).json({ error: "No image provided" });
   }
+  if (typeof image !== "string" || !image.startsWith("data:image/")) {
+    return res.status(400).json({ error: "Invalid image format" });
+  }
+  // ~10MB base64 ліміт — реальні фото чеків важать значно менше;
+  // захист від навмисно роздутого payload, що забиває памʼять
+  // функції чи роздуває OpenAI-рахунок.
+  if (image.length > 10_000_000) {
+    return res.status(413).json({ error: "Image too large" });
+  }
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
