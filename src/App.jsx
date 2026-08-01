@@ -16,6 +16,7 @@ import Profile from "./components/Profile";
 import AnalyticsScreen from "./components/AnalyticsScreen";
 import Settings from "./components/Settings";
 import ChatScreen from "./components/ChatScreen";
+import { authFetch } from "./utils/authFetch";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -217,6 +218,14 @@ export default function App() {
   }
 
   async function handleLogout() {
+    // Спершу відкликаємо токен на сервері (реальний захист), потім
+    // чистимо локальний стан клієнта — так навіть якщо мережевий запит
+    // до api/logout не встигне чи впаде, signOut все одно спрацює.
+    try {
+      await authFetch("/api/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Token revoke failed:", err);
+    }
     await signOut(auth);
     setTrips([]);
     setScreen("trips");

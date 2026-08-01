@@ -38,6 +38,9 @@ export async function verifyAuth(req) {
     throw new Error("Missing Authorization header");
   }
   const idToken = match[1];
-  const decoded = await getAuth().verifyIdToken(idToken);
+  // Другий параметр true — обов'язково перевіряти чи токен не був
+  // відкликаний (revokeRefreshTokens). Без нього перевірка відкликання
+  // не має жодного ефекту, токен лишається дійсним до природного exp.
+  const decoded = await getAuth().verifyIdToken(idToken, true);
   return decoded.uid;
 }
