@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { getLocations } from "../data/store";
 import { stripCyrillic } from "../utils/textFilters";
 import { US_STATES } from "../data/usStates";
+import { lookupZip } from "../utils/zipLookup";
 
 function splitValue(value) {
   const parts = (value || "").split(",");
@@ -44,6 +45,23 @@ export default function CityStateInput({
     setState(parsed.state);
     setPrevValue(value);
   }
+
+  // Автозаповнення City/State з ZIP — водій вводить тільки ZIP (найпростіше,
+  // просто переписати з документа), City/State підтягуються самі.
+  // lastLookedUpZip запобігає повторним запитам на той самий ZIP.
+  const lastLookedUpZip = useRef(null);
+  useEffect(() => {
+    if (!zip || zip.length !== 5 || zip === lastLookedUpZip.current) return;
+    lastLookedUpZip.current = zip;
+    lookupZip(zip).then((result) => {
+      if (result) {
+        setCity(result.city);
+        setState(result.state);
+        emit(result.city, result.state);
+      }
+    });
+  }, [zip]);
+
   const [suggestions, setSuggestions] = useState([]);
   const [show, setShow] = useState(false);
   const ref = useRef(null);
@@ -114,7 +132,6 @@ export default function CityStateInput({
         }}
       >
         <div ref={ref} style={{ position: "relative" }}>
-          <RequiredBadge />
           <input
             type="text"
             value={city}
@@ -174,7 +191,6 @@ export default function CityStateInput({
           )}
         </div>
         <div style={{ position: "relative" }}>
-          <RequiredBadge />
           <select
             value={state}
             onChange={(e) => handleStateChange(e.target.value)}

@@ -11,6 +11,18 @@ import Header from "./Header";
 import RouteConnector from "./RouteConnector";
 import ScanRateConMenu from "./ScanRateConMenu";
 import { pdfToImageBase64 } from "../utils/pdfToImage";
+import { lookupZip } from "../utils/zipLookup";
+
+const ORDINALS = ["", "first", "second", "third", "fourth", "fifth", "sixth"];
+function ordinal(n) {
+  return ORDINALS[n] || `${n}th`;
+}
+
+function ordinalSuffix(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
 
 export default function LoadForm({ load, onSave, onBack, user }) {
   const settings = getSettings();
@@ -442,7 +454,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
 
   function handleSave() {
     if (!gross) return;
-    if (!from.includes(",") || !to.includes(",")) {
+    if (!fromAddress || !fromZip || !toAddress || !toZip) {
       setLocationError(true);
       return;
     }
@@ -559,7 +571,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   marginBottom: 12,
                 }}
               >
-                From · Pickup
+                From · 1st Pickup
               </div>
               <div style={{ marginBottom: 10 }}>
                 <Field
@@ -567,6 +579,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   value={fromAddress}
                   onChange={setFromAddress}
                   placeholder="1600 Pennsylvania Ave NW"
+                  required
                 />
               </div>
               <div style={{ marginBottom: 10 }}>
@@ -600,7 +613,6 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                 />
               </div>
             </div>
-
             {/* More pickups */}
             <button
               onClick={() => setShowMorePickups((s) => !s)}
@@ -629,7 +641,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
               >
                 {extraPickups.length > 0
                   ? `MORE STOPS (${extraPickups.length})`
-                  : "+ ADD STOP"}
+                  : `+ ADD ${ordinalSuffix(2).toUpperCase()} PICKUP STOP`}
               </span>
               <div
                 style={{ flex: 1, height: 1, background: "var(--border)" }}
@@ -661,12 +673,80 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                     cursor: "pointer",
                   }}
                 >
-                  + Add another pickup
+                  + Add {ordinal(extraPickups.length + 2)} pickup stop
+                </button>
+              </div>
+            )}
+            {/* More deliveries — рендеряться ПЕРЕД основною карткою To, бо
+                хронологічно проміжні зупинки відбуваються РАНІШЕ за
+                фінальну точку доставки (яка завжди в основній картці). */}
+            <button
+              onClick={() => setShowMoreDeliveries((s) => !s)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px 0",
+                width: "100%",
+              }}
+            >
+              <div
+                style={{ flex: 1, height: 1, background: "var(--border)" }}
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  color: "var(--text-muted)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {extraDeliveries.length > 0
+                  ? `MORE STOPS (${extraDeliveries.length})`
+                  : `+ ADD ${ordinalSuffix(1).toUpperCase()} DELIVERY STOP`}
+              </span>
+              <div
+                style={{ flex: 1, height: 1, background: "var(--border)" }}
+              />
+            </button>
+            {showMoreDeliveries && (
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
+                {extraDeliveries.map((d, i) => (
+                  <ExtraStopCard
+                    key={i}
+                    label={`${ordinal(i + 1)[0].toUpperCase()}${ordinal(i + 1).slice(1)} delivery stop`}
+                    stop={d}
+                    onChange={(field, val) =>
+                      updateExtraDelivery(i, field, val)
+                    }
+                    onRemove={() => removeExtraDelivery(i)}
+                  />
+                ))}
+                <button
+                  onClick={addExtraDelivery}
+                  style={{
+                    padding: "10px",
+                    border: "1px dashed var(--border)",
+                    borderRadius: "var(--radius-btn)",
+                    background: "transparent",
+                    color: "var(--text-muted)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  + Add {ordinal(extraDeliveries.length + 1)} delivery stop
                 </button>
               </div>
             )}
 
-            {/* TO */}
+            {/* TO — фінальна точка доставки, завжди в кінці маршруту */}
             <div ref={toAnchorRef} className="glass" style={{ padding: 16 }}>
               <div
                 style={{
@@ -678,7 +758,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   marginBottom: 12,
                 }}
               >
-                To · Delivery
+                To · Last Delivery
               </div>
               <div style={{ marginBottom: 10 }}>
                 <Field
@@ -686,6 +766,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                   value={toAddress}
                   onChange={setToAddress}
                   placeholder="10600 N Tantau Ave"
+                  required
                 />
               </div>
               <div style={{ marginBottom: 10 }}>
@@ -719,73 +800,6 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                 />
               </div>
             </div>
-
-            {/* More deliveries */}
-            <button
-              onClick={() => setShowMoreDeliveries((s) => !s)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "4px 0",
-                width: "100%",
-              }}
-            >
-              <div
-                style={{ flex: 1, height: 1, background: "var(--border)" }}
-              />
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.1em",
-                  color: "var(--text-muted)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {extraDeliveries.length > 0
-                  ? `MORE STOPS (${extraDeliveries.length})`
-                  : "+ ADD STOP"}
-              </span>
-              <div
-                style={{ flex: 1, height: 1, background: "var(--border)" }}
-              />
-            </button>
-            {showMoreDeliveries && (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 12 }}
-              >
-                {extraDeliveries.map((d, i) => (
-                  <ExtraStopCard
-                    key={i}
-                    label={`Delivery #${i + 2}`}
-                    stop={d}
-                    onChange={(field, val) =>
-                      updateExtraDelivery(i, field, val)
-                    }
-                    onRemove={() => removeExtraDelivery(i)}
-                  />
-                ))}
-                <button
-                  onClick={addExtraDelivery}
-                  style={{
-                    padding: "10px",
-                    border: "1px dashed var(--border)",
-                    borderRadius: "var(--radius-btn)",
-                    background: "transparent",
-                    color: "var(--text-muted)",
-                    fontFamily: "var(--font-sans)",
-                    fontSize: 13,
-                    cursor: "pointer",
-                  }}
-                >
-                  + Add another delivery
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -803,8 +817,8 @@ export default function LoadForm({ load, onSave, onBack, user }) {
               lineHeight: 1.4,
             }}
           >
-            Please select a state for both From and To — this keeps your route
-            accurate.
+            Please enter Address and ZIP for both From and To — this keeps your
+            route accurate.
           </div>
         )}
         <div
@@ -1308,7 +1322,14 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   );
 }
 
-function Field({ label, value, onChange, type = "text", placeholder }) {
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  required,
+}) {
   return (
     <div>
       <div
@@ -1324,14 +1345,34 @@ function Field({ label, value, onChange, type = "text", placeholder }) {
       >
         {label}
       </div>
-      <input
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="input"
-        style={{ fontSize: 14, padding: "10px 12px" }}
-      />
+      <div style={{ position: "relative" }}>
+        {required && (
+          <span
+            style={{
+              position: "absolute",
+              top: -6,
+              right: -4,
+              color: "#f87171",
+              fontFamily: "var(--font-sans)",
+              fontWeight: 700,
+              fontSize: 14,
+              lineHeight: 1,
+              zIndex: 1,
+              pointerEvents: "none",
+            }}
+          >
+            *
+          </span>
+        )}
+        <input
+          type={type}
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className="input"
+          style={{ fontSize: 14, padding: "10px 12px" }}
+        />
+      </div>
     </div>
   );
 }
@@ -1424,6 +1465,19 @@ function Toast({ message }) {
 }
 
 function ExtraStopCard({ label, stop, onChange, onRemove }) {
+  const lastLookedUpZip = useRef(null);
+
+  useEffect(() => {
+    const zip = stop.zip;
+    if (!zip || zip.length !== 5 || zip === lastLookedUpZip.current) return;
+    lastLookedUpZip.current = zip;
+    lookupZip(zip).then((result) => {
+      if (result) {
+        onChange("city", `${result.city}, ${result.state}`);
+      }
+    });
+  }, [stop.zip]);
+
   return (
     <div className="glass" style={{ padding: 16, position: "relative" }}>
       <button
@@ -1469,14 +1523,7 @@ function ExtraStopCard({ label, stop, onChange, onRemove }) {
           value={stop.address}
           onChange={(v) => onChange("address", v)}
           placeholder="Street address"
-        />
-      </div>
-      <div style={{ marginBottom: 10 }}>
-        <Field
-          label="City, State"
-          value={stop.city}
-          onChange={(v) => onChange("city", v)}
-          placeholder="Denver, CO"
+          required
         />
       </div>
       <div
@@ -1492,6 +1539,13 @@ function ExtraStopCard({ label, stop, onChange, onRemove }) {
           value={stop.zip}
           onChange={(v) => onChange("zip", v)}
           placeholder="80202"
+          required
+        />
+        <Field
+          label="City, State"
+          value={stop.city}
+          onChange={(v) => onChange("city", v)}
+          placeholder="Auto-filled from ZIP"
         />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
