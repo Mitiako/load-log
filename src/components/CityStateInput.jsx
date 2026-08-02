@@ -130,7 +130,7 @@ export default function CityStateInput({
                 zIndex: 50,
                 width: "100%",
                 marginTop: 4,
-                background: "var(--bg-elevated)",
+                background: "rgba(16, 15, 12, 0.97)",
                 backdropFilter: "var(--glass-blur)",
                 WebkitBackdropFilter: "var(--glass-blur)",
                 border: "1px solid var(--border)",

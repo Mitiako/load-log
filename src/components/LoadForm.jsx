@@ -59,6 +59,51 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   const [toReceiverName, setToReceiverName] = useState(
     load?.toReceiverName || "",
   );
+
+  // Додаткові зупинки понад основний Pickup/Delivery — для мульти-стоп
+  // лоудів (кілька адрес забору чи доставки на одному RateCon).
+  // Структура кожного елемента: { city, address, zip, contactName, contactPhone }.
+  const [extraPickups, setExtraPickups] = useState(
+    load?.extraPickups?.length ? load.extraPickups : [],
+  );
+  const [extraDeliveries, setExtraDeliveries] = useState(
+    load?.extraDeliveries?.length ? load.extraDeliveries : [],
+  );
+  const [showMorePickups, setShowMorePickups] = useState(false);
+  const [showMoreDeliveries, setShowMoreDeliveries] = useState(false);
+
+  function addExtraPickup() {
+    setExtraPickups([
+      ...extraPickups,
+      { city: "", address: "", zip: "", contactName: "", contactPhone: "" },
+    ]);
+    setShowMorePickups(true);
+  }
+  function updateExtraPickup(i, field, val) {
+    const u = [...extraPickups];
+    u[i] = { ...u[i], [field]: val };
+    setExtraPickups(u);
+  }
+  function removeExtraPickup(i) {
+    setExtraPickups(extraPickups.filter((_, idx) => idx !== i));
+  }
+
+  function addExtraDelivery() {
+    setExtraDeliveries([
+      ...extraDeliveries,
+      { city: "", address: "", zip: "", contactName: "", contactPhone: "" },
+    ]);
+    setShowMoreDeliveries(true);
+  }
+  function updateExtraDelivery(i, field, val) {
+    const u = [...extraDeliveries];
+    u[i] = { ...u[i], [field]: val };
+    setExtraDeliveries(u);
+  }
+  function removeExtraDelivery(i) {
+    setExtraDeliveries(extraDeliveries.filter((_, idx) => idx !== i));
+  }
+
   // Позиція лінії-конектора між зеленою і помаранчевою крапками —
   // вимірюється реальними координатами DOM (не приблизною CSS-математикою),
   // бо висота FROM-картки змінюється залежно від довжини введеного тексту.
@@ -384,6 +429,10 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       toZip,
       toReceiverName,
       toReceiverContact,
+      // Фільтруємо порожні картки (водій натиснув "+ Add" але нічого
+      // не заповнив і не видалив) — не засмічуємо Firestore-документ.
+      extraPickups: extraPickups.filter((p) => p.city || p.address),
+      extraDeliveries: extraDeliveries.filter((d) => d.city || d.address),
       miles: Number(miles) || 0,
       dh: showDh ? Number(dh) || 0 : 0,
       gross: Number(gross),
@@ -523,6 +572,71 @@ export default function LoadForm({ load, onSave, onBack, user }) {
               </div>
             </div>
 
+            {/* More pickups */}
+            <button
+              onClick={() => setShowMorePickups((s) => !s)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px 0",
+                width: "100%",
+              }}
+            >
+              <div
+                style={{ flex: 1, height: 1, background: "var(--border)" }}
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  color: "var(--text-muted)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {extraPickups.length > 0
+                  ? `MORE STOPS (${extraPickups.length})`
+                  : "+ ADD STOP"}
+              </span>
+              <div
+                style={{ flex: 1, height: 1, background: "var(--border)" }}
+              />
+            </button>
+            {showMorePickups && (
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
+                {extraPickups.map((p, i) => (
+                  <ExtraStopCard
+                    key={i}
+                    label={`Pickup #${i + 2}`}
+                    stop={p}
+                    onChange={(field, val) => updateExtraPickup(i, field, val)}
+                    onRemove={() => removeExtraPickup(i)}
+                  />
+                ))}
+                <button
+                  onClick={addExtraPickup}
+                  style={{
+                    padding: "10px",
+                    border: "1px dashed var(--border)",
+                    borderRadius: "var(--radius-btn)",
+                    background: "transparent",
+                    color: "var(--text-muted)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  + Add another pickup
+                </button>
+              </div>
+            )}
+
             {/* TO */}
             <div ref={toAnchorRef} className="glass" style={{ padding: 16 }}>
               <div
@@ -576,6 +690,73 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                 />
               </div>
             </div>
+
+            {/* More deliveries */}
+            <button
+              onClick={() => setShowMoreDeliveries((s) => !s)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px 0",
+                width: "100%",
+              }}
+            >
+              <div
+                style={{ flex: 1, height: 1, background: "var(--border)" }}
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  color: "var(--text-muted)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {extraDeliveries.length > 0
+                  ? `MORE STOPS (${extraDeliveries.length})`
+                  : "+ ADD STOP"}
+              </span>
+              <div
+                style={{ flex: 1, height: 1, background: "var(--border)" }}
+              />
+            </button>
+            {showMoreDeliveries && (
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
+                {extraDeliveries.map((d, i) => (
+                  <ExtraStopCard
+                    key={i}
+                    label={`Delivery #${i + 2}`}
+                    stop={d}
+                    onChange={(field, val) =>
+                      updateExtraDelivery(i, field, val)
+                    }
+                    onRemove={() => removeExtraDelivery(i)}
+                  />
+                ))}
+                <button
+                  onClick={addExtraDelivery}
+                  style={{
+                    padding: "10px",
+                    border: "1px dashed var(--border)",
+                    borderRadius: "var(--radius-btn)",
+                    background: "transparent",
+                    color: "var(--text-muted)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  + Add another delivery
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1209,6 +1390,95 @@ function Toast({ message }) {
       }}
     >
       {message}
+    </div>
+  );
+}
+
+function ExtraStopCard({ label, stop, onChange, onRemove }) {
+  return (
+    <div className="glass" style={{ padding: 16, position: "relative" }}>
+      <button
+        onClick={onRemove}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-input)",
+          background: "transparent",
+          color: "var(--text-muted)",
+          cursor: "pointer",
+          width: 28,
+          height: 28,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 14,
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.color = "var(--text-muted)")
+        }
+      >
+        ×
+      </button>
+      <div
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontWeight: 700,
+          fontSize: 14,
+          letterSpacing: "0.02em",
+          color: "var(--text-primary)",
+          marginBottom: 12,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ marginBottom: 10 }}>
+        <Field
+          label="Address"
+          value={stop.address}
+          onChange={(v) => onChange("address", v)}
+          placeholder="Street address"
+        />
+      </div>
+      <div style={{ marginBottom: 10 }}>
+        <Field
+          label="City, State"
+          value={stop.city}
+          onChange={(v) => onChange("city", v)}
+          placeholder="Denver, CO"
+        />
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 8,
+          marginBottom: 10,
+        }}
+      >
+        <Field
+          label="ZIP"
+          value={stop.zip}
+          onChange={(v) => onChange("zip", v)}
+          placeholder="80202"
+        />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <Field
+          label="Contact name"
+          value={stop.contactName}
+          onChange={(v) => onChange("contactName", v)}
+          placeholder="Company name"
+        />
+        <Field
+          label="Contact phone"
+          value={stop.contactPhone}
+          onChange={(v) => onChange("contactPhone", v)}
+          placeholder="+1..."
+        />
+      </div>
     </div>
   );
 }

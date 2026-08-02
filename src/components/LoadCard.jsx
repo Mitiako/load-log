@@ -156,21 +156,6 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
           >
             {load.to}
           </span>
-          <span
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 600,
-              fontSize: 15,
-              color: "var(--text-primary)",
-              letterSpacing: "-0.01em",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              flexShrink: 1,
-            }}
-          >
-            {load.to}
-          </span>
         </div>
         {/* Net profit */}
         <span
