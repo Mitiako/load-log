@@ -16,7 +16,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
  * @param {number} maxPages - захист від випадково завеликого файлу
  * @returns {Promise<string[]>} масив base64 рядків JPEG, по одному на сторінку
  */
-export async function pdfToImagesBase64(pdfFile, scale = 2, maxPages = 6) {
+export async function pdfToImagesBase64(pdfFile, scale = 2, maxPages = 4) {
   const arrayBuffer = await pdfFile.arrayBuffer();
 
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });

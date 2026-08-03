@@ -21,8 +21,8 @@ export default async function handler(req, res) {
   if (!images || !Array.isArray(images) || images.length === 0) {
     return res.status(400).json({ error: "No images provided" });
   }
-  if (images.length > 6) {
-    return res.status(400).json({ error: "Too many pages (max 6)" });
+  if (images.length > 4) {
+    return res.status(400).json({ error: "Too many pages (max 4)" });
   }
   for (const img of images) {
     if (typeof img !== "string" || !img.startsWith("data:image/")) {
