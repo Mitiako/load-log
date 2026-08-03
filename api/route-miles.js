@@ -1,7 +1,9 @@
 // api/route-miles.js
-// Vercel Serverless Function — рахує орієнтовну кількість миль між двома
-// точками через безкоштовний ланцюжок: Nominatim (геокодування City/State
-// в координати) → OSRM (публічний демо-сервер маршрутизації).
+// Vercel Serverless Function — рахує орієнтовну кількість миль реального
+// дорожнього маршруту через довільну кількість точок по порядку (не тільки
+// origin→destination) через безкоштовний ланцюжок: Nominatim (геокодування
+// City/State в координати) → OSRM (публічний демо-сервер маршрутизації,
+// підтримує multi-waypoint маршрути нативно).
 // Без API-ключа, без білінгу — обидва сервіси безкоштовні (OpenStreetMap-based).
 import { verifyAuth } from "./_lib/verifyAuth.js";
 
@@ -16,26 +18,33 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { originCity, originState, destinationCity, destinationState } =
-    req.body;
-  if (!originCity || !originState || !destinationCity || !destinationState) {
-    return res.status(400).json({ error: "Missing city/state" });
+  // stops — впорядкований масив { city, state }, мінімум 2 точки
+  // (перший pickup ... останній delivery, з усіма проміжними стопами між).
+  const { stops } = req.body;
+  if (!Array.isArray(stops) || stops.length < 2) {
+    return res.status(400).json({ error: "Need at least 2 stops" });
+  }
+  for (const stop of stops) {
+    if (!stop?.city || !stop?.state) {
+      return res.status(400).json({ error: "Each stop needs city and state" });
+    }
   }
 
   try {
-    const originCoords = await geocode(`${originCity}, ${originState}, USA`);
-    const destCoords = await geocode(
-      `${destinationCity}, ${destinationState}, USA`,
+    // Геокодуємо всі точки паралельно — швидше за послідовні запити.
+    const coordsList = await Promise.all(
+      stops.map((s) => geocode(`${s.city}, ${s.state}, USA`)),
     );
 
-    // Геокодування не гарантоване (нетипові назви міст, тимчасова
-    // недоступність Nominatim) — тихо повертаємо null, водій довводить
-    // милі вручну як і зараз, жодної помилки на екрані.
-    if (!originCoords || !destCoords) {
+    // Якщо хоч одна точка не геокодувалась — тихо повертаємо null,
+    // водій довводить милі вручну, жодної помилки на екрані.
+    if (coordsList.some((c) => !c)) {
       return res.status(200).json({ miles: null });
     }
 
-    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originCoords.lon},${originCoords.lat};${destCoords.lon},${destCoords.lat}?overview=false`;
+    const coordsPath = coordsList.map((c) => `${c.lon},${c.lat}`).join(";");
+
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordsPath}?overview=false`;
     const routeRes = await fetch(osrmUrl);
     const routeData = await routeRes.json();
 
@@ -43,6 +52,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ miles: null });
     }
 
+    // OSRM сам повертає ЗАГАЛЬНУ відстань всього маршруту через усі
+    // waypoints по порядку — не треба нічого підсумовувати вручну.
     const meters = routeData.routes[0].distance;
     const miles = Math.round(meters / 1609.34);
     return res.status(200).json({ miles });

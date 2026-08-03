@@ -301,22 +301,12 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     reader.readAsDataURL(file);
   }
 
-  async function fetchRouteMiles(
-    originCity,
-    originState,
-    destinationCity,
-    destinationState,
-  ) {
+  async function fetchRouteMiles(stops) {
     try {
       const res = await authFetch("/api/route-miles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          originCity,
-          originState,
-          destinationCity,
-          destinationState,
-        }),
+        body: JSON.stringify({ stops }),
       });
       const data = await res.json();
       if (data.miles) {
@@ -326,6 +316,39 @@ export default function LoadForm({ load, onSave, onBack, user }) {
       console.error("Route miles fetch failed:", err);
       // Тихо ігноруємо — водій довводить милі вручну, як і зараз.
     }
+  }
+
+  // Збирає впорядкований список усіх стопів маршруту для розрахунку миль:
+  // перший pickup → додаткові pickup → додаткові delivery → останній delivery.
+  // City/State тут беремо з полів форми, не з даних скану — так само
+  // рахує і коли водій заповнює/редагує вручну, без AI взагалі.
+  function buildRouteStops() {
+    const parseCity = (combined) => {
+      const parts = (combined || "").split(",");
+      if (parts.length < 2) return null;
+      return {
+        city: parts.slice(0, -1).join(",").trim(),
+        state: parts[parts.length - 1].trim(),
+      };
+    };
+
+    const stops = [];
+    const fromStop = parseCity(from);
+    if (fromStop) stops.push(fromStop);
+
+    for (const p of extraPickups) {
+      const s = parseCity(p.city);
+      if (s) stops.push(s);
+    }
+    for (const d of extraDeliveries) {
+      const s = parseCity(d.city);
+      if (s) stops.push(s);
+    }
+
+    const toStop = parseCity(to);
+    if (toStop) stops.push(toStop);
+
+    return stops;
   }
 
   async function handleScanRateCon(e) {
@@ -416,23 +439,18 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         if (data.rate) setGross(String(data.rate));
         if (data.weight) setWeight(String(data.weight));
 
-        if (data.miles) {
-          // RateCon сам вказав милі — довіряємо документу, не рахуємо повторно.
-          setMiles(String(data.miles));
-        } else if (
-          data.originCity &&
-          data.originState &&
-          data.destinationCity &&
-          data.destinationState
-        ) {
-          // Документ не дав миль — рахуємо орієнтовно через безкоштовний маршрут.
-          fetchRouteMiles(
-            data.originCity,
-            data.originState,
-            data.destinationCity,
-            data.destinationState,
-          );
-        }
+        // Милі ЗАВЖДИ рахуємо самі через реальний дорожній маршрут —
+        // навіть якщо RateCon друкує своє число миль, воно часто занижене
+        // чи неточне (брокери рахують по-своєму, не по факту дороги).
+        // setTimeout(0) — щоб стейти from/to/extraPickups/extraDeliveries
+        // встигли оновитись з даних скану перед тим як buildRouteStops()
+        // їх прочитає.
+        setTimeout(() => {
+          const stops = buildRouteStops();
+          if (stops.length >= 2) {
+            fetchRouteMiles(stops);
+          }
+        }, 0);
         showToast("Route filled from RateCon — double-check before saving.");
       }
     } catch (err) {

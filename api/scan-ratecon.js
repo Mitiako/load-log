@@ -45,7 +45,6 @@ Otherwise the JSON must have these fields:
 - additionalPickups — array of every pickup stop AFTER the first, in route order. Each: { city (combined "City, ST"), address, zip, contactName, contactPhone }. Empty array if only one pickup.
 - additionalDeliveries — array of every delivery stop BEFORE the last, in route order. Each: same shape as above. Empty array if only one delivery.
 - rate — total dollar amount the broker pays the carrier (number). Look for labels like "Total Carrier Pay", "Net Freight Charges", "Carrier Fees Total", "Total Cost". If the document lists a Rate Breakdown with a highlighted/bolded final total row (e.g. Linehaul + Fuel Surcharge = Total Carrier Pay), use that final total — do NOT skip it just because there are ALSO separate conditional "if applicable" accessorial charges (detention, lumper, layover) nearby; those are optional and separate from the base rate, they never prevent you from reporting the main total. If you truly cannot find any total pay figure anywhere in the document, use null — but check carefully first, this field should be null only rarely.
-- miles — trip/loaded miles if printed (number, null if not shown).
 
 STOP TYPE CLASSIFICATION — read the label word on EACH stop individually, never assume by position or stop number:
 - Words meaning PICKUP: "Pickup", "PU", "PUP", "P/U", "Shipper", "Origin", "Ship From", "Supplier", "Vendor", "Loading Point", "Loading Location", "Collection Point", "Facility", "Warehouse" (when it's the FIRST stop context), "POL", "Pickup Location", "Pickup Address".
