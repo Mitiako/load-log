@@ -439,18 +439,41 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         if (data.rate) setGross(String(data.rate));
         if (data.weight) setWeight(String(data.weight));
 
-        // Милі ЗАВЖДИ рахуємо самі через реальний дорожній маршрут —
-        // навіть якщо RateCon друкує своє число миль, воно часто занижене
-        // чи неточне (брокери рахують по-своєму, не по факту дороги).
-        // setTimeout(0) — щоб стейти from/to/extraPickups/extraDeliveries
-        // встигли оновитись з даних скану перед тим як buildRouteStops()
-        // їх прочитає.
-        setTimeout(() => {
-          const stops = buildRouteStops();
-          if (stops.length >= 2) {
-            fetchRouteMiles(stops);
+        // Милі рахуємо ПРЯМО з даних скану (data), а не з React-стейту —
+        // стейт (from/extraPickups тощо) ще не встиг оновитись у момент
+        // виконання цієї функції (класична React "stale closure" пастка),
+        // тоді як data вже містить усе потрібне синхронно, без затримки.
+        const routeStops = [];
+        if (data.originCity && data.originState) {
+          routeStops.push({ city: data.originCity, state: data.originState });
+        }
+        for (const p of data.additionalPickups || []) {
+          const parts = (p.city || "").split(",");
+          if (parts.length >= 2) {
+            routeStops.push({
+              city: parts.slice(0, -1).join(",").trim(),
+              state: parts[parts.length - 1].trim(),
+            });
           }
-        }, 0);
+        }
+        for (const d of data.additionalDeliveries || []) {
+          const parts = (d.city || "").split(",");
+          if (parts.length >= 2) {
+            routeStops.push({
+              city: parts.slice(0, -1).join(",").trim(),
+              state: parts[parts.length - 1].trim(),
+            });
+          }
+        }
+        if (data.destinationCity && data.destinationState) {
+          routeStops.push({
+            city: data.destinationCity,
+            state: data.destinationState,
+          });
+        }
+        if (routeStops.length >= 2) {
+          fetchRouteMiles(routeStops);
+        }
         showToast("Route filled from RateCon — double-check before saving.");
       }
     } catch (err) {
