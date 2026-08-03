@@ -10,7 +10,7 @@ import LocationInput from "./LocationInput";
 import Header from "./Header";
 import RouteConnector from "./RouteConnector";
 import ScanRateConMenu from "./ScanRateConMenu";
-import { pdfToImageBase64 } from "../utils/pdfToImage";
+import { pdfToImagesBase64 } from "../utils/pdfToImage";
 import { lookupZip } from "../utils/zipLookup";
 
 const ORDINALS = ["", "first", "second", "third", "fourth", "fifth", "sixth"];
@@ -333,25 +333,29 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     if (!file) return;
     setScanningRateCon(true);
     try {
-      // PDF конвертуємо в JPEG-картинку локально в браузері перед відправкою —
-      // OpenAI vision API приймає лише зображення, не PDF напряму.
-      let imageDataUrl;
+      // PDF конвертуємо в масив JPEG-картинок (усі сторінки) локально
+      // в браузері — OpenAI vision API приймає лише зображення, не PDF,
+      // і нам треба ВСІ сторінки, бо адреси/суми часто на другій-третій.
+      let imageDataUrls;
       if (file.type === "application/pdf") {
-        const base64 = await pdfToImageBase64(file);
-        imageDataUrl = `data:image/jpeg;base64,${base64}`;
+        const base64Pages = await pdfToImagesBase64(file);
+        imageDataUrls = base64Pages.map(
+          (b64) => `data:image/jpeg;base64,${b64}`,
+        );
       } else {
-        imageDataUrl = await new Promise((resolve, reject) => {
+        const singleImage = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (ev) => resolve(ev.target.result);
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
+        imageDataUrls = [singleImage];
       }
 
       const res = await authFetch("/api/scan-ratecon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: imageDataUrl }),
+        body: JSON.stringify({ images: imageDataUrls }),
       });
       const data = await res.json();
 
