@@ -117,7 +117,12 @@ Never guess or invent values anywhere in this task — only extract what is actu
       console.error("No JSON marker in response:", content);
       return res.status(502).json({ error: "AI response format error" });
     }
-    const jsonText = content.slice(markerIndex + marker.length).trim();
+    let jsonText = content.slice(markerIndex + marker.length).trim();
+
+    jsonText = jsonText
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/, "")
+      .trim();
     const parsed = JSON.parse(jsonText);
 
     // Вагу рахуємо тут, у нашому коді — модель повертає ОКРЕМІ компоненти
