@@ -42,6 +42,14 @@ Otherwise the JSON must have these fields:
 - destinationCity, destinationState (2-letter), destinationAddress, destinationZip, receiverName, receiverContact — all from the LAST delivery stop. Use null for any field not shown.
 - additionalPickups — array of every pickup stop AFTER the first, in route order. Each: { city (combined "City, ST"), address, zip, contactName, contactPhone }. Empty array if only one pickup.
 - additionalDeliveries — array of every delivery stop BEFORE the last, in route order. Each: same shape as above. Empty array if only one delivery.
+
+SSTOP TYPE CLASSIFICATION — read the label word on EACH stop individually, never assume by position or stop number:
+- Words meaning PICKUP: "Pickup", "PU", "PUP", "P/U", "Shipper", "Origin", "Ship From", "Supplier", "Vendor", "Loading Point", "Loading Location", "Collection Point", "Facility", "Warehouse" (when it's the FIRST stop context), "POL", "Pickup Location", "Pickup Address".
+- Words meaning DELIVERY: "Delivery", "Drop", "Drop-off", "Consignee", "SO", "DEL", "DLY", "DLV", "Destination", "Final Destination", "Ship To", "Deliver To", "Receiver", "Recipient", "Unloading Point", "POD", "Buyer", "Customer", "Receiving Dock", "R-Dock".
+- A stop labeled "Consignee Delivery (Stop 2)" is a DELIVERY even though it's stop #2 — the label WORD decides the type, the stop NUMBER never does.
+- Before writing the JSON, in your reasoning sentences, list every stop as "Stop N: [PICKUP or DELIVERY] — [city]" using its actual label word, then use that list to fill originCity/destinationCity/additionalPickups/additionalDeliveries correctly.
+
+FIELD SEPARATION: the "address" field must contain ONLY the street address (e.g. "1234 Main St"). Never include the company/consignee/shipper name in the address field — that always goes in contactName instead, even if they're printed right next to each other on the document.
 - rate — total dollar amount the broker pays the carrier (number). Look for labels like "Total Carrier Pay", "Net Freight Charges", "Carrier Fees Total", "Total Cost", or similar. If the document has multiple fee line items, use the TOTAL, not an individual line item.
 - miles — trip/loaded miles if printed (number, null if not shown).
 
