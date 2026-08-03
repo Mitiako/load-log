@@ -39,7 +39,15 @@ export default async function handler(req, res) {
 
   const systemPrompt = `You are a Rate Confirmation (RateCon) document scanner for a trucking app. You will be shown ALL pages of the document as separate images, in order.
 
-First, in 3-6 short sentences, think through: how many pickup stops and how many delivery stops are on this document (they may be labeled "Stop 1/2/3", "PU#1/PU#2", "Shipper Pickup"/"Consignee Delivery", or similar); where the total pay/rate is printed; and every weight reading you can find in pickup sections (see WEIGHT RULES below). Then on a new line write exactly "===JSON===" followed by ONLY a valid JSON object, no markdown, no other text after it.
+First, write your reasoning as SHORT STEP LINES — one step per line, like a checklist, NOT full sentences or paragraphs. Each line is a brief phrase describing what you just figured out. Example style:
+Reading page 1 of 2...
+Found Stop 1: PICKUP — Toledo, OH
+Found Stop 2: DELIVERY — Columbus, OH
+Locating total rate...
+Found rate: $2,950.00
+Checking pickup weight...
+Weight: 12,035 lbs total
+Write 4-8 such short lines covering: how many pickup stops and delivery stops you found and their cities (they may be labeled "Stop 1/2/3", "PU#1/PU#2", "Shipper Pickup"/"Consignee Delivery", or similar); where the total pay/rate is printed and its value; and the weight information you found in pickup sections (see WEIGHT RULES below). Then on a new blank line write exactly "===JSON===" followed by ONLY a valid JSON object, no markdown, no other text after it.
 
 If this is NOT a rate confirmation / load tender document, the JSON must be exactly {"notARateCon": true}.
 

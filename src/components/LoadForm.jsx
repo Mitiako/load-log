@@ -633,15 +633,39 @@ export default function LoadForm({ load, onSave, onBack, user }) {
               background: "rgba(255,138,61,0.06)",
               border: "1px solid rgba(255,138,61,0.25)",
               borderRadius: "var(--radius-btn)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "var(--accent)",
-              lineHeight: 1.5,
-              minHeight: 20,
-              whiteSpace: "pre-wrap",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
             }}
           >
-            {scanLiveText || "Reading document..."}
+            {(scanLiveText || "Reading document...")
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean)
+              .map((line, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 8,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    color: "var(--accent)",
+                    lineHeight: 1.5,
+                    animation: "stepFadeIn 250ms ease-out",
+                  }}
+                >
+                  <span style={{ flexShrink: 0, opacity: 0.6 }}>›</span>
+                  <span>{line.replace(/^[-•]\s*/, "")}</span>
+                </div>
+              ))}
+            <style>{`
+              @keyframes stepFadeIn {
+                from { opacity: 0; transform: translateY(4px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            `}</style>
           </div>
         )}
         <div
