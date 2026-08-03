@@ -2,8 +2,8 @@
 // Vercel Serverless Function — рахує орієнтовну кількість миль реального
 // дорожнього маршруту через довільну кількість точок по порядку (не тільки
 // origin→destination) через безкоштовний ланцюжок: Nominatim (геокодування
-// City/State в координати) → OSRM (публічний демо-сервер маршрутизації,
-// підтримує multi-waypoint маршрути нативно).
+// в координати) → OSRM (публічний демо-сервер маршрутизації, підтримує
+// multi-waypoint маршрути нативно).
 // Без API-ключа, без білінгу — обидва сервіси безкоштовні (OpenStreetMap-based).
 import { verifyAuth } from "./_lib/verifyAuth.js";
 
@@ -18,8 +18,10 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  // stops — впорядкований масив { city, state }, мінімум 2 точки
-  // (перший pickup ... останній delivery, з усіма проміжними стопами між).
+  // stops — впорядкований масив { city, state, address?, zip? }, мінімум
+  // 2 точки. address/zip опціональні, але коли є — дають набагато точніше
+  // геокодування (конкретна точка замість центру міста), суттєво звужуючи
+  // розбіжність з реальною відстанню на мульти-стоп маршрутах.
   const { stops } = req.body;
   if (!Array.isArray(stops) || stops.length < 2) {
     return res.status(400).json({ error: "Need at least 2 stops" });
@@ -32,9 +34,7 @@ export default async function handler(req, res) {
 
   try {
     // Геокодуємо всі точки паралельно — швидше за послідовні запити.
-    const coordsList = await Promise.all(
-      stops.map((s) => geocode(`${s.city}, ${s.state}, USA`)),
-    );
+    const coordsList = await Promise.all(stops.map(geocodeStop));
 
     // Якщо хоч одна точка не геокодувалась — тихо повертаємо null,
     // водій довводить милі вручну, жодної помилки на екрані.
@@ -61,6 +61,21 @@ export default async function handler(req, res) {
     console.error("Route miles error:", err);
     return res.status(200).json({ miles: null });
   }
+}
+
+// Геокодує одну зупинку — спершу пробує повну адресу (найточніше),
+// і якщо Nominatim її не знайшов (нетипове форматування, неповна адреса),
+// відкочується на просто City+State (центр міста, менш точно, але краще
+// ніж узагалі нічого).
+async function geocodeStop(stop) {
+  if (stop.address) {
+    const fullQuery = stop.zip
+      ? `${stop.address}, ${stop.city}, ${stop.state} ${stop.zip}, USA`
+      : `${stop.address}, ${stop.city}, ${stop.state}, USA`;
+    const preciseCoords = await geocode(fullQuery);
+    if (preciseCoords) return preciseCoords;
+  }
+  return geocode(`${stop.city}, ${stop.state}, USA`);
 }
 
 async function geocode(query) {

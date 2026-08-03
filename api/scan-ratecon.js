@@ -1,10 +1,14 @@
 // api/scan-ratecon.js
-// Vercel Serverless Function — витягує дані з RateCon (Rate Confirmation),
-// підтримує кілька сторінок (images: масив base64 data URL) і дозволяє
-// моделі коротко "подумати" перед фінальним JSON — це суттєво покращує
-// точність на багатосторінкових/табличних документах порівняно з жорстким
-// "тільки JSON, без жодного тексту".
+// Vercel Serverless Function — витягує дані з RateCon через streaming-виклик
+// OpenAI: модель пише міркування вголос перед JSON, і ми пересилаємо ці
+// слова водієві в реальному часі, поки вони генеруються — так замість
+// "чорної скриньки на 5-7 секунд" водій буквально бачить AI, що аналізує
+// документ рядок за рядком.
 import { verifyAuth } from "./_lib/verifyAuth.js";
+
+const MARKER = "===JSON===";
+const RESULT_TAG = "@@RESULT@@";
+const ERROR_TAG = "@@ERROR@@";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -46,25 +50,25 @@ Otherwise the JSON must have these fields:
 - destinationCity, destinationState (2-letter), destinationAddress, destinationZip — from the LAST delivery stop. Use null for any field not shown.
 - receiverName — same rules as shipperName above, but for the LAST delivery stop.
 - receiverContact — same rules as shipperContact above (always a phone number, never a person's name), but for the LAST delivery stop.
-- additionalPickups — array of every pickup stop AFTER the first, in route order. Each: { city (combined "City, ST"), address, zip, contactName, contactPhone }. Empty array if only one pickup.
+- additionalPickups — array of every pickup stop AFTER the first, in route order. Each: { city (combined "City, ST" string), address, zip, contactName, contactPhone }. Empty array if only one pickup.
 - additionalDeliveries — array of every delivery stop BEFORE the last, in route order. Each: same shape as above. Empty array if only one delivery.
-- rate — total dollar amount the broker pays the carrier (number). Look for labels like "Total Carrier Pay", "Net Freight Charges", "Carrier Fees Total", "Total Cost". If the document lists a Rate Breakdown with a highlighted/bolded final total row (e.g. Linehaul + Fuel Surcharge = Total Carrier Pay), use that final total — do NOT skip it just because there are ALSO separate conditional "if applicable" accessorial charges (detention, lumper, layover) nearby; those are optional and separate from the base rate, they never prevent you from reporting the main total. If you truly cannot find any total pay figure anywhere in the document, use null — but check carefully first, this field should be null only rarely.
+- rate — total dollar amount the broker pays the carrier (number). Look for labels like "Total Carrier Pay", "Net Freight Charges", "Carrier Fees Total", "Total Cost", "Total Due Carrier", "Total Rate". If the document lists a Rate Breakdown with a highlighted/bolded final total row, use that final total — do NOT skip it just because there are ALSO separate conditional "if applicable" accessorial charges (detention, lumper, layover) or deduction lines (fuel advance) nearby; those are separate from the base rate and never prevent you from reporting the main final total. If you truly cannot find any total pay figure anywhere in the document, use null — but check carefully first, this field should be null only rarely.
 
 STOP TYPE CLASSIFICATION — read the label word on EACH stop individually, never assume by position or stop number:
-- Words meaning PICKUP: "Pickup", "PU", "PUP", "P/U", "Shipper", "Origin", "Ship From", "Supplier", "Vendor", "Loading Point", "Loading Location", "Collection Point", "Facility", "Warehouse" (when it's the FIRST stop context), "POL", "Pickup Location", "Pickup Address".
+- Words meaning PICKUP: "Pickup", "PU", "PUP", "P/U", "Pick", "Shipper", "Origin", "Ship From", "Supplier", "Vendor", "Loading Point", "Loading Location", "Collection Point", "Facility", "Warehouse" (when it's the FIRST stop context), "POL", "Pickup Location", "Pickup Address".
 - Words meaning DELIVERY: "Delivery", "Drop", "Drop-off", "Consignee", "SO", "DEL", "DLY", "DLV", "Destination", "Final Destination", "Ship To", "Deliver To", "Receiver", "Recipient", "Unloading Point", "POD", "Buyer", "Customer", "Receiving Dock", "R-Dock".
 - A stop labeled "Consignee Delivery (Stop 2)" is a DELIVERY even though it's stop #2 — the label WORD decides the type, the stop NUMBER never does.
 - Before writing the JSON, in your reasoning sentences, list every stop as "Stop N: [PICKUP or DELIVERY] — [city]" using its actual label word, then use that list to fill originCity/destinationCity/additionalPickups/additionalDeliveries correctly.
 
-FIELD SEPARATION: the "address" field must contain ONLY the street address (e.g. "1234 Main St"). Never include the company/consignee/shipper name in the address field — that always goes in contactName instead, even if they're printed right next to each other on the document.
+STOP TYPE FOR AMBIGUOUS LABELS: if a stop is labeled only "Stop N" with no other pickup/delivery keyword nearby, infer its type from context: compare it to the document's own pickup label (e.g. if the document uses "PICK" or "PU" for the pickup stop and then separately numbers "STOP 1", "STOP 2", "STOP 3" for the rest, those "STOP" entries are deliveries — a document only numbers what comes after the pickup). Retail/warehouse/distribution-center names (e.g. "WAL MART STORES", "WAL MART DC") appearing in a "STOP" block are further confirmation it's a delivery, not a pickup.
+
+FIELD SEPARATION: the "address" field must contain ONLY the street address (e.g. "1234 Main St"). Never include the company/consignee/shipper name in the address field — that always goes in the name field instead, even if they're printed right next to each other on the document.
+
+COMPANY NAME WITHOUT AN EXPLICIT LABEL: some documents print the company or facility name as a plain line of text right at the top of a stop block, with no "Shipper:"/"Consignee:"/"Name:" label in front of it — for example, directly under a "STOP 1" or "PICK 1" header, the very next line might simply read "WAL MART STORES 6084" with no label at all. Treat that unlabeled top line as the company name for that stop — do not require an explicit label word to recognize it. If that line is clearly just an internal facility code with no readable company name (e.g. "418-TLC"), use null instead of guessing.
 
 RUN-TOGETHER ADDRESS TEXT: some documents print an address with no spaces between words due to a formatting artifact (e.g. "1200IndustrialParkwaySteC" or "77WestcliffeAveDock9"). When you see clearly-run-together address text like this, insert spaces at the natural word/number boundaries before returning it (e.g. "1200 Industrial Parkway Ste C", "77 Westcliffe Ave Dock 9"). Do this for street addresses only, not for company names or reference numbers.
 
 CONTACT NAME RULE (for additionalPickups/additionalDeliveries contactName/contactPhone fields): contactName is for a PERSON's name or a role/department (e.g. "Warehouse Desk", "Dock Supervisor", "John Smith"). contactPhone is ALWAYS a phone number, never an email or a person's name. If the only contact information printed for a stop is an email address and/or phone number with no named person or role, set contactName to null and put the phone number (not the email) in contactPhone. NEVER put an email address into a name field, and NEVER put a person's name into a phone field.
-
-COMPANY NAME WITHOUT AN EXPLICIT LABEL: some documents print the company or facility name as a plain line of text right at the top of a stop block, with no "Shipper:"/"Consignee:"/"Name:" label in front of it — for example, directly under a "STOP 1" or "PICK 1" header, the very next line might simply read "WAL MART STORES 6084" with no label at all. Treat that unlabeled top line as the company name for that stop (shipperName, receiverName, or contactName as appropriate) — do not require an explicit label word to recognize it. If that line is clearly just an internal facility code with no readable company name (e.g. "418-TLC"), use null instead of guessing.
-
-STOP TYPE FOR AMBIGUOUS LABELS: if a stop is labeled only "Stop N" with no other pickup/delivery keyword nearby, infer its type from context: compare it to the document's own pickup label (e.g. if the document uses "PICK" or "PU" for the pickup stop and then separately numbers "STOP 1", "STOP 2", "STOP 3" for the rest, those "STOP" entries are deliveries — a document only numbers what comes after the pickup). Retail/warehouse/distribution-center names (e.g. "WAL MART STORES", "WAL MART DC") appearing in a "STOP" block are further confirmation it's a delivery, not a pickup.
 
 WEIGHT RULES — read carefully, this is commonly mis-extracted:
 - Only look for weight in sections belonging to PICKUP stops (the first pickup AND any additional pickups). Ignore weight tables on delivery/consignee stops — those often repeat a subset of the SAME cargo already counted at pickup, and adding them again would double-count.
@@ -79,13 +83,9 @@ ANTI-GUESSING RULE — this is critical, read carefully: Addresses, city/state, 
 
 Never guess or invent values anywhere in this task — only extract what is actually printed on the document, in the correct labeled section.`;
 
+  let openaiResponse;
   try {
-    const imageContent = images.map((img) => ({
-      type: "image_url",
-      image_url: { url: img },
-    }));
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -102,59 +102,145 @@ Never guess or invent values anywhere in this task — only extract what is actu
                 type: "text",
                 text: `Extract the rate confirmation data. This document has ${images.length} page(s), shown in order.`,
               },
-              ...imageContent,
+              ...images.map((img) => ({
+                type: "image_url",
+                image_url: { url: img },
+              })),
             ],
           },
         ],
         max_tokens: 1600,
+        stream: true,
       }),
     });
+  } catch (err) {
+    console.error("OpenAI fetch failed:", err);
+    return res.status(502).json({ error: "AI service error" });
+  }
 
-    const data = await response.json();
+  if (!openaiResponse.ok || !openaiResponse.body) {
+    const errBody = await openaiResponse.text().catch(() => "");
+    console.error("OpenAI API error:", openaiResponse.status, errBody);
+    return res.status(502).json({ error: "AI service error" });
+  }
 
-    if (!response.ok) {
-      console.error("OpenAI API error:", data);
-      return res.status(502).json({ error: "AI service error" });
-    }
+  // Далі відповідаємо клієнту потоково (plain text chunked response) —
+  // не JSON одним шматком. Протокол простий, наш власний:
+  //   - усе, що йде до RESULT_TAG/ERROR_TAG — "міркування вголос" моделі,
+  //     показуємо водієві живцем по мірі надходження;
+  //   - після RESULT_TAG — фінальний JSON з готовими даними (вага вже
+  //     підсумована на сервері, а не моделлю).
+  res.writeHead(200, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "no-cache",
+    "X-Accel-Buffering": "no",
+  });
 
-    const content = data.choices?.[0]?.message?.content || "";
-    const marker = "===JSON===";
-    const markerIndex = content.indexOf(marker);
-    if (markerIndex === -1) {
-      console.error("No JSON marker in response:", content);
-      return res.status(502).json({ error: "AI response format error" });
-    }
-    let jsonText = content.slice(markerIndex + marker.length).trim();
+  const reader = openaiResponse.body.getReader();
+  const decoder = new TextDecoder();
+  let sseBuffer = "";
+  let fullContent = "";
+  let sentLength = 0;
+  let markerFound = false;
 
-    jsonText = jsonText
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/```\s*$/, "")
-      .trim();
-    const parsed = JSON.parse(jsonText);
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      sseBuffer += decoder.decode(value, { stream: true });
+      const lines = sseBuffer.split("\n");
+      sseBuffer = lines.pop();
 
-    // Вагу рахуємо тут, у нашому коді — модель повертає ОКРЕМІ компоненти
-    // ваги (може бути кілька, по одному на кожен pickup-стоп, кожен або
-    // готове число, або масив позицій з таблиці) — ми їх усі підсумовуємо.
-    // Так надійніше за арифметику моделі "в умі" без окремого кроку.
-    let weight = null;
-    if (
-      Array.isArray(parsed.weightComponents) &&
-      parsed.weightComponents.length > 0
-    ) {
-      let total = 0;
-      for (const comp of parsed.weightComponents) {
-        if (comp.type === "total" && typeof comp.value === "number") {
-          total += comp.value;
-        } else if (comp.type === "itemized" && Array.isArray(comp.items)) {
-          total += comp.items.reduce((sum, n) => sum + (Number(n) || 0), 0);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const dataStr = trimmed.slice(5).trim();
+        if (dataStr === "[DONE]") continue;
+
+        let chunk;
+        try {
+          chunk = JSON.parse(dataStr);
+        } catch {
+          continue;
+        }
+        const delta = chunk.choices?.[0]?.delta?.content;
+        if (!delta) continue;
+
+        fullContent += delta;
+
+        if (!markerFound) {
+          const idx = fullContent.indexOf(MARKER);
+          if (idx !== -1) {
+            // Маркер щойно зʼявився в накопиченому тексті — форвардимо
+            // водієві все ДО маркера (це й є фінальний шматок міркувань),
+            // і назавжди перестаємо пересилати що-небудь далі (то вже JSON).
+            const toSend = fullContent.slice(sentLength, idx);
+            if (toSend) res.write(toSend);
+            sentLength = fullContent.length;
+            markerFound = true;
+          } else {
+            // Тримаємо останні (MARKER.length - 1) символів непересланими —
+            // раптом вони виявляться ПОЧАТКОМ маркера в наступному шматку.
+            // Без цього маркер міг би "просочитись" водієві частинами.
+            const safeBoundary = Math.max(
+              sentLength,
+              fullContent.length - (MARKER.length - 1),
+            );
+            if (safeBoundary > sentLength) {
+              res.write(fullContent.slice(sentLength, safeBoundary));
+              sentLength = safeBoundary;
+            }
+          }
         }
       }
-      weight = total;
     }
-
-    return res.status(200).json({ ...parsed, weight });
   } catch (err) {
-    console.error("Scan RateCon error:", err);
-    return res.status(500).json({ error: "Failed to process document" });
+    console.error("Stream reading error:", err);
+    res.write(`\n${ERROR_TAG}\nStream interrupted`);
+    return res.end();
   }
+
+  const markerIndex = fullContent.indexOf(MARKER);
+  if (markerIndex === -1) {
+    console.error("No JSON marker in response:", fullContent);
+    res.write(`\n${ERROR_TAG}\nAI response format error`);
+    return res.end();
+  }
+
+  let jsonText = fullContent.slice(markerIndex + MARKER.length).trim();
+  jsonText = jsonText
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```\s*$/, "")
+    .trim();
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch (err) {
+    console.error("JSON parse error:", err, jsonText);
+    res.write(`\n${ERROR_TAG}\nAI response format error`);
+    return res.end();
+  }
+
+  // Вагу рахуємо тут, у нашому коді — модель повертає ОКРЕМІ компоненти
+  // ваги (може бути кілька, по одному на кожен pickup-стоп) — ми їх усі
+  // підсумовуємо. Так надійніше за арифметику моделі "в умі".
+  let weight = null;
+  if (
+    Array.isArray(parsed.weightComponents) &&
+    parsed.weightComponents.length > 0
+  ) {
+    let total = 0;
+    for (const comp of parsed.weightComponents) {
+      if (comp.type === "total" && typeof comp.value === "number") {
+        total += comp.value;
+      } else if (comp.type === "itemized" && Array.isArray(comp.items)) {
+        total += comp.items.reduce((sum, n) => sum + (Number(n) || 0), 0);
+      }
+    }
+    weight = total;
+  }
+
+  res.write(`\n${RESULT_TAG}\n${JSON.stringify({ ...parsed, weight })}`);
+  res.end();
 }

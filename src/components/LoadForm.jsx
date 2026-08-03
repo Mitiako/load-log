@@ -156,6 +156,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   const scanExpenseRef = useRef(null);
   const [scanningExpense, setScanningExpense] = useState(false);
   const [scanningRateCon, setScanningRateCon] = useState(false);
+  const [scanLiveText, setScanLiveText] = useState("");
 
   const [toast, setToast] = useState(null);
 
@@ -249,7 +250,8 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         console.error("Scan failed:", err);
         showToast("Couldn't read the receipt — please enter details manually.");
       } finally {
-        setScanning(false);
+        setScanningRateCon(false);
+        setScanLiveText("");
         e.target.value = "";
       }
     };
@@ -334,19 +336,20 @@ export default function LoadForm({ load, onSave, onBack, user }) {
 
     const stops = [];
     const fromStop = parseCity(from);
-    if (fromStop) stops.push(fromStop);
+    if (fromStop)
+      stops.push({ ...fromStop, address: fromAddress, zip: fromZip });
 
     for (const p of extraPickups) {
       const s = parseCity(p.city);
-      if (s) stops.push(s);
+      if (s) stops.push({ ...s, address: p.address, zip: p.zip });
     }
     for (const d of extraDeliveries) {
       const s = parseCity(d.city);
-      if (s) stops.push(s);
+      if (s) stops.push({ ...s, address: d.address, zip: d.zip });
     }
 
     const toStop = parseCity(to);
-    if (toStop) stops.push(toStop);
+    if (toStop) stops.push({ ...toStop, address: toAddress, zip: toZip });
 
     return stops;
   }
@@ -380,7 +383,38 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ images: imageDataUrls }),
       });
-      const data = await res.json();
+
+      // Читаємо потік — сервер пересилає "міркування вголос" моделі
+      // живцем, поки вона генерує текст, а в кінці шле спеціальний тег
+      // @@RESULT@@ з фінальним JSON. Показуємо текст водієві по мірі
+      // надходження замість одного "Scanning..." на весь час очікування.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const RESULT_TAG = "@@RESULT@@";
+      const ERROR_TAG = "@@ERROR@@";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const displayText = buffer.split(RESULT_TAG)[0].split(ERROR_TAG)[0];
+        setScanLiveText(displayText.trim());
+      }
+
+      setScanLiveText("");
+
+      const resultIdx = buffer.indexOf(RESULT_TAG);
+      const errorIdx = buffer.indexOf(ERROR_TAG);
+
+      let data;
+      if (resultIdx !== -1) {
+        data = JSON.parse(buffer.slice(resultIdx + RESULT_TAG.length).trim());
+      } else if (errorIdx !== -1) {
+        data = { error: "AI response format error" };
+      } else {
+        data = { error: "Empty response" };
+      }
 
       if (data.error) {
         showToast(
@@ -445,7 +479,12 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         // тоді як data вже містить усе потрібне синхронно, без затримки.
         const routeStops = [];
         if (data.originCity && data.originState) {
-          routeStops.push({ city: data.originCity, state: data.originState });
+          routeStops.push({
+            city: data.originCity,
+            state: data.originState,
+            address: data.originAddress,
+            zip: data.originZip,
+          });
         }
         for (const p of data.additionalPickups || []) {
           const parts = (p.city || "").split(",");
@@ -453,6 +492,8 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             routeStops.push({
               city: parts.slice(0, -1).join(",").trim(),
               state: parts[parts.length - 1].trim(),
+              address: p.address,
+              zip: p.zip,
             });
           }
         }
@@ -462,6 +503,8 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             routeStops.push({
               city: parts.slice(0, -1).join(",").trim(),
               state: parts[parts.length - 1].trim(),
+              address: d.address,
+              zip: d.zip,
             });
           }
         }
@@ -469,6 +512,8 @@ export default function LoadForm({ load, onSave, onBack, user }) {
           routeStops.push({
             city: data.destinationCity,
             state: data.destinationState,
+            address: data.destinationAddress,
+            zip: data.destinationZip,
           });
         }
         if (routeStops.length >= 2) {
@@ -580,6 +625,25 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             />
           }
         />
+        {scanningRateCon && (
+          <div
+            style={{
+              margin: "0 16px 12px",
+              padding: "12px 14px",
+              background: "rgba(255,138,61,0.06)",
+              border: "1px solid rgba(255,138,61,0.25)",
+              borderRadius: "var(--radius-btn)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--accent)",
+              lineHeight: 1.5,
+              minHeight: 20,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {scanLiveText || "Reading document..."}
+          </div>
+        )}
         <div
           ref={routeWrapRef}
           style={{
@@ -871,7 +935,7 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
             gap: 12,
-            padding: "0 16px 12px",
+            padding: "0 16px 4px",
           }}
         >
           <Field
@@ -882,6 +946,30 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             placeholder="1100"
           />
           <Field label="Date" value={date} onChange={setDate} type="date" />
+        </div>
+        <div style={{ padding: "0 16px 12px" }}>
+          <button
+            onClick={() => {
+              const stops = buildRouteStops();
+              if (stops.length >= 2) {
+                fetchRouteMiles(stops);
+              } else {
+                showToast("Fill in Address + ZIP for From and To first.");
+              }
+            }}
+            style={{
+              padding: "8px 12px",
+              border: "1px dashed var(--border)",
+              borderRadius: "var(--radius-btn)",
+              background: "transparent",
+              color: "var(--text-muted)",
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            🔄 Recalculate miles from route
+          </button>
         </div>
         <label
           style={{
