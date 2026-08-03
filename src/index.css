@@ -315,6 +315,8 @@ a:hover {
 
 .input::placeholder {
     color: var(--text-muted);
+    opacity: 0.4;
+    font-style: italic;
 }
 
 .input:focus {
