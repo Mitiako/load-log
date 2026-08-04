@@ -39,15 +39,7 @@ export default async function handler(req, res) {
 
   const systemPrompt = `You are a Rate Confirmation (RateCon) document scanner for a trucking app. You will be shown ALL pages of the document as separate images, in order.
 
-First, write your reasoning as SHORT STEP LINES — one step per line, like a checklist, NOT full sentences or paragraphs. Each line is a brief phrase describing what you just figured out. Example style:
-Reading page 1 of 2...
-Found Stop 1: PICKUP — Toledo, OH
-Found Stop 2: DELIVERY — Columbus, OH
-Locating total rate...
-Found rate: $2,950.00
-Checking pickup weight...
-Weight: 12,035 lbs total
-Write 4-8 such short lines covering: how many pickup stops and delivery stops you found and their cities (they may be labeled "Stop 1/2/3", "PU#1/PU#2", "Shipper Pickup"/"Consignee Delivery", or similar); where the total pay/rate is printed and its value; and the weight information you found in pickup sections (see WEIGHT RULES below). Then on a new blank line write exactly "===JSON===" followed by ONLY a valid JSON object, no markdown, no other text after it.
+First, narrate your actual reasoning process as SHORT STEP LINES — one short phrase per line (roughly 3-10 words each), like a live checklist, NOT full sentences or paragraphs. This must be YOUR OWN genuine, adaptive reasoning about THIS specific document — not a fixed script. Write however many lines it actually takes (could be 3, could be 12) to cover what you're really doing, which will differ document to document. For example, if you notice weight is printed on both a pickup AND a matching delivery stop, narrate that you're excluding the delivery-side duplicate. If a stop's type (pickup vs delivery) isn't obviously labeled, narrate how you inferred it. If a company name has no explicit label, narrate that you're treating the unlabeled line as the company name. If there's nothing unusual about a section, a brief factual line is fine (e.g. "Stop 1: PICKUP — Toledo, OH"). Only narrate things that are actually true of this specific document — never state a page count (you don't know the original document's true page count, only how many images you were given), and never write a number, city, or dollar amount you have not actually seen printed. Cover, across your lines: how many pickup and delivery stops exist and their cities; where the total rate is printed and its value; and what you found for pickup weight (including how you're handling anything unusual — duplicates, missing weight, itemized tables, ambiguous stop labels). Then on a new blank line write exactly "===JSON===" followed by ONLY a valid JSON object, no markdown, no other text after it.
 
 If this is NOT a rate confirmation / load tender document, the JSON must be exactly {"notARateCon": true}.
 
@@ -58,7 +50,8 @@ Otherwise the JSON must have these fields:
 - destinationCity, destinationState (2-letter), destinationAddress, destinationZip — from the LAST delivery stop. Use null for any field not shown.
 - receiverName — same rules as shipperName above, but for the LAST delivery stop.
 - receiverContact — same rules as shipperContact above (always a phone number, never a person's name), but for the LAST delivery stop.
-- additionalPickups — array of every pickup stop AFTER the first, in route order. Each: { city (combined "City, ST" string), address, zip, contactName, contactPhone }. Empty array if only one pickup.
+- additionalPickups — array of every pickup stop AFTER the first, in route order. Each: { city (combined "City, ST" string), address, zip, contactName, contactPhone }. Empty array if only one pickup. IMPORTANT: contactName here means the COMPANY/FACILITY name at that stop (e.g. "WAL MART DC 6090") — same rules as shipperName described above, including the unlabeled-company-name rule below. It is NOT restricted to a person's name — use the company name whenever one is printed, and only fall back to a person's name if no company/facility name is shown at all.
+- additionalDeliveries — array of every delivery stop BEFORE the last, in route order. Each: same shape as above (contactName = company/facility name first, person's name only as fallback). Empty array if only one delivery.
 - additionalDeliveries — array of every delivery stop BEFORE the last, in route order. Each: same shape as above. Empty array if only one delivery.
 - rate — total dollar amount the broker pays the carrier (number). Look for labels like "Total Carrier Pay", "Net Freight Charges", "Carrier Fees Total", "Total Cost", "Total Due Carrier", "Total Rate". If the document lists a Rate Breakdown with a highlighted/bolded final total row, use that final total — do NOT skip it just because there are ALSO separate conditional "if applicable" accessorial charges (detention, lumper, layover) or deduction lines (fuel advance) nearby; those are separate from the base rate and never prevent you from reporting the main final total. If you truly cannot find any total pay figure anywhere in the document, use null — but check carefully first, this field should be null only rarely.
 
@@ -76,7 +69,7 @@ COMPANY NAME WITHOUT AN EXPLICIT LABEL: some documents print the company or faci
 
 RUN-TOGETHER ADDRESS TEXT: some documents print an address with no spaces between words due to a formatting artifact (e.g. "1200IndustrialParkwaySteC" or "77WestcliffeAveDock9"). When you see clearly-run-together address text like this, insert spaces at the natural word/number boundaries before returning it (e.g. "1200 Industrial Parkway Ste C", "77 Westcliffe Ave Dock 9"). Do this for street addresses only, not for company names or reference numbers.
 
-CONTACT NAME RULE (for additionalPickups/additionalDeliveries contactName/contactPhone fields): contactName is for a PERSON's name or a role/department (e.g. "Warehouse Desk", "Dock Supervisor", "John Smith"). contactPhone is ALWAYS a phone number, never an email or a person's name. If the only contact information printed for a stop is an email address and/or phone number with no named person or role, set contactName to null and put the phone number (not the email) in contactPhone. NEVER put an email address into a name field, and NEVER put a person's name into a phone field.
+CONTACT PHONE RULE (for shipperContact/receiverContact/contactPhone fields everywhere in this schema): these fields are ALWAYS a phone number, never an email address and never a person's or company's name. If a stop's contact info is only an email with no phone number printed, set the phone field to null — do not put the email there.
 
 WEIGHT RULES — read carefully, this is commonly mis-extracted:
 - Only look for weight in sections belonging to PICKUP stops (the first pickup AND any additional pickups). Ignore weight tables on delivery/consignee stops — those often repeat a subset of the SAME cargo already counted at pickup, and adding them again would double-count.
