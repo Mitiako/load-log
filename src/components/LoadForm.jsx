@@ -443,32 +443,31 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         if (data.receiverContact) setToReceiverContact(data.receiverContact);
 
         // Мульти-стоп: якщо AI знайшов додаткові зупинки — заповнюємо
-        // extraPickups/extraDeliveries і одразу розгортаємо секцію,
-        // щоб водій одразу побачив що документ має більше однієї адреси.
-        if (data.additionalPickups?.length) {
-          setExtraPickups(
-            data.additionalPickups.map((p) => ({
-              city: p.city || "",
-              address: p.address || "",
-              zip: p.zip || "",
-              contactName: p.contactName || "",
-              contactPhone: p.contactPhone || "",
-            })),
-          );
-          setShowMorePickups(true);
-        }
-        if (data.additionalDeliveries?.length) {
-          setExtraDeliveries(
-            data.additionalDeliveries.map((d) => ({
-              city: d.city || "",
-              address: d.address || "",
-              zip: d.zip || "",
-              contactName: d.contactName || "",
-              contactPhone: d.contactPhone || "",
-            })),
-          );
-          setShowMoreDeliveries(true);
-        }
+        // extraPickups/extraDeliveries і одразу розгортаємо секцію.
+        // Завжди (не умовно) перезаписуємо обидва стейти, з порожнім
+        // масивом якщо додаткових стопів немає — інакше стейт "памʼятає"
+        // додаткові стопи з ПОПЕРЕДНЬОГО скану іншого документа.
+        setExtraPickups(
+          (data.additionalPickups || []).map((p) => ({
+            city: p.city || "",
+            address: p.address || "",
+            zip: p.zip || "",
+            contactName: p.contactName || "",
+            contactPhone: p.contactPhone || "",
+          })),
+        );
+        setShowMorePickups((data.additionalPickups?.length || 0) > 0);
+
+        setExtraDeliveries(
+          (data.additionalDeliveries || []).map((d) => ({
+            city: d.city || "",
+            address: d.address || "",
+            zip: d.zip || "",
+            contactName: d.contactName || "",
+            contactPhone: d.contactPhone || "",
+          })),
+        );
+        setShowMoreDeliveries((data.additionalDeliveries?.length || 0) > 0);
 
         if (data.rate) setGross(String(data.rate));
         if (data.weight) setWeight(String(data.weight));
