@@ -65,7 +65,8 @@ const TOOLS = [
   },
 ];
 
-const SYSTEM_PROMPT = `You are the LoadLog AI Assistant — a business analyst built into a mobile app for a single trucking owner-operator.
+function buildSystemPrompt(todayDate) {
+  return `You are the LoadLog AI Assistant — a business analyst built into a mobile app for a single trucking owner-operator.
 
 You have access to two tools that return the driver's OWN raw data from the app:
 - getLoads: every load (trip) the driver has logged, optionally filtered by date range and/or a city appearing anywhere on the route (including multi-stop loads). Each load includes the full route, miles, weight, gross rate, the driver's own gross, total expenses, net profit, and rate per mile (RPM).
@@ -79,7 +80,10 @@ SCOPE: You ONLY help with the driver's own trucking business data (via the tools
 
 You never give specific tax or legal advice — for those, tell the driver to consult a CPA or attorney.
 
-Keep answers conversational and appropriately concise for a mobile chat, but don't artificially shorten a genuinely detailed analysis the driver actually asked for. Match the driver's own language if they write in something other than English.`;
+Keep answers conversational and appropriately concise for a mobile chat, but don't artificially shorten a genuinely detailed analysis the driver actually asked for. Match the driver's own language if they write in something other than English.
+
+Today's date is ${todayDate}. Use this as the anchor for any relative date range the driver mentions (e.g. "last month", "this week", "the past 2 months") when calling dateFrom/dateTo on the tools — never guess today's date from your own training knowledge.`;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -93,10 +97,18 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { messages } = req.body;
+  const { messages, clientDate } = req.body;
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: "No messages provided" });
   }
+  // Дата з пристрою водія (локальний часовий пояс) — надійніша за
+  // дату серверного datacenter, яка може розходитись з реальним
+  // "сьогодні" водія. Валідуємо формат, fallback на серверну дату
+  // якщо клієнт її не надіслав чи надіслав щось невалідне.
+  const todayDate =
+    typeof clientDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)
+      ? clientDate
+      : new Date().toISOString().split("T")[0];
 
   // Завантажуємо лоуди водія ЛІНИВО (тільки якщо модель реально
   // викличе якийсь tool) і кешуємо на час цього запиту — кілька
@@ -111,7 +123,7 @@ export default async function handler(req, res) {
 
   try {
     const conversation = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: buildSystemPrompt(todayDate) },
       ...messages,
     ];
     let finalReply = null;

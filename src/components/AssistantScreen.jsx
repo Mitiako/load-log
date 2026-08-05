@@ -32,7 +32,13 @@ export default function AssistantScreen({ onBack }) {
       const res = await authFetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
+        body: JSON.stringify({
+          messages: nextMessages,
+          // Дата з ПРИСТРОЮ водія (локальний часовий пояс), не сервера —
+          // "сьогодні"/"минулий тиждень" мають рахуватись від його
+          // реальної поточної дати, не від дати серверного datacenter.
+          clientDate: new Date().toLocaleDateString("en-CA"),
+        }),
       });
       const data = await res.json();
 
