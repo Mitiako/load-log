@@ -26,6 +26,7 @@ export default function Profile({
   onToggleTheme,
   onOpenSettings,
   onOpenChat,
+  onOpenAssistant,
 }) {
   const [profile, setProfile] = useState({
     name: user?.displayName || "",
@@ -122,6 +123,37 @@ export default function Profile({
               }}
             >
               <AssistantIcon size={26} />
+            </button>
+            <button
+              onClick={onOpenAssistant}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                display: "flex",
+                color: "var(--text-muted)",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "var(--accent)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "var(--text-muted)")
+              }
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                <circle cx="12" cy="12" r="4" />
+              </svg>
             </button>
             <button
               onClick={onOpenSettings}
