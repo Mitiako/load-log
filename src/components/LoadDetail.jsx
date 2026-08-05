@@ -616,7 +616,12 @@ function StopsList({ load }) {
                 {stop.contactName}
                 {stop.contactName && stop.address && "  |  "}
                 {stop.address && (
-                  <span style={{ color: "var(--text-secondary)" }}>
+                  <span
+                    style={{
+                      color:
+                        "color-mix(in srgb, var(--text-secondary) 99%, var(--text-muted))",
+                    }}
+                  >
                     {stop.address}
                   </span>
                 )}
