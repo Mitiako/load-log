@@ -54,3 +54,12 @@ export async function saveProfile(userId, profile) {
     console.error("saveProfile error", e);
   }
 }
+
+export async function fetchAssistantChats(userId) {
+  const q = query(
+    collection(db, "users", userId, "assistantChats"),
+    orderBy("updatedAt", "desc"),
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+}

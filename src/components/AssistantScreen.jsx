@@ -1,16 +1,22 @@
 // AssistantScreen.jsx
 // Окремий екран для AI Chat Assistant з function calling (api/assistant.js) —
-// свідомо НЕ той самий екран що ChatScreen.jsx (там вузько сфокусований,
-// ефемерний асистент з готовим 3-місячним зрізом даних). Тут асистент сам
-// вирішує які дані йому потрібні через getLoads/getFuelPurchases tools.
+// свідомо НЕ той самий екран що ChatScreen.jsx. Розмови зберігаються в
+// Firestore (users/{uid}/assistantChats) — водій може прогорнути список
+// старих сесій вручну, і сервер сам підмішує короткий дайджест останніх
+// розмов на початку нової сесії, без явного нагадування з боку водія.
 import { useState, useRef, useEffect } from "react";
 import { authFetch } from "../utils/authFetch";
+import { fetchAssistantChats } from "../data/firestore";
 import Header from "./Header";
 
-export default function AssistantScreen({ onBack }) {
+export default function AssistantScreen({ user, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [chatId, setChatId] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyList, setHistoryList] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -34,10 +40,9 @@ export default function AssistantScreen({ onBack }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages,
-          // Дата з ПРИСТРОЮ водія (локальний часовий пояс), не сервера —
-          // "сьогодні"/"минулий тиждень" мають рахуватись від його
-          // реальної поточної дати, не від дати серверного datacenter.
+          // Дата з ПРИСТРОЮ водія (локальний часовий пояс), не сервера.
           clientDate: new Date().toLocaleDateString("en-CA"),
+          chatId,
         }),
       });
       const data = await res.json();
@@ -47,6 +52,7 @@ export default function AssistantScreen({ onBack }) {
           ...prev,
           { role: "assistant", content: data.reply },
         ]);
+        if (data.chatId) setChatId(data.chatId);
       } else {
         setMessages((prev) => [
           ...prev,
@@ -78,6 +84,43 @@ export default function AssistantScreen({ onBack }) {
     }
   }
 
+  function handleNewChat() {
+    setMessages([]);
+    setChatId(null);
+    setShowHistory(false);
+  }
+
+  async function handleOpenHistory() {
+    setShowHistory(true);
+    setHistoryLoading(true);
+    try {
+      const chats = await fetchAssistantChats(user.uid);
+      setHistoryList(chats);
+    } catch (err) {
+      console.error("Failed to load chat history:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  function handleOpenPastChat(chat) {
+    setMessages(chat.messages || []);
+    setChatId(chat.id);
+    setShowHistory(false);
+  }
+
+  function formatChatDate(chat) {
+    // updatedAt приходить з Firestore Admin SDK як Timestamp-подібний
+    // об'єкт ({ _seconds, _nanoseconds }) через JSON — обробляємо обидва
+    // можливі формати про всяк випадок.
+    const raw = chat.updatedAt;
+    let date = null;
+    if (raw?._seconds) date = new Date(raw._seconds * 1000);
+    else if (raw?.seconds) date = new Date(raw.seconds * 1000);
+    if (!date) return "";
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+
   return (
     <div
       style={{
@@ -89,9 +132,9 @@ export default function AssistantScreen({ onBack }) {
     >
       <Header
         title="AI Assistant"
-        right={
+        left={
           <button
-            onClick={onBack}
+            onClick={handleOpenHistory}
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
@@ -102,15 +145,43 @@ export default function AssistantScreen({ onBack }) {
               cursor: "pointer",
               padding: 0,
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "var(--text-secondary)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "var(--text-muted)")
-            }
           >
-            BACK →
+            HISTORY
           </button>
+        }
+        right={
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button
+              onClick={handleNewChat}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.06em",
+                color: "var(--text-muted)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              + NEW
+            </button>
+            <button
+              onClick={onBack}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.06em",
+                color: "var(--text-muted)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              BACK →
+            </button>
+          </div>
         }
       />
 
@@ -225,6 +296,131 @@ export default function AssistantScreen({ onBack }) {
           Send
         </button>
       </div>
+
+      {/* History overlay */}
+      {showHistory && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 300,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+          }}
+          onClick={() => setShowHistory(false)}
+        >
+          <div
+            className="glass"
+            style={{
+              width: "100%",
+              maxWidth: 480,
+              maxHeight: "70svh",
+              overflowY: "auto",
+              borderRadius: "20px 20px 0 0",
+              padding: "16px 16px calc(16px + env(safe-area-inset-bottom))",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontWeight: 600,
+                fontSize: 15,
+                color: "var(--text-primary)",
+                marginBottom: 12,
+              }}
+            >
+              Past conversations
+            </div>
+
+            {historyLoading && (
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12,
+                  color: "var(--text-muted)",
+                  textAlign: "center",
+                  padding: "20px 0",
+                }}
+              >
+                Loading...
+              </div>
+            )}
+
+            {!historyLoading && historyList.length === 0 && (
+              <div
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 13,
+                  color: "var(--text-muted)",
+                  textAlign: "center",
+                  padding: "20px 0",
+                }}
+              >
+                No past conversations yet.
+              </div>
+            )}
+
+            {historyList.map((chat) => {
+              const firstUserMsg = (chat.messages || []).find(
+                (m) => m.role === "user",
+              );
+              return (
+                <button
+                  key={chat.id}
+                  onClick={() => handleOpenPastChat(chat)}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "12px 4px",
+                    borderBottom: "1px solid var(--border)",
+                    background: "none",
+                    border: "none",
+                    borderBottomWidth: 1,
+                    borderBottomStyle: "solid",
+                    borderBottomColor: "var(--border)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 10,
+                        letterSpacing: "0.06em",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      {formatChatDate(chat)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: 13,
+                      color: "var(--text-primary)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {firstUserMsg?.content || "(empty conversation)"}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

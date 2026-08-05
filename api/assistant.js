@@ -7,6 +7,11 @@
 // токена, ніколи з тіла запиту — асистент не може торкнутись чужих даних.
 import { verifyAuth } from "./_lib/verifyAuth.js";
 import { getAppData } from "./_lib/getAppData.js";
+import { randomUUID } from "node:crypto";
+import {
+  getRecentHistoryDigest,
+  saveConversation,
+} from "./_lib/assistantHistory.js";
 
 const TOOLS = [
   {
@@ -20,7 +25,10 @@ const TOOLS = [
   },
 ];
 
-function buildSystemPrompt(todayDate) {
+function buildSystemPrompt(todayDate, historyDigest) {
+  const historySection = historyDigest
+    ? `\n\nRECENT CONVERSATION HISTORY (from your last few sessions with this driver — for your own context only, don't just repeat it back unless it's directly relevant to the current question):\n${historyDigest}`
+    : "";
   return `You are the LoadLog AI Assistant — a business analyst built into a mobile app for a single trucking owner-operator.
 
 You have access to one tool, getAppData, that returns the driver's ENTIRE dataset from the app: every load (with full multi-stop route, miles, weight, gross rate, driver's own gross, net profit, rate per mile), every individual fuel purchase, every individual non-fuel expense line item (by name), and the driver's profile.
@@ -35,7 +43,7 @@ You never give specific tax or legal advice — for those, tell the driver to co
 
 Keep answers conversational and appropriately concise for a mobile chat, but don't artificially shorten a genuinely detailed analysis the driver actually asked for. Match the driver's own language if they write in something other than English.
 
-Today's date is ${todayDate}. Use this as the anchor for any relative date range the driver mentions (e.g. "last month", "this week", "the past 2 months") — never guess today's date from your own training knowledge.`;
+Today's date is ${todayDate}. Use this as the anchor for any relative date range the driver mentions (e.g. "last month", "this week", "the past 2 months") — never guess today's date from your own training knowledge.${historySection}`;
 }
 
 export default async function handler(req, res) {
@@ -50,10 +58,19 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { messages, clientDate } = req.body;
+  const { messages, clientDate, chatId } = req.body;
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: "No messages provided" });
   }
+  // chatId ідентифікує розмову для збереження/продовження — якщо
+  // клієнт ще не має його (перше повідомлення нової сесії), генеруємо
+  // тут і повертаємо назад, клієнт зберігає й надсилає в наступних.
+  const activeChatId =
+    typeof chatId === "string" && chatId ? chatId : randomUUID();
+  // Нова сесія (ще тільки перше повідомлення водія) — підмішуємо
+  // короткий дайджест останніх розмов, щоб асистент сам "пам'ятав"
+  // контекст без явного нагадування з боку водія.
+  const isNewSession = messages.length <= 1;
   // Дата з пристрою водія (локальний часовий пояс) — надійніша за
   // дату серверного datacenter, яка може розходитись з реальним
   // "сьогодні" водія. Валідуємо формат, fallback на серверну дату
@@ -74,8 +91,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    const historyDigest = isNewSession
+      ? await getRecentHistoryDigest(uid, activeChatId)
+      : null;
     const conversation = [
-      { role: "system", content: buildSystemPrompt(todayDate) },
+      { role: "system", content: buildSystemPrompt(todayDate, historyDigest) },
       ...messages,
     ];
     let finalReply = null;
@@ -140,7 +160,19 @@ export default async function handler(req, res) {
         .json({ error: "AI did not produce a final answer" });
     }
 
-    return res.status(200).json({ reply: finalReply });
+    // Зберігаємо повну розмову (включно з щойно отриманою відповіддю) —
+    // наступного разу її можна і прочитати вручну, і врахувати автоматично.
+    try {
+      await saveConversation(uid, activeChatId, [
+        ...messages,
+        { role: "assistant", content: finalReply },
+      ]);
+    } catch (err) {
+      console.error("Failed to save conversation:", err);
+      // Не зриваємо відповідь водієві через збій збереження історії.
+    }
+
+    return res.status(200).json({ reply: finalReply, chatId: activeChatId });
   } catch (err) {
     console.error("Assistant error:", err);
     return res.status(500).json({ error: "Failed to get response" });

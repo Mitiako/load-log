@@ -56,17 +56,10 @@ export async function getAppData(uid) {
     });
   });
 
-  // Профіль без фото — base64-рядки зображень безглузді для текстової
-  // моделі (вона їх не "бачить" без окремого vision-виклику) і тільки
-  // роздули б розмір даних, що передаються в кожен запит без користі.
   const profileData = profileSnap.exists ? profileSnap.data() : {};
-  const {
-    truckPhoto,
-    trailerPhoto,
-    cdlPhoto,
-    medPhoto,
-    ...profileWithoutPhotos
-  } = profileData;
-
-  return { loads, profile: profileWithoutPhotos };
+  const profileWithoutPhotos = { ...profileData };
+  delete profileWithoutPhotos.truckPhoto;
+  delete profileWithoutPhotos.trailerPhoto;
+  delete profileWithoutPhotos.cdlPhoto;
+  delete profileWithoutPhotos.medPhoto;
 }

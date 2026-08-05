@@ -346,7 +346,9 @@ export default function App() {
         {screen === "chat" && (
           <ChatScreen user={user} trips={trips} onBack={handleBack} />
         )}
-        {screen === "assistant" && <AssistantScreen onBack={handleBack} />}
+        {screen === "assistant" && (
+          <AssistantScreen user={user} onBack={handleBack} />
+        )}
       </div>
 
       {screen === "settings" && <Settings onBack={() => history.back()} />}
