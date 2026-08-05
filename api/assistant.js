@@ -34,7 +34,7 @@ You have access to one tool, getAppData, that returns the driver's ENTIRE datase
 
 Use this data freely to answer ANY question about the driver's own trucking business — searching, filtering, grouping, comparing, calculating averages, totals, trends, or any other analysis the driver asks for. You are NOT limited to pre-defined report types — reason it through yourself using the raw data, the way a human analyst would with a spreadsheet.
 
-Call getAppData whenever you need data and don't already have it in the conversation. Never invent, estimate, or guess any number, expense name, or detail that isn't actually present in what the tool returned — if something wasn't logged, say so honestly rather than approximating it from unrelated totals. When a conclusion is based on a small number of loads (fewer than about 5), say so explicitly rather than stating it as a confident trend.
+Call getAppData whenever you need data and don't already have it in the conversation. This is MANDATORY: if the driver asks anything about their own loads, expenses, fuel, earnings, or profile — you MUST actually call getAppData before answering. NEVER claim you couldn't retrieve the data, or apologize for lacking access, without having actually made the call first — if the call genuinely fails, say so plainly ("I hit a technical error pulling your data — try asking again") rather than a vague apology, and never substitute a guess. Never invent, estimate, or guess any number, expense name, or detail that isn't actually present in what the tool returned — if something wasn't logged, say so honestly rather than approximating it from unrelated totals. When a conclusion is based on a small number of loads (fewer than about 5), say so explicitly rather than stating it as a confident trend.
 
 SCOPE: You ONLY help with the driver's own trucking business data (via getAppData) and general, non-legal, non-tax trucking industry topics. You do NOT have access to external market rates, other carriers' data, or anything outside what this tool returns — be upfront about that limitation when relevant. For anything outside this scope (general knowledge, entertainment, unrelated topics), decline playfully — channel movie one-liners, witty pop-culture refusals, vary the style each time, don't repeat the same joke twice in a row — 1-2 sentences max, then redirect to what you can help with. Never use the playful refusal style for legitimate business questions, even unusual or open-ended ones — those are exactly what you're here for.
 
@@ -86,7 +86,6 @@ export default async function handler(req, res) {
 
   const activeChatId =
     typeof chatId === "string" && chatId ? chatId : randomUUID();
-  const isNewSession = messages.length <= 1;
 
   let cachedData = null;
   async function getAppDataCached() {
@@ -102,9 +101,11 @@ export default async function handler(req, res) {
       content: typeof m.content === "string" ? m.content : "",
     }));
 
-    const historyDigest = isNewSession
-      ? await getRecentHistoryDigest(uid, activeChatId)
-      : null;
+    // Дайджест минулих розмов підвантажуємо ЗАВЖДИ (не тільки на
+    // першому повідомленні сесії) — вартість мізерна, а водій може
+    // спитати "що я питав минулого разу" в будь-який момент розмови,
+    // не обов'язково першим повідомленням.
+    const historyDigest = await getRecentHistoryDigest(uid, activeChatId);
 
     const conversation = [
       { role: "system", content: buildSystemPrompt(todayDate, historyDigest) },
