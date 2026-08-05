@@ -1,10 +1,8 @@
 // api/assistant.js
 // Vercel Serverless Function — AI Chat Assistant з function calling.
-// На відміну від api/chat.js (вузький, заздалегідь підготовлений зріз
-// даних за 3 місяці) — цей асистент отримує ПОВНИЙ зріз даних водія
-// одним широким tool-викликом (getAppData) і сам вирішує як їх
-// фільтрувати/групувати/аналізувати. uid береться ТІЛЬКИ з перевіреного
-// токена, ніколи з тіла запиту — асистент не може торкнутись чужих даних.
+// Асистент отримує ПОВНИЙ зріз даних водія одним широким tool-викликом
+// (getAppData) і сам вирішує як їх фільтрувати/групувати/аналізувати.
+// uid береться ТІЛЬКИ з перевіреного токена, ніколи з тіла запиту.
 import { verifyAuth } from "./_lib/verifyAuth.js";
 import { getAppData } from "./_lib/getAppData.js";
 import { randomUUID } from "node:crypto";
@@ -29,13 +27,14 @@ function buildSystemPrompt(todayDate, historyDigest) {
   const historySection = historyDigest
     ? `\n\nRECENT CONVERSATION HISTORY (from your last few sessions with this driver — for your own context only, don't just repeat it back unless it's directly relevant to the current question):\n${historyDigest}`
     : "";
+
   return `You are the LoadLog AI Assistant — a business analyst built into a mobile app for a single trucking owner-operator.
 
 You have access to one tool, getAppData, that returns the driver's ENTIRE dataset from the app: every load (with full multi-stop route, miles, weight, gross rate, driver's own gross, net profit, rate per mile), every individual fuel purchase, every individual non-fuel expense line item (by name), and the driver's profile.
 
 Use this data freely to answer ANY question about the driver's own trucking business — searching, filtering, grouping, comparing, calculating averages, totals, trends, or any other analysis the driver asks for. You are NOT limited to pre-defined report types — reason it through yourself using the raw data, the way a human analyst would with a spreadsheet.
 
-Call getAppData whenever you need data and don't already have it in the conversation. Never invent, estimate, or guess any number, expense name, or detail that isn't actually present in what the tool returned — if something wasn't logged (e.g. an expense category, a date, a photo), say so honestly rather than approximating it from unrelated totals. When a conclusion is based on a small number of loads (fewer than about 5), say so explicitly rather than stating it as a confident trend.
+Call getAppData whenever you need data and don't already have it in the conversation. Never invent, estimate, or guess any number, expense name, or detail that isn't actually present in what the tool returned — if something wasn't logged, say so honestly rather than approximating it from unrelated totals. When a conclusion is based on a small number of loads (fewer than about 5), say so explicitly rather than stating it as a confident trend.
 
 SCOPE: You ONLY help with the driver's own trucking business data (via getAppData) and general, non-legal, non-tax trucking industry topics. You do NOT have access to external market rates, other carriers' data, or anything outside what this tool returns — be upfront about that limitation when relevant. For anything outside this scope (general knowledge, entertainment, unrelated topics), decline playfully — channel movie one-liners, witty pop-culture refusals, vary the style each time, don't repeat the same joke twice in a row — 1-2 sentences max, then redirect to what you can help with. Never use the playful refusal style for legitimate business questions, even unusual or open-ended ones — those are exactly what you're here for.
 
@@ -50,6 +49,17 @@ Be precise about WHICH time period your answer actually covers, and say so expli
 Keep answers conversational and appropriately concise for a mobile chat, but don't artificially shorten a genuinely detailed analysis the driver actually asked for — showing your arithmetic work is not "too long", it's expected. Match the driver's own language if they write in something other than English.
 
 Today's date is ${todayDate}. Use this as the anchor for any relative date range the driver mentions (e.g. "last month", "this week", "the past 2 months") — never guess today's date from your own training knowledge.${historySection}`;
+}
+
+// Гарантія на всяк випадок: незалежно від того, звідки саме взявся
+// null у content (модель, наш код, стара збережена історія) — перед
+// КОЖНИМ відправленням в OpenAI приводимо все до валідного рядка.
+function sanitizeForOpenAI(conv) {
+  return conv.map((m) =>
+    typeof m.content === "string"
+      ? m
+      : { ...m, content: m.content == null ? "" : String(m.content) },
+  );
 }
 
 export default async function handler(req, res) {
@@ -68,26 +78,16 @@ export default async function handler(req, res) {
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: "No messages provided" });
   }
-  // chatId ідентифікує розмову для збереження/продовження — якщо
-  // клієнт ще не має його (перше повідомлення нової сесії), генеруємо
-  // тут і повертаємо назад, клієнт зберігає й надсилає в наступних.
-  const activeChatId =
-    typeof chatId === "string" && chatId ? chatId : randomUUID();
-  // Нова сесія (ще тільки перше повідомлення водія) — підмішуємо
-  // короткий дайджест останніх розмов, щоб асистент сам "пам'ятав"
-  // контекст без явного нагадування з боку водія.
-  const isNewSession = messages.length <= 1;
-  // Дата з пристрою водія (локальний часовий пояс) — надійніша за
-  // дату серверного datacenter, яка може розходитись з реальним
-  // "сьогодні" водія. Валідуємо формат, fallback на серверну дату
-  // якщо клієнт її не надіслав чи надіслав щось невалідне.
+
   const todayDate =
     typeof clientDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)
       ? clientDate
       : new Date().toISOString().split("T")[0];
 
-  // Кешуємо на час цього запиту — кілька викликів getAppData у циклі
-  // (малоймовірно, але можливо) не б'ють по Firestore повторно.
+  const activeChatId =
+    typeof chatId === "string" && chatId ? chatId : randomUUID();
+  const isNewSession = messages.length <= 1;
+
   let cachedData = null;
   async function getAppDataCached() {
     if (cachedData === null) {
@@ -97,12 +97,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    const sanitizedMessages = messages.map((m) => ({
+      role: m.role,
+      content: typeof m.content === "string" ? m.content : "",
+    }));
+
     const historyDigest = isNewSession
       ? await getRecentHistoryDigest(uid, activeChatId)
       : null;
+
     const conversation = [
       { role: "system", content: buildSystemPrompt(todayDate, historyDigest) },
-      ...messages,
+      ...sanitizedMessages,
     ];
     let finalReply = null;
     const MAX_ITERATIONS = 5;
@@ -118,7 +124,7 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             model: "gpt-4o-mini",
-            messages: conversation,
+            messages: sanitizeForOpenAI(conversation),
             tools: TOOLS,
             max_tokens: 800,
           }),
@@ -137,7 +143,11 @@ export default async function handler(req, res) {
       }
 
       if (msg.tool_calls?.length > 0) {
-        conversation.push(msg);
+        conversation.push({
+          role: msg.role,
+          content: msg.content ?? "",
+          tool_calls: msg.tool_calls,
+        });
 
         for (const toolCall of msg.tool_calls) {
           let result;
@@ -166,8 +176,6 @@ export default async function handler(req, res) {
         .json({ error: "AI did not produce a final answer" });
     }
 
-    // Зберігаємо повну розмову (включно з щойно отриманою відповіддю) —
-    // наступного разу її можна і прочитати вручну, і врахувати автоматично.
     try {
       await saveConversation(uid, activeChatId, [
         ...messages,
@@ -175,7 +183,6 @@ export default async function handler(req, res) {
       ]);
     } catch (err) {
       console.error("Failed to save conversation:", err);
-      // Не зриваємо відповідь водієві через збій збереження історії.
     }
 
     return res.status(200).json({ reply: finalReply, chatId: activeChatId });
