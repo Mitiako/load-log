@@ -6,6 +6,13 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
   const [confirm, setConfirm] = useState(false);
   const c = calcLoad(load);
 
+  // Загальна кількість стопів: From + додаткові pickup + додаткові
+  // delivery + To. Якщо більше 2 — лоуд мульти-стоп, показуємо бейдж,
+  // бо картка інакше виглядає як звичайний From→To навіть коли реально
+  // є проміжні зупинки, збережені в extraPickups/extraDeliveries.
+  const totalStops =
+    2 + (load.extraPickups?.length || 0) + (load.extraDeliveries?.length || 0);
+
   function handleDelete(e) {
     e.stopPropagation();
     setConfirm(true);
@@ -156,6 +163,25 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
           >
             {load.to}
           </span>
+          {totalStops > 2 && (
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                color: "var(--accent)",
+                background: "rgba(255,138,61,0.12)",
+                border: "1px solid rgba(255,138,61,0.25)",
+                borderRadius: 999,
+                padding: "2px 7px",
+                flexShrink: 0,
+                lineHeight: 1.4,
+              }}
+            >
+              {totalStops} stops
+            </span>
+          )}
         </div>
         {/* Net profit */}
         <span

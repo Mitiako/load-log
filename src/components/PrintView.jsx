@@ -174,19 +174,7 @@ export default function PrintView({ loads, onClose }) {
                       breakInside: "avoid",
                     }}
                   >
-                    <div
-                      style={{
-                        fontFamily: "'Space Grotesk', sans-serif",
-                        fontWeight: 700,
-                        fontSize: 13,
-                        color: "#100F0C",
-                        marginBottom: 8,
-                        paddingBottom: 8,
-                        borderBottom: "1px solid #E5E2DC",
-                      }}
-                    >
-                      {load.from} → {load.to}
-                    </div>
+                    <RouteHeader load={load} />
 
                     <PrintRow label="Date" value={fmtDate(load.date)} />
                     <PrintRow
@@ -406,6 +394,74 @@ function PageSummary({ loads }) {
           </tr>
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function RouteHeader({ load }) {
+  // Повний впорядкований список стопів: From → додаткові pickup →
+  // додаткові delivery → To. Для звичайного лоуда (2 стопи) виглядає
+  // так само як завжди — жодних змін для більшості лоудів.
+  const stops = [
+    load.from,
+    ...(load.extraPickups || []).map((p) => p.city).filter(Boolean),
+    ...(load.extraDeliveries || []).map((d) => d.city).filter(Boolean),
+    load.to,
+  ].filter(Boolean);
+
+  if (stops.length <= 2) {
+    return (
+      <div
+        style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontWeight: 700,
+          fontSize: 13,
+          color: "#100F0C",
+          marginBottom: 8,
+          paddingBottom: 8,
+          borderBottom: "1px solid #E5E2DC",
+        }}
+      >
+        {load.from} → {load.to}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        marginBottom: 8,
+        paddingBottom: 8,
+        borderBottom: "1px solid #E5E2DC",
+      }}
+    >
+      {stops.map((city, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: 5,
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: i === 0 || i === stops.length - 1 ? 12 : 11,
+            fontWeight: i === 0 || i === stops.length - 1 ? 700 : 500,
+            color: i === 0 || i === stops.length - 1 ? "#100F0C" : "#5C594F",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              color: "#8E8A82",
+              flexShrink: 0,
+              width: 12,
+            }}
+          >
+            {i === 0 ? "①" : i === stops.length - 1 ? "🏁" : i + 1}
+          </span>
+          {city}
+        </div>
+      ))}
     </div>
   );
 }
