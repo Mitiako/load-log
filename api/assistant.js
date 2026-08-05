@@ -25,6 +25,17 @@ const TOOLS = [
   },
 ];
 
+// Гарантія на всяк випадок: незалежно від того, звідки саме взявся
+// null у content (модель, наш код, стара збережена історія) — перед
+// КОЖНИМ відправленням в OpenAI приводимо все до валідного рядка.
+function sanitizeForOpenAI(conv) {
+  return conv.map((m) =>
+    typeof m.content === "string"
+      ? m
+      : { ...m, content: m.content == null ? "" : String(m.content) },
+  );
+}
+
 function buildSystemPrompt(todayDate, historyDigest) {
   const historySection = historyDigest
     ? `\n\nRECENT CONVERSATION HISTORY (from your last few sessions with this driver — for your own context only, don't just repeat it back unless it's directly relevant to the current question):\n${historyDigest}`
@@ -119,7 +130,7 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             model: "gpt-4o-mini",
-            messages: conversation,
+            messages: sanitizeForOpenAI(conversation),
             tools: TOOLS,
             max_tokens: 800,
           }),
