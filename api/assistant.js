@@ -94,9 +94,16 @@ export default async function handler(req, res) {
     const historyDigest = isNewSession
       ? await getRecentHistoryDigest(uid, activeChatId)
       : null;
+    // Санітизуємо вхідні повідомлення — content має бути завжди
+    // рядком для OpenAI API, ніколи null (навіть якщо десь у клієнта
+    // чи збереженій історії опинився null з якоїсь причини).
+    const sanitizedMessages = messages.map((m) => ({
+      role: m.role,
+      content: typeof m.content === "string" ? m.content : "",
+    }));
     const conversation = [
       { role: "system", content: buildSystemPrompt(todayDate, historyDigest) },
-      ...messages,
+      ...sanitizedMessages,
     ];
     let finalReply = null;
     const MAX_ITERATIONS = 5;
@@ -131,7 +138,15 @@ export default async function handler(req, res) {
       }
 
       if (msg.tool_calls?.length > 0) {
-        conversation.push(msg);
+        // OpenAI повертає content: null для повідомлень де модель ТІЛЬКИ
+        // викликає tool (без супровідного тексту) — це валідно на виході,
+        // але при пересиланні назад у наступному циклі null не проходить
+        // валідацію запиту. Підміняємо на порожній рядок про всяк випадок.
+        conversation.push({
+          role: msg.role,
+          content: msg.content ?? "",
+          tool_calls: msg.tool_calls,
+        });
 
         for (const toolCall of msg.tool_calls) {
           let result;
