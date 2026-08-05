@@ -25,17 +25,6 @@ const TOOLS = [
   },
 ];
 
-// Гарантія на всяк випадок: незалежно від того, звідки саме взявся
-// null у content (модель, наш код, стара збережена історія) — перед
-// КОЖНИМ відправленням в OpenAI приводимо все до валідного рядка.
-function sanitizeForOpenAI(conv) {
-  return conv.map((m) =>
-    typeof m.content === "string"
-      ? m
-      : { ...m, content: m.content == null ? "" : String(m.content) },
-  );
-}
-
 function buildSystemPrompt(todayDate, historyDigest) {
   const historySection = historyDigest
     ? `\n\nRECENT CONVERSATION HISTORY (from your last few sessions with this driver — for your own context only, don't just repeat it back unless it's directly relevant to the current question):\n${historyDigest}`
@@ -52,7 +41,13 @@ SCOPE: You ONLY help with the driver's own trucking business data (via getAppDat
 
 You never give specific tax or legal advice — for those, tell the driver to consult a CPA or attorney. You do not have access to photos or scanned documents (BOL, RateCon images) — only the structured data logged in the app.
 
-Keep answers conversational and appropriately concise for a mobile chat, but don't artificially shorten a genuinely detailed analysis the driver actually asked for. Match the driver's own language if they write in something other than English.
+FORMATTING: Never use LaTeX or markdown math notation (no \\frac, \\left, \\right, \\text, or bracket-wrapped formulas) — this chat displays plain text only, not rendered math. Write arithmetic in plain, everyday form instead (e.g. "33120 / 101450 = 0.326, so about 32.6%").
+
+ARITHMETIC ACCURACY — this is critical: whenever you sum, average, or otherwise combine numbers across MULTIPLE loads or expenses (e.g. "total earnings", "average RPM", "how much did I spend this month"), you MUST show your work — list every individual value being combined on its own line, then compute the result step by step, before stating the final figure. Never state a multi-item total or average without showing this breakdown first — silently adding numbers "in your head" is exactly how errors slip in, and showing the work lets the driver catch a mistake if one occurs.
+
+Be precise about WHICH time period your answer actually covers, and say so explicitly — if the driver's phrasing is ambiguous (e.g. "earnings today" could colloquially mean "as of today, all-time" or literally "loads dated today"), state which interpretation you're using rather than silently picking one.
+
+Keep answers conversational and appropriately concise for a mobile chat, but don't artificially shorten a genuinely detailed analysis the driver actually asked for — showing your arithmetic work is not "too long", it's expected. Match the driver's own language if they write in something other than English.
 
 Today's date is ${todayDate}. Use this as the anchor for any relative date range the driver mentions (e.g. "last month", "this week", "the past 2 months") — never guess today's date from your own training knowledge.${historySection}`;
 }
@@ -105,16 +100,9 @@ export default async function handler(req, res) {
     const historyDigest = isNewSession
       ? await getRecentHistoryDigest(uid, activeChatId)
       : null;
-    // Санітизуємо вхідні повідомлення — content має бути завжди
-    // рядком для OpenAI API, ніколи null (навіть якщо десь у клієнта
-    // чи збереженій історії опинився null з якоїсь причини).
-    const sanitizedMessages = messages.map((m) => ({
-      role: m.role,
-      content: typeof m.content === "string" ? m.content : "",
-    }));
     const conversation = [
       { role: "system", content: buildSystemPrompt(todayDate, historyDigest) },
-      ...sanitizedMessages,
+      ...messages,
     ];
     let finalReply = null;
     const MAX_ITERATIONS = 5;
@@ -130,7 +118,7 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             model: "gpt-4o-mini",
-            messages: sanitizeForOpenAI(conversation),
+            messages: conversation,
             tools: TOOLS,
             max_tokens: 800,
           }),
@@ -149,15 +137,7 @@ export default async function handler(req, res) {
       }
 
       if (msg.tool_calls?.length > 0) {
-        // OpenAI повертає content: null для повідомлень де модель ТІЛЬКИ
-        // викликає tool (без супровідного тексту) — це валідно на виході,
-        // але при пересиланні назад у наступному циклі null не проходить
-        // валідацію запиту. Підміняємо на порожній рядок про всяк випадок.
-        conversation.push({
-          role: msg.role,
-          content: msg.content ?? "",
-          tool_calls: msg.tool_calls,
-        });
+        conversation.push(msg);
 
         for (const toolCall of msg.tool_calls) {
           let result;
