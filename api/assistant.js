@@ -47,14 +47,14 @@ const TOOLS = [
     function: {
       name: "lookupExpense",
       description:
-        "Check whether a SPECIFIC expense name/category actually exists in the driver's logged data — use this for ANY yes/no question like 'do I have X', 'how much do I pay for Y', 'is there a Z expense', 'do I have trailer rent/insurance/etc'. This does a literal search against the real expense and fuel records and tells you definitively whether it exists. NEVER answer this kind of question from memory or general trucking knowledge — always call this tool first, even if you feel confident you already know the answer.",
+        "Check the driver's real expense/fuel records. Pass a specific query (e.g. 'trailer rent', 'insurance') to search for one item, or an EMPTY string to get the driver's COMPLETE real expense list. Use this tool for EVERY expense-related question — existence checks, listing, categorization — never answer from memory or general trucking knowledge.",
       parameters: {
         type: "object",
         properties: {
           query: {
             type: "string",
             description:
-              "The expense name or category the driver is asking about, e.g. 'trailer rent', 'insurance', 'parking'.",
+              "The expense name/category to search for, or an empty string to get the complete list.",
           },
         },
         required: ["query"],
@@ -73,7 +73,9 @@ function buildSystemPrompt(todayDate, historyDigest) {
 You have three tools:
 - getAppData: returns the driver's ENTIRE dataset (every load with full multi-stop route, miles, weight, gross rate, driver's own gross, net profit, rate per mile; every individual fuel purchase; every individual non-fuel expense line item by name; the driver's profile; and a pre-calculated "summary" object with ready totals for last7Days, last30Days, last90Days, and allTime).
 - calculate: runs real JavaScript code against that data and returns an exact result. Use this for ANY arithmetic across multiple items that "summary" doesn't already cover.
-- lookupExpense: does a literal search for a SPECIFIC expense name/category (e.g. "trailer rent", "insurance", "do I have X"). Use this for ANY yes/no or "how much do I pay for" question about a specific expense — it tells you definitively whether it exists in the driver's data, and if not, gives you the actual list of what they've logged. This is MANDATORY for this type of question — never answer from memory or general knowledge about what a trucker typically pays for.
+- lookupExpense: does a literal search for a SPECIFIC expense name/category (e.g. "trailer rent", "insurance"). Pass an EMPTY string as the query to get the driver's COMPLETE real expense list. Use this tool for EVERY question that touches the driver's expenses in ANY way — not just "do I have X", but also "what are my expenses", "what's my biggest expense", "list my costs", categorization questions, anything. There is no expense-related question you should ever answer without calling this tool (or calculate, for a specific computed comparison like "biggest") first — never rely on memory, a previous answer in this conversation, or general knowledge about what a trucker typically pays for.
+
+SELF-CONTRADICTION WARNING: if you're about to state a number or fact that CONTRADICTS something you already correctly verified via a tool earlier in this same conversation, the earlier tool-verified answer is right and your new instinct is wrong. Do not invent an explanation to reconcile them (like "maybe it's recorded under a different name") — just restate the tool-verified fact again.
 
 Use this data freely to answer ANY question about the driver's own trucking business — searching, filtering, grouping, comparing, calculating averages, totals, trends, hypothetical "what if" scenarios, or any other analysis the driver asks for. You are NOT limited to pre-defined report types — reason it through yourself, calling calculate whenever real arithmetic across multiple items is needed.
 
@@ -88,9 +90,7 @@ Never invent, estimate, or guess any number, expense name, or detail that isn't 
 
 CATEGORIZING EXPENSES: individual non-fuel expense line items only have a "name" field (whatever the driver typed) — there is no separate category field. If the driver asks which of THEIR ACTUAL logged expenses are or aren't "truck-related", infer it from each item's name using clear, consistent judgment — e.g. a tire, truck wash, or repair is truck-related; food or personal items are not; be consistent about the SAME item across the whole answer. This categorization only applies to items that are actually in the data — never add extra rows for categories the driver hasn't logged.
 
-KNOWN FABRICATION PATTERN — read this carefully: in past sessions, this exact assistant has repeatedly and WRONGLY stated the driver has these recurring costs, when they do NOT exist anywhere in this driver's actual data: "truck payment" / "monthly truck payment", "insurance" / "insurance premium", "ELD" / "ELD subscription", "trailer rent" / "trailer rental", "home parking" as a recurring line. These five specific phrases are a known hallucination pattern for you — if you're about to state ANY of them, STOP and check: is this literally present in the otherExpenses array you retrieved for THIS driver in THIS conversation? If not, do not say it, even if it sounds like a normal thing a trucker would pay for.
-
-IF THE DRIVER CORRECTS OR PUSHES BACK on a categorization you gave (e.g. "actually that IS business-related"): only re-evaluate the items you ALREADY listed — flip their category if warranted. Do NOT add any new items to the list at this point. Adding items that weren't in your original answer, right after being corrected, is exactly how the fabrication above has happened before — treat the urge to "give a fuller list now" as a warning sign, not helpfulness.
+# (narrow mini-specific patches removed for clean gpt-4o baseline test)
 
 HISTORY IS FOR CONTINUITY, NOT FACTS: the RECENT CONVERSATION HISTORY section (if present) reflects what was said in past sessions — including anything you may have gotten wrong before. Use it only for conversational continuity (tone, ongoing topics, goals the driver mentioned). NEVER treat a specific number or fact from past history as already-verified truth — always re-derive any figure you state from getAppData/calculate in the current conversation, even if it looks like something was already established previously.
 
@@ -268,15 +268,13 @@ export default async function handler(req, res) {
 // дозволяти моделі відповідати прозою "з голови". Шукає і серед
 // otherExpenses (назви витрат), і серед fuelPurchases (локації).
 function lookupExpenseByQuery(appData, query) {
-  if (!query || typeof query !== "string") {
-    return { found: false, message: "No query provided." };
-  }
-  const q = query.toLowerCase().trim();
+  const q = typeof query === "string" ? query.toLowerCase().trim() : "";
+  const wantAll = q === "";
   const matches = [];
 
   for (const load of appData.loads || []) {
     for (const e of load.otherExpenses || []) {
-      if (e.name && e.name.toLowerCase().includes(q)) {
+      if (e.name && (wantAll || e.name.toLowerCase().includes(q))) {
         matches.push({
           type: "expense",
           name: e.name,
@@ -287,7 +285,7 @@ function lookupExpenseByQuery(appData, query) {
       }
     }
     for (const f of load.fuelPurchases || []) {
-      if (f.location && f.location.toLowerCase().includes(q)) {
+      if (f.location && (wantAll || f.location.toLowerCase().includes(q))) {
         matches.push({
           type: "fuel",
           location: f.location,
