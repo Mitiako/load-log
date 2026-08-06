@@ -42,6 +42,25 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "lookupExpense",
+      description:
+        "Check whether a SPECIFIC expense name/category actually exists in the driver's logged data — use this for ANY yes/no question like 'do I have X', 'how much do I pay for Y', 'is there a Z expense', 'do I have trailer rent/insurance/etc'. This does a literal search against the real expense and fuel records and tells you definitively whether it exists. NEVER answer this kind of question from memory or general trucking knowledge — always call this tool first, even if you feel confident you already know the answer.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description:
+              "The expense name or category the driver is asking about, e.g. 'trailer rent', 'insurance', 'parking'.",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
 ];
 
 function buildSystemPrompt(todayDate, historyDigest) {
@@ -51,9 +70,10 @@ function buildSystemPrompt(todayDate, historyDigest) {
 
   return `You are the LoadLog AI Assistant — a business analyst built into a mobile app for a single trucking owner-operator.
 
-You have two tools:
+You have three tools:
 - getAppData: returns the driver's ENTIRE dataset (every load with full multi-stop route, miles, weight, gross rate, driver's own gross, net profit, rate per mile; every individual fuel purchase; every individual non-fuel expense line item by name; the driver's profile; and a pre-calculated "summary" object with ready totals for last7Days, last30Days, last90Days, and allTime).
 - calculate: runs real JavaScript code against that data and returns an exact result. Use this for ANY arithmetic across multiple items that "summary" doesn't already cover.
+- lookupExpense: does a literal search for a SPECIFIC expense name/category (e.g. "trailer rent", "insurance", "do I have X"). Use this for ANY yes/no or "how much do I pay for" question about a specific expense — it tells you definitively whether it exists in the driver's data, and if not, gives you the actual list of what they've logged. This is MANDATORY for this type of question — never answer from memory or general knowledge about what a trucker typically pays for.
 
 Use this data freely to answer ANY question about the driver's own trucking business — searching, filtering, grouping, comparing, calculating averages, totals, trends, hypothetical "what if" scenarios, or any other analysis the driver asks for. You are NOT limited to pre-defined report types — reason it through yourself, calling calculate whenever real arithmetic across multiple items is needed.
 
@@ -201,6 +221,9 @@ export default async function handler(req, res) {
           } else if (toolCall.function.name === "calculate") {
             const appData = await getAppDataCached();
             result = runSandboxedCalculation(args.code, appData);
+          } else if (toolCall.function.name === "lookupExpense") {
+            const appData = await getAppDataCached();
+            result = lookupExpenseByQuery(appData, args.query);
           } else {
             result = { error: "Unknown tool" };
           }
@@ -238,4 +261,59 @@ export default async function handler(req, res) {
     console.error("Assistant error:", err);
     return res.status(500).json({ error: "Failed to get response" });
   }
+}
+
+// Буквальний пошук конкретної витрати/категорії по реальних даних —
+// повертає ЧЕСНЕ "не знайдено" + список того, що реально є, замість
+// дозволяти моделі відповідати прозою "з голови". Шукає і серед
+// otherExpenses (назви витрат), і серед fuelPurchases (локації).
+function lookupExpenseByQuery(appData, query) {
+  if (!query || typeof query !== "string") {
+    return { found: false, message: "No query provided." };
+  }
+  const q = query.toLowerCase().trim();
+  const matches = [];
+
+  for (const load of appData.loads || []) {
+    for (const e of load.otherExpenses || []) {
+      if (e.name && e.name.toLowerCase().includes(q)) {
+        matches.push({
+          type: "expense",
+          name: e.name,
+          amount: e.amount,
+          date: load.date,
+          loadRoute: `${load.from} → ${load.to}`,
+        });
+      }
+    }
+    for (const f of load.fuelPurchases || []) {
+      if (f.location && f.location.toLowerCase().includes(q)) {
+        matches.push({
+          type: "fuel",
+          location: f.location,
+          amount: f.amount,
+          date: f.date,
+          loadRoute: `${load.from} → ${load.to}`,
+        });
+      }
+    }
+  }
+
+  if (matches.length > 0) {
+    return { found: true, matches };
+  }
+
+  const allExpenseNames = [
+    ...new Set(
+      (appData.loads || []).flatMap((l) =>
+        (l.otherExpenses || []).map((e) => e.name).filter(Boolean),
+      ),
+    ),
+  ];
+
+  return {
+    found: false,
+    message: `No expense matching "${query}" was found in the driver's data.`,
+    actualLoggedExpenseNames: allExpenseNames,
+  };
 }
