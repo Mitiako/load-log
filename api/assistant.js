@@ -108,6 +108,19 @@ export default async function handler(req, res) {
     // спитати "що я питав минулого разу" в будь-який момент розмови,
     // не обов'язково першим повідомленням.
     const historyDigest = await getRecentHistoryDigest(uid, activeChatId);
+    // ТИМЧАСОВЕ логування для діагностики — приберемо після перевірки.
+    console.log(
+      "historyDigest:",
+      historyDigest
+        ? `${historyDigest.length} chars, starts: ${historyDigest.slice(0, 100)}`
+        : "NULL/empty",
+    );
+    console.log(
+      "activeChatId:",
+      activeChatId,
+      "isNewClientChatId:",
+      typeof chatId === "string" && chatId,
+    );
 
     const conversation = [
       { role: "system", content: buildSystemPrompt(todayDate, historyDigest) },
