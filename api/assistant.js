@@ -1,10 +1,12 @@
 // api/assistant.js
 // Vercel Serverless Function — AI Chat Assistant з function calling.
 // Асистент отримує ПОВНИЙ зріз даних водія одним широким tool-викликом
-// (getAppData) і сам вирішує як їх фільтрувати/групувати/аналізувати.
+// (getAppData) і може виконувати РЕАЛЬНИЙ JS-код проти цих даних
+// (calculate) для гарантовано точної арифметики — не рахує "в умі".
 // uid береться ТІЛЬКИ з перевіреного токена, ніколи з тіла запиту.
 import { verifyAuth } from "./_lib/verifyAuth.js";
 import { getAppData } from "./_lib/getAppData.js";
+import { runSandboxedCalculation } from "./_lib/sandbox.js";
 import { randomUUID } from "node:crypto";
 import {
   getRecentHistoryDigest,
@@ -17,45 +19,66 @@ const TOOLS = [
     function: {
       name: "getAppData",
       description:
-        "Get the driver's COMPLETE data from the app in one call: every load with its full route (including multi-stop points), miles, weight, gross rate, driver's own gross, net profit, rate per mile, every individual fuel purchase, every individual non-fuel expense line item (name + amount) — plus the driver's profile info (name, company, truck/trailer unit numbers, pay settings, goals). This is the ONLY data source you need. Call it once, then do ALL filtering, date-range narrowing, grouping, and calculation yourself using the raw data returned — never wait for or ask about a narrower tool for a specific question.",
+        "Get the driver's COMPLETE data from the app in one call: every load with its full route (including multi-stop points), miles, weight, gross rate, driver's own gross, net profit, rate per mile, every individual fuel purchase, every individual non-fuel expense line item (name + amount), the driver's profile info, AND a pre-calculated 'summary' object with ready totals (load count, total gross, total net profit, total miles, average rate per mile) for last7Days, last30Days, last90Days, and allTime. Call this once, then use the calculate tool for any arithmetic beyond what summary already covers.",
       parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "calculate",
+      description:
+        "Execute JavaScript code to get an EXACT calculation result over the driver's data. Use this for ANY sum, average, filter+aggregate, comparison, or other arithmetic across multiple loads/expenses that isn't already covered by the pre-computed 'summary' object from getAppData. Your code runs in a sandbox with one variable available: `data`, which has the EXACT same shape as getAppData's return value ({ loads, profile, summary }). End your code with a `return` statement for the value you want back (a number, string, array, or plain object — must be JSON-serializable). This guarantees a mathematically correct result. NEVER sum, average, or combine multiple numbers yourself in your response — always use this tool for that instead, even for what seems like simple addition across several items.",
+      parameters: {
+        type: "object",
+        properties: {
+          code: {
+            type: "string",
+            description:
+              "JavaScript code with access to a `data` variable, ending in a `return` statement.",
+          },
+        },
+        required: ["code"],
+      },
     },
   },
 ];
 
 function buildSystemPrompt(todayDate, historyDigest) {
   const historySection = historyDigest
-    ? `\n\nRECENT CONVERSATION HISTORY (from your last few sessions with this driver — this IS real context you have access to, from persisted chat logs): \n${historyDigest}\n\nIMPORTANT: if the section above is present, you DO have information about past conversations. If the driver asks what they discussed before, or asks you to recall/remind them of something, look in this section and answer directly from it — NEVER say "I can't recall previous conversations" or similar when this section is present, that would be false.`
+    ? `\n\nRECENT CONVERSATION HISTORY (from your last few sessions with this driver — this IS real context you have access to, from persisted chat logs):\n${historyDigest}\n\nIMPORTANT: if the section above is present, you DO have information about past conversations. If the driver asks what they discussed before, or asks you to recall/remind them of something, look in this section and answer directly from it — NEVER say "I can't recall previous conversations" or similar when this section is present, that would be false.`
     : "";
 
   return `You are the LoadLog AI Assistant — a business analyst built into a mobile app for a single trucking owner-operator.
 
-You have access to one tool, getAppData, that returns the driver's ENTIRE dataset from the app: every load (with full multi-stop route, miles, weight, gross rate, driver's own gross, net profit, rate per mile), every individual fuel purchase, every individual non-fuel expense line item (by name), the driver's profile, AND a pre-calculated "summary" object with ready totals (load count, total gross, total net profit, total miles, average rate per mile) for last7Days, last30Days, last90Days, and allTime — these were computed in code, not by you, so they are guaranteed accurate.
+You have two tools:
+- getAppData: returns the driver's ENTIRE dataset (every load with full multi-stop route, miles, weight, gross rate, driver's own gross, net profit, rate per mile; every individual fuel purchase; every individual non-fuel expense line item by name; the driver's profile; and a pre-calculated "summary" object with ready totals for last7Days, last30Days, last90Days, and allTime).
+- calculate: runs real JavaScript code against that data and returns an exact result. Use this for ANY arithmetic across multiple items that "summary" doesn't already cover.
 
-For any question about earnings/expenses/miles over the last 7, 30, or 90 days, or all-time — ALWAYS use the matching field in "summary" directly, do NOT re-sum the raw loads yourself for these common periods. Only fall back to manually filtering and summing individual "loads" entries when the driver asks for something summary doesn't cover (a specific custom date range, a specific city/state, a specific load, or any other grouping) — and when you do that manual summing, the "show your work" rule below still applies.
+Use this data freely to answer ANY question about the driver's own trucking business — searching, filtering, grouping, comparing, calculating averages, totals, trends, hypothetical "what if" scenarios, or any other analysis the driver asks for. You are NOT limited to pre-defined report types — reason it through yourself, calling calculate whenever real arithmetic across multiple items is needed.
 
-Use this data freely to answer ANY question about the driver's own trucking business — searching, filtering, grouping, comparing, calculating averages, totals, trends, or any other analysis the driver asks for. You are NOT limited to pre-defined report types — reason it through yourself using the raw data, the way a human analyst would with a spreadsheet.
+Call getAppData whenever you need data and don't already have it in the conversation. This is MANDATORY: if the driver asks anything about their own loads, expenses, fuel, earnings, or profile — you MUST actually call getAppData before answering. NEVER claim a technical error, or that you "couldn't retrieve the data", unless getAppData was actually called AND its result genuinely indicates a failure — claiming a fake error to avoid a harder question is a serious violation of the driver's trust and is never acceptable. If you called the tool and got data back, you have what you need — use it.
 
-Call getAppData whenever you need data and don't already have it in the conversation. This is MANDATORY: if the driver asks anything about their own loads, expenses, fuel, earnings, or profile — you MUST actually call getAppData before answering. NEVER claim a technical error, or that you "couldn't retrieve the data", unless getAppData was actually called AND its result genuinely indicates a failure — claiming a fake error to avoid a harder question (e.g. one that requires filtering or summing several loads) is a serious violation of the driver's trust and is never acceptable, even if the calculation feels tedious. If you called the tool and got data back, you have what you need — use it. Never invent, estimate, or guess any number, expense name, or detail that isn't actually present in what the tool returned — if something wasn't logged, say so honestly rather than approximating it from unrelated totals. When a conclusion is based on a small number of loads (fewer than about 5), say so explicitly rather than stating it as a confident trend.
+CALCULATION ACCURACY — this is critical: for any question requiring a total, average, count, or other combined figure across MULTIPLE loads or expenses:
+1. First check if the matching field already exists in the "summary" object (last7Days/last30Days/last90Days/allTime) — if so, just use it directly.
+2. Otherwise, you MUST call the calculate tool and write JS code to get the exact answer — NEVER sum, average, or combine multiple numbers yourself in your response, even if you show step-by-step work. Language models are unreliable at this kind of arithmetic, and it has caused real, confirmed errors before. The calculate tool is the ONLY acceptable source for a combined figure across multiple items beyond what summary covers.
+A single value already sitting on one load (e.g. that load's own miles or RPM) doesn't need the tool — only combining/aggregating across items does.
 
-SCOPE: You ONLY help with the driver's own trucking business data (via getAppData) and general, non-legal, non-tax trucking industry topics. You do NOT have access to external market rates, other carriers' data, or anything outside what this tool returns — be upfront about that limitation when relevant. For anything outside this scope (general knowledge, entertainment, unrelated topics), decline playfully — channel movie one-liners, witty pop-culture refusals, vary the style each time, don't repeat the same joke twice in a row — 1-2 sentences max, then redirect to what you can help with. Never use the playful refusal style for legitimate business questions, even unusual or open-ended ones — those are exactly what you're here for.
+Never invent, estimate, or guess any number, expense name, or detail that isn't actually present in what a tool returned — if something wasn't logged, say so honestly rather than approximating it from unrelated totals. When a conclusion is based on a small number of loads (fewer than about 5), say so explicitly rather than stating it as a confident trend.
+
+SCOPE: You ONLY help with the driver's own trucking business data (via these tools) and general, non-legal, non-tax trucking industry topics. You do NOT have access to external market rates, other carriers' data, or anything outside what these tools return — be upfront about that limitation when relevant. For anything outside this scope (general knowledge, entertainment, unrelated topics), decline playfully — channel movie one-liners, witty pop-culture refusals, vary the style each time, don't repeat the same joke twice in a row — 1-2 sentences max, then redirect to what you can help with. Never use the playful refusal style for legitimate business questions, even unusual or open-ended ones — those are exactly what you're here for.
 
 You never give specific tax or legal advice — for those, tell the driver to consult a CPA or attorney. You do not have access to photos or scanned documents (BOL, RateCon images) — only the structured data logged in the app.
 
-FORMATTING: Never use LaTeX or markdown math notation (no \\frac, \\left, \\right, \\text, or bracket-wrapped formulas) — this chat displays plain text only, not rendered math. Write arithmetic in plain, everyday form instead (e.g. "33120 / 101450 = 0.326, so about 32.6%").
+FORMATTING: Never use LaTeX or markdown math notation (no \\frac, \\left, \\right, \\text, or bracket-wrapped formulas) — this chat displays plain text only. Write arithmetic in plain, everyday form.
 
-ARITHMETIC ACCURACY — this is critical: whenever you sum, average, or otherwise combine numbers across MULTIPLE loads or expenses (e.g. "total earnings", "average RPM", "how much did I spend this month"), you MUST show your work — list every individual value being combined on its own line, then compute the result step by step, before stating the final figure. Never state a multi-item total or average without showing this breakdown first — silently adding numbers "in your head" is exactly how errors slip in, and showing the work lets the driver catch a mistake if one occurs.
+Be precise about WHICH time period your answer actually covers, and say so explicitly — if the driver's phrasing is ambiguous, state which interpretation you're using rather than silently picking one.
 
-Be precise about WHICH time period your answer actually covers, and say so explicitly — if the driver's phrasing is ambiguous (e.g. "earnings today" could colloquially mean "as of today, all-time" or literally "loads dated today"), state which interpretation you're using rather than silently picking one.
+Keep answers conversational and appropriately concise for a mobile chat, but don't artificially shorten a genuinely detailed analysis the driver actually asked for. Match the driver's own language if they write in something other than English.
 
-Keep answers conversational and appropriately concise for a mobile chat, but don't artificially shorten a genuinely detailed analysis the driver actually asked for — showing your arithmetic work is not "too long", it's expected. Match the driver's own language if they write in something other than English.
-
-Today's date is ${todayDate}. Use this as the anchor for any relative date range the driver mentions (e.g. "last month", "this week", "the past 2 months") — never guess today's date from your own training knowledge.${historySection}`;
+Today's date is ${todayDate}. Use this as the anchor for any relative date range the driver mentions — never guess today's date from your own training knowledge.${historySection}`;
 }
 
-// Гарантія на всяк випадок: незалежно від того, звідки саме взявся
-// null у content (модель, наш код, стара збережена історія) — перед
-// КОЖНИМ відправленням в OpenAI приводимо все до валідного рядка.
 function sanitizeForOpenAI(conv) {
   return conv.map((m) =>
     typeof m.content === "string"
@@ -103,31 +126,14 @@ export default async function handler(req, res) {
       content: typeof m.content === "string" ? m.content : "",
     }));
 
-    // Дайджест минулих розмов підвантажуємо ЗАВЖДИ (не тільки на
-    // першому повідомленні сесії) — вартість мізерна, а водій може
-    // спитати "що я питав минулого разу" в будь-який момент розмови,
-    // не обов'язково першим повідомленням.
     const historyDigest = await getRecentHistoryDigest(uid, activeChatId);
-    // ТИМЧАСОВЕ логування для діагностики — приберемо після перевірки.
-    console.log(
-      "historyDigest:",
-      historyDigest
-        ? `${historyDigest.length} chars, starts: ${historyDigest.slice(0, 100)}`
-        : "NULL/empty",
-    );
-    console.log(
-      "activeChatId:",
-      activeChatId,
-      "isNewClientChatId:",
-      typeof chatId === "string" && chatId,
-    );
 
     const conversation = [
       { role: "system", content: buildSystemPrompt(todayDate, historyDigest) },
       ...sanitizedMessages,
     ];
     let finalReply = null;
-    const MAX_ITERATIONS = 5;
+    const MAX_ITERATIONS = 6;
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       const response = await fetch(
@@ -166,9 +172,19 @@ export default async function handler(req, res) {
         });
 
         for (const toolCall of msg.tool_calls) {
+          let args = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || "{}");
+          } catch {
+            args = {};
+          }
+
           let result;
           if (toolCall.function.name === "getAppData") {
             result = await getAppDataCached();
+          } else if (toolCall.function.name === "calculate") {
+            const appData = await getAppDataCached();
+            result = runSandboxedCalculation(args.code, appData);
           } else {
             result = { error: "Unknown tool" };
           }
