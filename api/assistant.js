@@ -162,7 +162,7 @@ export default async function handler(req, res) {
       content: typeof m.content === "string" ? m.content : "",
     }));
 
-    const historyDigest = await getRecentHistoryDigest(uid, activeChatId);
+    const historyDigest = null; // ТИМЧАСОВО вимкнено для діагностики — перевіряємо чи History є джерелом фабрикації
 
     const conversation = [
       { role: "system", content: buildSystemPrompt(todayDate, historyDigest) },
