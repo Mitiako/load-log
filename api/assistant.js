@@ -25,7 +25,7 @@ const TOOLS = [
 
 function buildSystemPrompt(todayDate, historyDigest) {
   const historySection = historyDigest
-    ? `\n\nRECENT CONVERSATION HISTORY (from your last few sessions with this driver — for your own context only, don't just repeat it back unless it's directly relevant to the current question):\n${historyDigest}`
+    ? `\n\nRECENT CONVERSATION HISTORY (from your last few sessions with this driver — this IS real context you have access to, from persisted chat logs): \n${historyDigest}\n\nIMPORTANT: if the section above is present, you DO have information about past conversations. If the driver asks what they discussed before, or asks you to recall/remind them of something, look in this section and answer directly from it — NEVER say "I can't recall previous conversations" or similar when this section is present, that would be false.`
     : "";
 
   return `You are the LoadLog AI Assistant — a business analyst built into a mobile app for a single trucking owner-operator.
