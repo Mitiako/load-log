@@ -6,7 +6,7 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 const MAX_RECENT_CHATS = 4;
-const MAX_DIGEST_CHARS_PER_CHAT = 350;
+const MAX_MESSAGES_PER_CHAT = 6; // останні N повідомлень, не перші
 
 /**
  * Дістає компактний текстовий дайджест останніх розмов водія (крім
@@ -36,14 +36,17 @@ export async function getRecentHistoryDigest(uid, excludeChatId) {
     const dateLabel = chat.updatedAt?.toDate
       ? chat.updatedAt.toDate().toISOString().split("T")[0]
       : "unknown date";
-    const text = (chat.messages || [])
+    const allMessages = chat.messages || [];
+    // Останні N повідомлень, не перші — водій найчастіше питає "про що
+    // ми говорили", маючи на увазі кінець розмови, не її початок.
+    // Якщо розмова довша за ліміт, позначаємо що це "хвіст", не все.
+    const recentMessages = allMessages.slice(-MAX_MESSAGES_PER_CHAT);
+    const wasTrimmed = allMessages.length > recentMessages.length;
+    const text = recentMessages
       .map((m) => `${m.role === "user" ? "Driver" : "Assistant"}: ${m.content}`)
       .join("\n");
-    const trimmed =
-      text.length > MAX_DIGEST_CHARS_PER_CHAT
-        ? text.slice(0, MAX_DIGEST_CHARS_PER_CHAT) + "…"
-        : text;
-    return `[${dateLabel}]\n${trimmed}`;
+    const prefix = wasTrimmed ? "(...earlier messages omitted...)\n" : "";
+    return `[${dateLabel}]\n${prefix}${text}`;
   });
 
   return parts.join("\n\n");
