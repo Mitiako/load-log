@@ -1,8 +1,11 @@
 // api/assistant.js
-// Vercel Serverless Function — AI Chat Assistant з function calling.
-// Асистент отримує ПОВНИЙ зріз даних водія одним широким tool-викликом
-// (getAppData) і може виконувати РЕАЛЬНИЙ JS-код проти цих даних
-// (calculate) для гарантовано точної арифметики — не рахує "в умі".
+// Vercel Serverless Function — обʼєднаний AI Chat Assistant.
+// Архітектура: pre-baked контекст (periodSummary + expenseLineItems за
+// останні CONTEXT_WINDOW_DAYS днів + assistantGoal, якщо встановлена)
+// вшивається ПРЯМО в системний промпт — без важкого function-calling
+// циклу. Єдиний виняток — tool `calculate`: sandboxed JS проти
+// ПОВНОГО датасету водія, тільки для запитів поза межами вшитого
+// періоду (кастомний діапазон дат, all-time, "що якщо"-сценарії).
 // uid береться ТІЛЬКИ з перевіреного токена, ніколи з тіла запиту.
 import { verifyAuth } from "./_lib/verifyAuth.js";
 import { getAppData } from "./_lib/getAppData.js";
@@ -13,22 +16,18 @@ import {
   saveConversation,
 } from "./_lib/assistantHistory.js";
 
+// TODO: рішення по тарифікації ще не прийнято — ймовірно 30 днів на
+// free tier, 90 на paid. Поки одне число для всіх, легко винести
+// в залежність від підписки водія пізніше.
+const CONTEXT_WINDOW_DAYS = 90;
+
 const TOOLS = [
-  {
-    type: "function",
-    function: {
-      name: "getAppData",
-      description:
-        "Get the driver's COMPLETE data from the app in one call: every load with its full route (including multi-stop points), miles, weight, gross rate, driver's own gross, net profit, rate per mile, every individual fuel purchase, every individual non-fuel expense line item (name + amount), the driver's profile info, AND a pre-calculated 'summary' object with ready totals (load count, total gross, total net profit, total miles, average rate per mile) for last7Days, last30Days, last90Days, and allTime. Call this once, then use the calculate tool for any arithmetic beyond what summary already covers.",
-      parameters: { type: "object", properties: {} },
-    },
-  },
   {
     type: "function",
     function: {
       name: "calculate",
       description:
-        "Execute JavaScript code to get an EXACT calculation result over the driver's data. Use this for ANY sum, average, filter+aggregate, comparison, or other arithmetic across multiple loads/expenses that isn't already covered by the pre-computed 'summary' object from getAppData. Your code runs in a sandbox with one variable available: `data`, which has the EXACT same shape as getAppData's return value ({ loads, profile, summary }). End your code with a `return` statement for the value you want back (a number, string, array, or plain object — must be JSON-serializable). This guarantees a mathematically correct result. NEVER sum, average, or combine multiple numbers yourself in your response — always use this tool for that instead, even for what seems like simple addition across several items.",
+        "Execute JavaScript code to get an EXACT calculation result over the driver's COMPLETE dataset (not just the recent-period data already given to you in the prompt). Use this ONLY when the driver's question genuinely falls outside that recent-period data — a custom/wider date range, an all-time total, a hypothetical 'what if' scenario, or a comparison spanning more than what's already in front of you. Your code runs in a sandbox with one variable available: `data`, which has the exact same shape as the driver's full app data ({ loads, profile, summary }). End your code with a `return` statement for the value you want back (a number, string, array, or plain object — must be JSON-serializable). NEVER sum, average, or combine multiple numbers yourself in your response instead of calling this — even for what looks like simple addition.",
       parameters: {
         type: "object",
         properties: {
@@ -42,77 +41,94 @@ const TOOLS = [
       },
     },
   },
-  {
-    type: "function",
-    function: {
-      name: "lookupExpense",
-      description:
-        "Check the driver's real expense/fuel records. Pass a specific query (e.g. 'trailer rent', 'insurance') to search for one item, or an EMPTY string to get the driver's COMPLETE real expense list. Use this tool for EVERY expense-related question — existence checks, listing, categorization — never answer from memory or general trucking knowledge.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: {
-            type: "string",
-            description:
-              "The expense name/category to search for, or an empty string to get the complete list.",
-          },
-        },
-        required: ["query"],
-      },
-    },
-  },
 ];
 
-function buildSystemPrompt(todayDate, historyDigest) {
+// Збирає плоский список fuel + other expenses за останні windowDays
+// днів з повного appData.loads — саме це вшивається в промпт, щоб
+// модель могла вільно шукати/фільтрувати/групувати без tool-виклику.
+function buildExpenseLineItems(loads, todayDate, windowDays) {
+  const cutoff = new Date(todayDate);
+  cutoff.setDate(cutoff.getDate() - windowDays);
+
+  const items = [];
+  for (const load of loads || []) {
+    const loadDate = new Date(load.date);
+    if (loadDate < cutoff) continue;
+
+    for (const e of load.otherExpenses || []) {
+      if (!e.name) continue;
+      items.push({
+        date: load.date,
+        label: e.name,
+        amount: e.amount,
+        type: "other",
+      });
+    }
+    for (const f of load.fuelPurchases || []) {
+      items.push({
+        date: f.date || load.date,
+        label: f.location || "fuel",
+        amount: f.netCost, // amount мінус знижка-кешбек — реальна витрата, не сирий amount
+        type: "fuel",
+      });
+    }
+  }
+  return items;
+}
+
+function buildSystemPrompt({
+  todayDate,
+  windowDays,
+  periodSummary,
+  expenseLineItems,
+  assistantGoal,
+  historyDigest,
+}) {
   const historySection = historyDigest
     ? `\n\nRECENT CONVERSATION HISTORY (from your last few sessions with this driver — this IS real context you have access to, from persisted chat logs):\n${historyDigest}\n\nIMPORTANT: if the section above is present, you DO have information about past conversations. If the driver asks what they discussed before, or asks you to recall/remind them of something, look in this section and answer directly from it — NEVER say "I can't recall previous conversations" or similar when this section is present, that would be false.`
     : "";
 
-  return `You are the LoadLog AI Assistant — a business analyst built into a mobile app for a single trucking owner-operator.
+  const goalSection = assistantGoal
+    ? `\n\nDRIVER'S CURRENT GOAL: ${JSON.stringify(assistantGoal)} — a target the driver set for themselves (either an RPM target or a net-profit target over a duration, see the fields present). If the driver asks how they're doing relative to this goal, compare it against periodSummary/expenseLineItems below (or calculate, if the goal's timeframe falls outside what's given) — never guess whether they're on track without checking real numbers first.`
+    : "";
 
-You have three tools:
-- getAppData: returns the driver's ENTIRE dataset (every load with full multi-stop route, miles, weight, gross rate, driver's own gross, net profit, rate per mile; every individual fuel purchase; every individual non-fuel expense line item by name; the driver's profile; and a pre-calculated "summary" object with ready totals for last7Days, last30Days, last90Days, and allTime).
-- calculate: runs real JavaScript code against that data and returns an exact result. Use this for ANY arithmetic across multiple items that "summary" doesn't already cover.
-- lookupExpense: does a literal search for a SPECIFIC expense name/category (e.g. "trailer rent", "insurance"). Pass an EMPTY string as the query to get the driver's COMPLETE real expense list. Use this tool for EVERY question that touches the driver's expenses in ANY way — not just "do I have X", but also "what are my expenses", "what's my biggest expense", "list my costs", categorization questions, anything. There is no expense-related question you should ever answer without calling this tool (or calculate, for a specific computed comparison like "biggest") first — never rely on memory, a previous answer in this conversation, or general knowledge about what a trucker typically pays for.
+  return `You are the LoadLog AI Assistant — built into a mobile app for trucking drivers who track their trips → loads, documentation, and bookkeeping in one place, so they always know exactly how much they're earning and where their money is going.
 
-SELF-CONTRADICTION WARNING: if you're about to state a number or fact that CONTRADICTS something you already correctly verified via a tool earlier in this same conversation, the earlier tool-verified answer is right and your new instinct is wrong. Do not invent an explanation to reconcile them (like "maybe it's recorded under a different name") — just restate the tool-verified fact again.
+SCOPE: You ONLY help with:
+1. Questions about the driver's own data shown below (earnings, loads, expenses, break-even, goals, history)
+2. General, non-legal, non-tax trucking industry topics
+3. Rare complex requests (custom date range beyond what's below, all-time totals, hypothetical "what if", comparisons beyond the data given) — for these, use the calculate tool
 
-Use this data freely to answer ANY question about the driver's own trucking business — searching, filtering, grouping, comparing, calculating averages, totals, trends, hypothetical "what if" scenarios, or any other analysis the driver asks for. You are NOT limited to pre-defined report types — reason it through yourself, calling calculate whenever real arithmetic across multiple items is needed.
+You do NOT answer questions outside this scope. Decline off-topic questions playfully — movie one-liners, witty pop-culture refusals, vary the style each time, never repeat the same joke twice in a row, 1-2 sentences max, then redirect to what you CAN help with. Match the driver's own language/tone. Never use this playful style for legitimate business questions, however unusual.
 
-Call getAppData whenever you need data and don't already have it in the conversation. This is MANDATORY: if the driver asks anything about their own loads, expenses, fuel, earnings, or profile — you MUST actually call getAppData before answering. NEVER claim a technical error, or that you "couldn't retrieve the data", unless getAppData was actually called AND its result genuinely indicates a failure — claiming a fake error to avoid a harder question is a serious violation of the driver's trust and is never acceptable. If you called the tool and got data back, you have what you need — use it.
+DATA ACCESS: Below you have periodSummary (totals for the last ${windowDays} days) and expenseLineItems — every individual fuel purchase and other expense logged in that period, each with date, label (exactly as typed), amount, and type. Treat it like a spreadsheet you can freely search, filter, group, sort, and total. Never say you "don't have that detail" if it's plausibly in expenseLineItems — search it first. If nothing matches, say so plainly.
 
-CALCULATION ACCURACY — this is critical: for any question requiring a total, average, count, or other combined figure across MULTIPLE loads or expenses:
-1. First check if the matching field already exists in the "summary" object (last7Days/last30Days/last90Days/allTime) — if so, just use it directly.
-2. Otherwise, you MUST call the calculate tool and write JS code to get the exact answer — NEVER sum, average, or combine multiple numbers yourself in your response, even if you show step-by-step work. Language models are unreliable at this kind of arithmetic, and it has caused real, confirmed errors before. The calculate tool is the ONLY acceptable source for a combined figure across multiple items beyond what summary covers.
-A single value already sitting on one load (e.g. that load's own miles or RPM) doesn't need the tool — only combining/aggregating across items does.
+CALCULATE TOOL: Use it ONLY when the driver's question genuinely falls outside the data below — a custom/wider date range, an all-time question, a hypothetical "what if" scenario, or a comparison spanning more than what's given. It runs real JS against the driver's COMPLETE dataset (not just the last ${windowDays} days) and returns an exact result. Never call it for something already answerable from the data below — that wastes a step for no reason.
 
-Never invent, estimate, or guess any number, expense name, or detail that isn't actually present in what a tool returned — if something wasn't logged, say so honestly rather than approximating it from unrelated totals. This applies with EXTREME force whenever the driver asks you to list, categorize, or summarize their expenses: you must ONLY use the exact expense line items that literally appear in the otherExpenses/diesel arrays for their loads. Do NOT supplement this list with generic trucking-industry knowledge — even realistic, plausible categories like "truck payment", "insurance", "ELD subscription", or "trailer rent" must NEVER appear in your answer unless that EXACT item name is actually present in the data you retrieved. If the driver's logged expenses don't include something you'd normally expect a trucker to have, that's fine — just don't have an opinion about it, only report what's actually there. Before answering any expense-listing question, mentally verify: "is every single item I'm about to name copied directly from the tool result, or did I add it from general knowledge?" — if it's the latter for even one item, remove it.
+CALCULATION ACCURACY: never sum, average, or combine multiple numbers yourself for anything outside the pre-baked data below — call calculate instead. Never invent, estimate, or guess a number, expense name, or category that isn't literally present in your data — this applies with extreme force to expense listing/categorization: never supplement with generic trucking-industry knowledge (no "truck payment", "insurance", "ELD subscription" etc. unless that EXACT name is in the data).
 
-CATEGORIZING EXPENSES: individual non-fuel expense line items only have a "name" field (whatever the driver typed) — there is no separate category field. If the driver asks which of THEIR ACTUAL logged expenses are or aren't "truck-related", infer it from each item's name using clear, consistent judgment — e.g. a tire, truck wash, or repair is truck-related; food or personal items are not; be consistent about the SAME item across the whole answer. This categorization only applies to items that are actually in the data — never add extra rows for categories the driver hasn't logged.
+CATEGORIZING EXPENSES: line items only have a "label" field, no category. Infer truck-related vs. not from the label with consistent judgment; never add rows for categories the driver hasn't logged.
 
-# (narrow mini-specific patches removed for clean gpt-4o baseline test)
+SELF-CONTRADICTION GUARD: if you're about to state something that contradicts a fact you already verified (from the data below or a calculate result) earlier in this conversation, trust the earlier verified fact — don't invent a reconciling explanation.
 
-HISTORY IS FOR CONTINUITY, NOT FACTS: the RECENT CONVERSATION HISTORY section (if present) reflects what was said in past sessions — including anything you may have gotten wrong before. Use it only for conversational continuity (tone, ongoing topics, goals the driver mentioned). NEVER treat a specific number or fact from past history as already-verified truth — always re-derive any figure you state from getAppData/calculate in the current conversation, even if it looks like something was already established previously.
+IF calculate FAILS: one retry with corrected code, then tell the driver plainly you hit a snag — never loop, never fall back to a guess.
 
-SCOPE: You ONLY help with the driver's own trucking business data (via these tools) and general, non-legal, non-tax trucking industry topics. You do NOT have access to external market rates, other carriers' data, or anything outside what these tools return — be upfront about that limitation when relevant. For anything outside this scope (general knowledge, entertainment, unrelated topics), decline playfully — channel movie one-liners, witty pop-culture refusals, vary the style each time, don't repeat the same joke twice in a row — 1-2 sentences max, then redirect to what you can help with. Never use the playful refusal style for legitimate business questions, even unusual or open-ended ones — those are exactly what you're here for.
+HISTORY IS FOR CONTINUITY, NOT FACTS: the RECENT CONVERSATION HISTORY section (if present) reflects what was said in past sessions — including anything that may have been wrong before. Use it only for conversational continuity (tone, ongoing topics, goals the driver mentioned). NEVER treat a specific number or fact from past history as already-verified truth — always re-derive any figure from the data below or calculate in the current conversation.
 
-You never give specific tax or legal advice — for those, tell the driver to consult a CPA or attorney. You do not have access to photos or scanned documents (BOL, RateCon images) — only the structured data logged in the app.
+FORMATTING: No LaTeX/markdown math notation — plain text only. Never narrate internal tool usage to the driver (don't say "let me calculate" or "I'm running a query") — just give the result naturally.
 
-FORMATTING: Never use LaTeX or markdown math notation (no \\frac, \\left, \\right, \\text, or bracket-wrapped formulas) — this chat displays plain text only. Write arithmetic in plain, everyday form.
+You never give tax/legal advice — redirect to a CPA/attorney.
 
-Be precise about WHICH time period your answer actually covers, and say so explicitly — if the driver's phrasing is ambiguous, state which interpretation you're using rather than silently picking one.
+PRE-FLIGHT CHECK before sending your final answer:
+1. Any combined/aggregate figure beyond the data below — did it come from an actual calculate result in THIS conversation? If not, don't send it.
+2. Any expense category/classification you stated — can you point to the exact logged item it's based on?
+3. About to say you don't have info or can't recall something? Check: does a RECENT CONVERSATION HISTORY section appear above, or is it literally not in the data below? If it IS there, that claim is false — use it.
+4. Every number you're about to state — can you point to the specific line item or calculate result behind it?
 
-Keep answers conversational and appropriately concise for a mobile chat, but don't artificially shorten a genuinely detailed analysis the driver actually asked for. Match the driver's own language if they write in something other than English. Never narrate your internal tool usage to the driver (e.g. don't say "let me call getAppData" or "I'm running a calculation") — just give the result naturally, the way a knowledgeable person would, not a description of your own process.
+Today's date is ${todayDate}. Use it as the anchor for relative periods the driver mentions — never guess.
 
-IF A TOOL CALL FAILS: allow yourself exactly ONE retry with corrected input. If it fails again, tell the driver plainly that you hit a snag getting that specific data, rather than looping indefinitely or falling back to a guess.
-
-PRE-FLIGHT CHECK — before sending your final answer, verify each of these:
-1. Any combined/aggregate figure (a sum, average, or total across multiple loads or expenses) — did it come from the "summary" object or an actual calculate tool result in THIS conversation? If you arrived at it any other way, don't send it — get it from calculate first.
-2. Any expense category or classification you stated — can you point to the EXACT logged item(s) it's based on? If you're unsure whether an item is genuinely in the data or just sounds plausible for a trucking business, leave it out.
-3. About to say you don't have information, can't recall something, or don't have access to data? First check: does a RECENT CONVERSATION HISTORY section appear above, or did you already call a relevant tool this conversation? If so, that claim is false — use what you actually have instead.
-4. Every number you're about to state — could you point to the specific load, expense line, or calculate result it came from? If not, don't state it.
-
-Today's date is ${todayDate}. Use this as the anchor for any relative date range the driver mentions — never guess today's date from your own training knowledge.${historySection}`;
+DRIVER'S DATA (last ${windowDays} days):
+${JSON.stringify({ periodSummary, expenseLineItems }, null, 2)}${goalSection}${historySection}`;
 }
 
 function sanitizeForOpenAI(conv) {
@@ -148,28 +164,53 @@ export default async function handler(req, res) {
   const activeChatId =
     typeof chatId === "string" && chatId ? chatId : randomUUID();
 
-  let cachedData = null;
-  async function getAppDataCached() {
-    if (cachedData === null) {
-      cachedData = await getAppData(uid, todayDate);
-    }
-    return cachedData;
-  }
-
   try {
+    // Один виклик — повний датасет водія. Він же йде і в calculate
+    // (без фільтра по даті), і як джерело для periodSummary/expenseLineItems/assistantGoal.
+    const appData = await getAppData(uid, todayDate);
+
+    const periodKey = `last${CONTEXT_WINDOW_DAYS}Days`;
+    const periodSummary = appData.summary?.[periodKey] ?? null;
+    const expenseLineItems = buildExpenseLineItems(
+      appData.loads,
+      todayDate,
+      CONTEXT_WINDOW_DAYS,
+    );
+    const assistantGoal = appData.profile?.assistantGoal ?? null;
+
+    let historyDigest = null;
+    try {
+      historyDigest = await getRecentHistoryDigest(uid, activeChatId);
+    } catch (err) {
+      console.error("Failed to load history digest:", err);
+      // не блокуємо відповідь через збій історії — просто йдемо без неї
+    }
+
     const sanitizedMessages = messages.map((m) => ({
       role: m.role,
       content: typeof m.content === "string" ? m.content : "",
     }));
 
-    const historyDigest = null; // ТИМЧАСОВО вимкнено для діагностики — перевіряємо чи History є джерелом фабрикації
-
     const conversation = [
-      { role: "system", content: buildSystemPrompt(todayDate, historyDigest) },
+      {
+        role: "system",
+        content: buildSystemPrompt({
+          todayDate,
+          windowDays: CONTEXT_WINDOW_DAYS,
+          periodSummary,
+          expenseLineItems,
+          assistantGoal,
+          historyDigest,
+        }),
+      },
       ...sanitizedMessages,
     ];
+
     let finalReply = null;
-    const MAX_ITERATIONS = 6;
+    let calculateFailedOnce = false;
+    // pre-baked контекст = зазвичай 0 tool-викликів; calculate — рідкісний
+    // виняток. 3 ітерації з запасом покривають "виклик + одна корекція".
+    const MAX_ITERATIONS = 3;
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       const response = await fetch(
@@ -184,7 +225,7 @@ export default async function handler(req, res) {
             model: "gpt-4o-mini",
             messages: sanitizeForOpenAI(conversation),
             tools: TOOLS,
-            max_tokens: 800,
+            max_tokens: 600,
           }),
         },
       );
@@ -216,16 +257,19 @@ export default async function handler(req, res) {
           }
 
           let result;
-          if (toolCall.function.name === "getAppData") {
-            result = await getAppDataCached();
-          } else if (toolCall.function.name === "calculate") {
-            const appData = await getAppDataCached();
+          try {
             result = runSandboxedCalculation(args.code, appData);
-          } else if (toolCall.function.name === "lookupExpense") {
-            const appData = await getAppDataCached();
-            result = lookupExpenseByQuery(appData, args.query);
-          } else {
-            result = { error: "Unknown tool" };
+          } catch (err) {
+            // "один промах + одна корекція, не зациклюйся"
+            if (calculateFailedOnce) {
+              result = {
+                error:
+                  "calculate failed twice — do not retry again, tell the driver plainly you hit a snag getting that specific number.",
+              };
+            } else {
+              calculateFailedOnce = true;
+              result = { error: String(err?.message || err) };
+            }
           }
 
           conversation.push({
@@ -254,64 +298,7 @@ export default async function handler(req, res) {
       ]);
     } catch (err) {
       console.error("Failed to save conversation:", err);
+      // не блокуємо відповідь водієві через збій збереження історії
     }
 
     return res.status(200).json({ reply: finalReply, chatId: activeChatId });
-  } catch (err) {
-    console.error("Assistant error:", err);
-    return res.status(500).json({ error: "Failed to get response" });
-  }
-}
-
-// Буквальний пошук конкретної витрати/категорії по реальних даних —
-// повертає ЧЕСНЕ "не знайдено" + список того, що реально є, замість
-// дозволяти моделі відповідати прозою "з голови". Шукає і серед
-// otherExpenses (назви витрат), і серед fuelPurchases (локації).
-function lookupExpenseByQuery(appData, query) {
-  const q = typeof query === "string" ? query.toLowerCase().trim() : "";
-  const wantAll = q === "";
-  const matches = [];
-
-  for (const load of appData.loads || []) {
-    for (const e of load.otherExpenses || []) {
-      if (e.name && (wantAll || e.name.toLowerCase().includes(q))) {
-        matches.push({
-          type: "expense",
-          name: e.name,
-          amount: e.amount,
-          date: load.date,
-          loadRoute: `${load.from} → ${load.to}`,
-        });
-      }
-    }
-    for (const f of load.fuelPurchases || []) {
-      if (f.location && (wantAll || f.location.toLowerCase().includes(q))) {
-        matches.push({
-          type: "fuel",
-          location: f.location,
-          amount: f.amount,
-          date: f.date,
-          loadRoute: `${load.from} → ${load.to}`,
-        });
-      }
-    }
-  }
-
-  if (matches.length > 0) {
-    return { found: true, matches };
-  }
-
-  const allExpenseNames = [
-    ...new Set(
-      (appData.loads || []).flatMap((l) =>
-        (l.otherExpenses || []).map((e) => e.name).filter(Boolean),
-      ),
-    ),
-  ];
-
-  return {
-    found: false,
-    message: `No expense matching "${query}" was found in the driver's data.`,
-    actualLoggedExpenseNames: allExpenseNames,
-  };
-}

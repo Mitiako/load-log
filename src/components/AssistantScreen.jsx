@@ -6,10 +6,16 @@
 // розмов на початку нової сесії, без явного нагадування з боку водія.
 import { useState, useRef, useEffect } from "react";
 import { authFetch } from "../utils/authFetch";
-import { fetchAssistantChats } from "../data/firestore";
+import {
+  fetchAssistantChats,
+  fetchProfile,
+  saveProfile,
+} from "../data/firestore";
 import Header from "./Header";
 
 export default function AssistantScreen({ user, onBack }) {
+  const [profile, setProfile] = useState(null);
+  const [showGoalForm, setShowGoalForm] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -18,6 +24,10 @@ export default function AssistantScreen({ user, onBack }) {
   const [historyList, setHistoryList] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const listRef = useRef(null);
+
+  useEffect(() => {
+    if (user?.uid) fetchProfile(user.uid).then(setProfile);
+  }, [user]);
 
   useEffect(() => {
     if (listRef.current) {
@@ -185,6 +195,20 @@ export default function AssistantScreen({ user, onBack }) {
         }
       />
 
+      <div
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 11,
+          color: "var(--text-muted)",
+          textAlign: "center",
+          padding: "8px 16px",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        For your security and performance, I only have access to your last 90
+        days of data.
+      </div>
+
       {/* Messages */}
       <div
         ref={listRef}
@@ -212,7 +236,37 @@ export default function AssistantScreen({ user, onBack }) {
             Ask me anything about your loads, expenses, or fuel stops — "How
             much did I make in July?", "What are my best-paying routes?", "Show
             me loads through Chicago last month."
+            <div style={{ marginTop: 12 }}>
+              <button
+                onClick={() => setShowGoalForm(true)}
+                style={{
+                  background: "none",
+                  border: "1px dashed var(--accent)",
+                  borderRadius: "var(--radius-btn)",
+                  padding: "8px 16px",
+                  color: "var(--accent)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                🎯 Set a Goal
+              </button>
+            </div>
           </div>
+        )}
+
+        {showGoalForm && (
+          <AssistantGoalForm
+            profile={profile}
+            onSave={async (goal) => {
+              const updated = { ...profile, assistantGoal: goal };
+              setProfile(updated);
+              await saveProfile(user.uid, updated);
+              setShowGoalForm(false);
+            }}
+            onClose={() => setShowGoalForm(false)}
+          />
         )}
 
         {messages.map((m, i) => (
@@ -421,6 +475,128 @@ export default function AssistantScreen({ user, onBack }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function AssistantGoalForm({ profile, onSave, onClose }) {
+  const [amount, setAmount] = useState(profile?.assistantGoal?.amount || "");
+  const [durationDays, setDurationDays] = useState(
+    profile?.assistantGoal?.durationDays || 7,
+  );
+
+  function handleSubmit() {
+    if (!amount) return;
+    onSave({
+      amount: Number(amount),
+      durationDays: Number(durationDays),
+      startDate: new Date().toISOString().split("T")[0],
+    });
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.5)",
+        backdropFilter: "blur(4px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          background: "var(--bg-elevated)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          borderRadius: "20px 20px 0 0",
+          border: "1px solid var(--border)",
+          padding: "24px 20px 40px",
+          boxShadow: "var(--glass-shadow)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 17,
+            color: "var(--text-primary)",
+            marginBottom: 16,
+          }}
+        >
+          Set a Goal
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <div className="label" style={{ marginBottom: 6 }}>
+            Target Net Profit ($)
+          </div>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="7000"
+            className="input"
+            style={{ fontSize: 14, padding: "10px 12px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <div className="label" style={{ marginBottom: 6 }}>
+            Duration
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              background: "var(--bg-base)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-btn)",
+              overflow: "hidden",
+            }}
+          >
+            {[
+              { label: "1 Week", days: 7 },
+              { label: "3 Weeks", days: 21 },
+              { label: "1 Month", days: 30 },
+            ].map((opt) => (
+              <button
+                key={opt.days}
+                onClick={() => setDurationDays(opt.days)}
+                style={{
+                  padding: "10px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  background:
+                    durationDays === opt.days ? "var(--accent)" : "transparent",
+                  color:
+                    durationDays === opt.days ? "#100F0C" : "var(--text-muted)",
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          className="btn-primary"
+          style={{ width: "100%", fontSize: 15 }}
+        >
+          Save Goal
+        </button>
+      </div>
     </div>
   );
 }

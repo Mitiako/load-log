@@ -15,7 +15,6 @@ import { Analytics } from "@vercel/analytics/react";
 import Profile from "./components/Profile";
 import AnalyticsScreen from "./components/AnalyticsScreen";
 import Settings from "./components/Settings";
-import ChatScreen from "./components/ChatScreen";
 import AssistantScreen from "./components/AssistantScreen";
 import { authFetch } from "./utils/authFetch";
 
@@ -266,7 +265,7 @@ export default function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
             onOpenSettings={() => goTo("settings")}
-            onOpenChat={() => goTo("chat")}
+            onOpenChat={() => goTo("assistant")}
           />
         )}
         {screen === "tripForm" && (
@@ -329,7 +328,7 @@ export default function App() {
             onToggleTheme={toggleTheme}
             onGoToLoad={handleGoToLoadFromAnalytics}
             onOpenSettings={() => goTo("settings")}
-            onOpenChat={() => goTo("chat")}
+            onOpenChat={() => goTo("assistant")}
           />
         )}
         {screen === "profile" && (
@@ -339,12 +338,8 @@ export default function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
             onOpenSettings={() => goTo("settings")}
-            onOpenChat={() => goTo("chat")}
-            onOpenAssistant={() => goTo("assistant")}
+            onOpenChat={() => goTo("assistant")}
           />
-        )}
-        {screen === "chat" && (
-          <ChatScreen user={user} trips={trips} onBack={handleBack} />
         )}
         {screen === "assistant" && (
           <AssistantScreen user={user} onBack={handleBack} />
