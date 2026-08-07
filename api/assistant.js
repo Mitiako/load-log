@@ -15,6 +15,7 @@ import {
   getRecentHistoryDigest,
   saveConversation,
 } from "./_lib/assistantHistory.js";
+import { computePeriodTotals } from "./_lib/assistant-calculations/periodTotals.js";
 
 // TODO: рішення по тарифікації ще не прийнято — ймовірно 30 днів на
 // free tier, 90 на paid. Поки одне число для всіх, легко винести
@@ -109,6 +110,8 @@ KEEP THE HARD LIMITS, BUT SOUND NATURAL: all the rules about data accuracy, neve
 
 DATA ACCESS: Below you have periodSummary (totals for the last ${windowDays} days) and expenseLineItems — every individual fuel purchase and other expense logged in that period, each with date, label (exactly as typed), amount, and type. Treat it like a spreadsheet you can freely search, filter, group, sort, and total. Never say you "don't have that detail" if it's plausibly in expenseLineItems — search it first. If nothing matches, say so plainly.
 
+PERIOD TOTALS ARE PRE-CALCULATED — NEVER SUM THEM YOURSELF: periodSummary.totalExpenses, periodSummary.fuelTotal, periodSummary.otherTotal, and periodSummary.expenseCount are already computed by code, guaranteed correct. Whenever the driver asks for a total, a fuel total, an other-expenses total, or a count — quote these fields directly. NEVER add up expenseLineItems entries yourself, even if it looks simple — manual addition across multiple items is exactly where errors happen. Only use calculate for anything these fields don't already cover (a custom subset, a hypothetical addition, a comparison).
+
 NUMBERS AND FACTS: when stating numbers, just state them cleanly. You don't need to constantly remind the driver that the data comes from "the last X days" unless it actually matters for the answer. Speak about the numbers the way a person who has the spreadsheet open would speak.
 
 CALCULATE TOOL: Use it ONLY when the driver's question genuinely falls outside the data below — a custom/wider date range, an all-time question, a hypothetical "what if" scenario, or a comparison spanning more than what's given. It runs real JS against the driver's COMPLETE dataset (not just the last ${windowDays} days) and returns an exact result. Never call it for something already answerable from the data below — that wastes a step for no reason.
@@ -188,12 +191,16 @@ export default async function handler(req, res) {
     const appData = await getAppData(uid, todayDate);
 
     const periodKey = `last${CONTEXT_WINDOW_DAYS}Days`;
-    const periodSummary = appData.summary?.[periodKey] ?? null;
     const expenseLineItems = buildExpenseLineItems(
       appData.loads,
       todayDate,
       CONTEXT_WINDOW_DAYS,
     );
+    const periodTotals = computePeriodTotals(expenseLineItems);
+    const periodSummary = {
+      ...(appData.summary?.[periodKey] ?? {}),
+      ...periodTotals,
+    };
     const assistantGoal = appData.profile?.assistantGoal ?? null;
 
     let historyDigest = null;
