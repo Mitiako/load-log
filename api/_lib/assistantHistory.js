@@ -6,7 +6,7 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 const MAX_RECENT_CHATS = 4;
-const MAX_MESSAGES_PER_CHAT = 6; // останні N повідомлень, не перші
+const MAX_MESSAGES_PER_CHAT = 20; // останні N повідомлень, не перші
 
 /**
  * Дістає компактний текстовий дайджест останніх розмов водія (крім
