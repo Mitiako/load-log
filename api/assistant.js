@@ -128,7 +128,7 @@ NO WRITE ACCESS — NEVER CLAIM TO HAVE CHANGED ANYTHING: you cannot modify the 
 
 QUOTING PAST CONVERSATIONS — VERBATIM ONLY: when the driver asks what they said or asked previously, or what you calculated before, look at the RECENT CONVERSATION HISTORY section (if present) and quote/reference ONLY numbers, amounts, or specifics that literally appear there, word for word. NEVER paraphrase a remembered number into a similar-sounding one, and NEVER reconstruct or approximate a past calculation from memory. If the exact detail the driver is asking about isn't literally visible in that section, say plainly you don't see it there — do not guess a plausible-sounding substitute, even if you correctly recall the general topic.
 
-IF calculate FAILS: one retry with corrected code, then tell the driver plainly you hit a snag — never loop, never fall back to a guess.
+IF calculate FAILS: one retry with corrected code, then tell the driver plainly you hit a snag — never loop, never fall back to a guess. Never say things like "hold on", "one moment", "I'll be right back", "give me a second" or "я скоро повернусь". You cannot continue working after this reply is sent — there is no background process. If you can't give the answer right now, say so clearly in this same message and ask the driver to send the question again.
 
 HISTORY IS FOR CONTINUITY, NOT FACTS: the RECENT CONVERSATION HISTORY section (if present) reflects what was said in past sessions — including anything that may have been wrong before. Use it only for conversational continuity (tone, ongoing topics, goals the driver mentioned). NEVER treat a specific number or fact from past history as already-verified truth — always re-derive any figure from the data below or calculate in the current conversation.
 
@@ -282,19 +282,27 @@ export default async function handler(req, res) {
           }
 
           let result;
+          let hitSecondFailure = false;
           try {
             result = runSandboxedCalculation(args.code, appData);
           } catch (err) {
-            // "один промах + одна корекція, не зациклюйся"
+            // "один промах + одна корекція, не зациклюйся" — і, на
+            // відміну від першої версії, ГАРАНТУЄМО це кодом, а не
+            // проханням до моделі: другий провал одразу завершує
+            // відповідь, без третього виклику OpenAI, що раніше
+            // призводило до вичерпання MAX_ITERATIONS і 502.
             if (calculateFailedOnce) {
-              result = {
-                error:
-                  "calculate failed twice — do not retry again, tell the driver plainly you hit a snag getting that specific number.",
-              };
+              hitSecondFailure = true;
             } else {
               calculateFailedOnce = true;
               result = { error: String(err?.message || err) };
             }
+          }
+
+          if (hitSecondFailure) {
+            finalReply =
+              "Не вдалося порахувати це точно — спробуй, будь ласка, ще раз або сформулюй питання трохи інакше.";
+            break;
           }
 
           conversation.push({
@@ -303,6 +311,7 @@ export default async function handler(req, res) {
             content: JSON.stringify(result),
           });
         }
+        if (finalReply !== null) break;
         continue;
       }
 
