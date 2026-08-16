@@ -156,6 +156,17 @@ function sanitizeForOpenAI(conv) {
   );
 }
 
+// Детекція "потребує арифметики" — не питаємо модель, чи варто рахувати
+// самій, а перевіряємо кодом і ПРИМУШУЄМО виклик calculate, якщо в
+// повідомленні водія 3+ числа. Модель ненадійна на багатоелементному
+// додаванні (підтверджено: помилка $1,395→$1,495 на 5 гіпотетичних
+// сумах), і це стосується як реальних, так і гіпотетичних чисел.
+function hasThreeOrMoreNumbers(text) {
+  if (typeof text !== "string") return false;
+  const matches = text.match(/\d+(?:[.,]\d+)?/g);
+  return Boolean(matches && matches.length >= 3);
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -233,6 +244,15 @@ export default async function handler(req, res) {
     // виняток. 3 ітерації з запасом покривають "виклик + одна корекція".
     const MAX_ITERATIONS = 3;
 
+    // Не просимо модель "будь ласка, порахуй правильно" — гарантуємо
+    // виклик calculate кодом, якщо водій згадав 3+ числа. Останнє
+    // повідомлення водія (не вся розмова) — саме воно містить нове
+    // прохання порахувати, яке нас цікавить.
+    const lastUserMessage = [...sanitizedMessages]
+      .reverse()
+      .find((m) => m.role === "user");
+    const forceCalculate = hasThreeOrMoreNumbers(lastUserMessage?.content);
+
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       const response = await fetch(
         "https://api.openai.com/v1/chat/completions",
@@ -246,6 +266,13 @@ export default async function handler(req, res) {
             model: "gpt-4o-mini",
             messages: sanitizeForOpenAI(conversation),
             tools: TOOLS,
+            // Примусовий виклик тільки на першій ітерації — далі
+            // модель вже отримала tool-результат і має відповідати
+            // текстом, інакше цикл ніколи не завершиться.
+            tool_choice:
+              forceCalculate && i === 0
+                ? { type: "function", function: { name: "calculate" } }
+                : undefined,
             max_tokens: 600,
           }),
         },
