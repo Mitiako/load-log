@@ -83,6 +83,11 @@ A receipt with many items is normal — extract ALL of them, do not summarize, s
 
     const content = data.choices?.[0]?.message?.content;
     const parsed = JSON.parse(content);
+    console.log(
+      "scan-expense lineItems count:",
+      parsed.lineItems?.length,
+      JSON.stringify(parsed.lineItems),
+    ); // ТИМЧАСОВО для діагностики
     return res.status(200).json(parsed);
   } catch (err) {
     console.error("Scan expense error:", err);
