@@ -562,6 +562,18 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   }
 
   function handleSave() {
+    console.log(
+      "handleSave called, gross =",
+      gross,
+      "fromAddress =",
+      fromAddress,
+      "fromZip =",
+      fromZip,
+      "toAddress =",
+      toAddress,
+      "toZip =",
+      toZip,
+    ); // ТИМЧАСОВО для діагностики
     if (!gross) return;
     if (!fromAddress || !fromZip || !toAddress || !toZip) {
       setLocationError(true);
