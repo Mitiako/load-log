@@ -12,6 +12,7 @@ import RouteConnector from "./RouteConnector";
 import ScanRateConMenu from "./ScanRateConMenu";
 import { pdfToImagesBase64 } from "../utils/pdfToImage";
 import { lookupZip } from "../utils/zipLookup";
+import { EXPENSE_CATEGORIES } from "./utils/expenseCategories";
 
 const ORDINALS = ["", "first", "second", "third", "fourth", "fifth", "sixth"];
 function ordinal(n) {
@@ -169,6 +170,10 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   const [expenses, setExpenses] = useState(
     load?.expenses?.length ? load.expenses : [],
   );
+  // Категорія за замовчуванням для нової витрати — перша з довідника,
+  // не порожній рядок, щоб водій завжди бачив осмислений вибір, а не
+  // "нічого не вибрано" одразу після додавання рядка.
+  const DEFAULT_EXPENSE_CATEGORY = EXPENSE_CATEGORIES[0].name;
 
   const currentLoad = {
     miles: Number(miles) || 0,
@@ -530,7 +535,10 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   }
 
   function addExpense() {
-    setExpenses([...expenses, { name: "", amount: "" }]);
+    setExpenses([
+      ...expenses,
+      { name: "", amount: "", category: DEFAULT_EXPENSE_CATEGORY },
+    ]);
   }
   function updateExpense(i, field, val) {
     const u = [...expenses];
@@ -1286,48 +1294,94 @@ export default function LoadForm({ load, onSave, onBack, user }) {
           <div
             key={i}
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr auto",
-              gap: 8,
-              padding: "0 16px 8px",
-              alignItems: "flex-end",
+              padding: "0 16px 16px",
+              borderBottom: "1px solid var(--border)",
+              marginBottom: 8,
             }}
           >
-            <Field
-              label="Description"
-              value={e.name}
-              onChange={(v) => updateExpense(i, "name", v)}
-              placeholder="Lumper, tolls..."
-              type="text"
-            />
-            <Field
-              label="Amount $"
-              value={e.amount}
-              onChange={(v) => updateExpense(i, "amount", v)}
-              placeholder="0"
-            />
-            <button
-              onClick={() => removeExpense(i)}
+            <div
               style={{
-                height: 42,
-                width: 36,
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-input)",
-                background: "transparent",
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                fontSize: 14,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr auto",
+                gap: 8,
+                marginBottom: 8,
+                alignItems: "flex-end",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "var(--text-muted)")
-              }
             >
-              ×
-            </button>
+              <Field
+                label="Description"
+                value={e.name}
+                onChange={(v) => updateExpense(i, "name", v)}
+                placeholder="Lumper, tolls..."
+                type="text"
+              />
+              <Field
+                label="Amount $"
+                value={e.amount}
+                onChange={(v) => updateExpense(i, "amount", v)}
+                placeholder="0"
+              />
+              <button
+                onClick={() => removeExpense(i)}
+                style={{
+                  height: 42,
+                  width: 36,
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-input)",
+                  background: "transparent",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = "var(--text-muted)")
+                }
+              >
+                ×
+              </button>
+            </div>
+            {/* Категорія — горизонтальний скрол тайлів замість dropdown,
+                щоб водій міг обрати одним тапом за кермом, не відкриваючи
+                додатковий екран/модалку. */}
+            <div
+              style={{
+                display: "flex",
+                gap: 6,
+                overflowX: "auto",
+                paddingBottom: 2,
+              }}
+            >
+              {EXPENSE_CATEGORIES.map((cat) => {
+                const selected = e.category === cat.name;
+                return (
+                  <button
+                    key={cat.name}
+                    onClick={() => updateExpense(i, "category", cat.name)}
+                    style={{
+                      flexShrink: 0,
+                      padding: "6px 10px",
+                      borderRadius: "var(--radius-btn)",
+                      border: "1px solid",
+                      borderColor: selected ? "var(--accent)" : "var(--border)",
+                      background: selected
+                        ? "rgba(255,138,61,0.12)"
+                        : "transparent",
+                      color: selected ? "var(--accent)" : "var(--text-muted)",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: 12,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {cat.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ))}
         <div
