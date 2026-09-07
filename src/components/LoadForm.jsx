@@ -1302,6 +1302,42 @@ export default function LoadForm({ load, onSave, onBack, user }) {
           style={{ height: 1, background: "var(--border)", margin: "4px 0" }}
         />
         <FormSection label="OTHER EXPENSES" />
+        {expenses.length > 0 && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr auto",
+              gap: 8,
+              padding: "0 16px 6px",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.6875rem",
+                fontWeight: 500,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "var(--text-primary)",
+              }}
+            >
+              Description
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.6875rem",
+                fontWeight: 500,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "var(--text-primary)",
+              }}
+            >
+              Amount $
+            </div>
+            <div />
+          </div>
+        )}
         {expenses.map((e, i) => (
           <div
             key={i}
@@ -1320,18 +1356,21 @@ export default function LoadForm({ load, onSave, onBack, user }) {
                 alignItems: "flex-end",
               }}
             >
-              <Field
-                label="Description"
-                value={e.name}
-                onChange={(v) => updateExpense(i, "name", v)}
-                placeholder="Lumper, tolls..."
+              <input
                 type="text"
+                value={e.name}
+                placeholder="Lumper, tolls..."
+                onChange={(ev) => updateExpense(i, "name", ev.target.value)}
+                className="input"
+                style={{ fontSize: 14, padding: "10px 12px" }}
               />
-              <Field
-                label="Amount $"
+              <input
+                type="text"
                 value={e.amount}
-                onChange={(v) => updateExpense(i, "amount", v)}
                 placeholder="0"
+                onChange={(ev) => updateExpense(i, "amount", ev.target.value)}
+                className="input"
+                style={{ fontSize: 14, padding: "10px 12px" }}
               />
               <button
                 onClick={() => removeExpense(i)}
