@@ -1,7 +1,12 @@
 // api/scan-expense.js
 // Vercel Serverless Function — сканує чек НЕ пального (запчастини,
-// lumper, tolls, ремонт тощо) для секції Other Expenses.
+// lumper, tolls, ремонт тощо) для секції Other Expenses. Повертає
+// мульти-item lineItems замість одного name/amount — реальні чеки
+// (напр. Walmart) майже завжди містять кілька різних позицій.
 import { verifyAuth } from "./_lib/verifyAuth.js";
+import { EXPENSE_CATEGORIES } from "../src/utils/expenseCategories.js";
+
+const CATEGORY_NAMES = EXPENSE_CATEGORIES.map((c) => c.name).join(", ");
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -21,9 +26,6 @@ export default async function handler(req, res) {
   if (typeof image !== "string" || !image.startsWith("data:image/")) {
     return res.status(400).json({ error: "Invalid image format" });
   }
-  // ~10MB base64 ліміт — реальні фото чеків важать значно менше;
-  // захист від навмисно роздутого payload, що забиває памʼять
-  // функції чи роздуває OpenAI-рахунок.
   if (image.length > 10_000_000) {
     return res.status(413).json({ error: "Image too large" });
   }
@@ -40,8 +42,21 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content:
-              "You are a business expense receipt scanner for a trucking app (NOT for fuel receipts — those are handled elsewhere). Respond with ONLY a JSON object, no other text, no markdown. If this is actually a diesel fuel receipt, respond with exactly: {\"isFuelReceipt\": true}. Otherwise extract: name (short description of the expense, e.g. 'Lumper fee', 'Truck parts - O\\'Reilly Auto', 'Tolls'), amount (total dollar amount paid, number), date (YYYY-MM-DD format, null if not visible). Never guess or invent values — only extract what is actually printed on the receipt. If the image doesn't look like any kind of receipt, respond with exactly: {\"notAReceipt\": true}.",
+            content: `You are a business expense receipt scanner for a trucking app (NOT for fuel receipts — those are handled elsewhere). Respond with ONLY a JSON object, no other text, no markdown.
+
+If this is actually a diesel fuel receipt, respond with exactly: {"isFuelReceipt": true}.
+If the image doesn't look like any kind of receipt, respond with exactly: {"notAReceipt": true}.
+
+Otherwise extract:
+- merchant (store/vendor name as printed, e.g. "Walmart", "O'Reilly Auto Parts")
+- date (YYYY-MM-DD format, null if not visible)
+- total (the final total amount paid, number)
+- lineItems: an array of EVERY distinct item/service on the receipt, each with:
+  - label (item name exactly as printed, or a short clear description if abbreviated)
+  - amount (that item's price, number)
+  - category (pick the SINGLE best match from this exact list, use "Other" if nothing fits: ${CATEGORY_NAMES})
+
+A receipt with many items is normal — extract ALL of them, do not summarize, skip, or merge items. Never guess or invent values — only extract what is actually printed on the receipt.`,
           },
           {
             role: "user",
@@ -54,7 +69,7 @@ export default async function handler(req, res) {
             ],
           },
         ],
-        max_tokens: 300,
+        max_tokens: 2000,
         response_format: { type: "json_object" },
       }),
     });

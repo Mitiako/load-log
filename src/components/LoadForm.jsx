@@ -288,14 +288,26 @@ export default function LoadForm({ load, onSave, onBack, user }) {
           showToast(
             "Couldn't recognize this as a receipt — please enter details manually.",
           );
-        } else {
+        } else if (data.lineItems?.length) {
+          // Один рядок витрати на весь чек — merchant + загальна сума,
+          // деталізація по позиціях вкладена в lineItems (для майбутнього
+          // перегляду по кліку і для Analytics donut-агрегації).
           setExpenses((prev) => [
             ...prev,
             {
-              name: data.name || "",
-              amount: data.amount ?? "",
+              name: data.merchant || "Receipt",
+              amount: data.total ?? "",
+              lineItems: data.lineItems,
+              receiptPhotoUrl: null, // TODO: Firebase Storage upload — окрема задача
             },
           ]);
+          showToast(
+            `Added ${data.merchant || "receipt"} — ${data.lineItems.length} item${data.lineItems.length > 1 ? "s" : ""} recorded, tap to review.`,
+          );
+        } else {
+          showToast(
+            "Couldn't read any items on this receipt — please enter details manually.",
+          );
         }
       } catch (err) {
         console.error("Scan failed:", err);
