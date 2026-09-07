@@ -174,6 +174,11 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   // не порожній рядок, щоб водій завжди бачив осмислений вибір, а не
   // "нічого не вибрано" одразу після додавання рядка.
   const DEFAULT_EXPENSE_CATEGORY = EXPENSE_CATEGORIES[0].name;
+  // За замовчуванням список витрат — READ-ONLY (звичайні рядки, тап
+  // показує фото чека). Редагування розблоковується явною кнопкою
+  // "Edit", щоб випадковий тап по рядку не відкривав інпути.
+  const [editingExpenses, setEditingExpenses] = useState(false);
+  const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null);
 
   const currentLoad = {
     miles: Number(miles) || 0,
@@ -1301,8 +1306,31 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         <div
           style={{ height: 1, background: "var(--border)", margin: "4px 0" }}
         />
-        <FormSection label="OTHER EXPENSES" />
-        {expenses.length > 0 && (
+        <FormSection
+          label="OTHER EXPENSES"
+          right={
+            expenses.length > 0 && (
+              <button
+                onClick={() => setEditingExpenses((v) => !v)}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.06em",
+                  color: editingExpenses
+                    ? "var(--accent)"
+                    : "var(--text-muted)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                {editingExpenses ? "DONE" : "EDIT"}
+              </button>
+            )
+          }
+        />
+        {editingExpenses && expenses.length > 0 && (
           <div
             style={{
               display: "grid",
@@ -1338,103 +1366,177 @@ export default function LoadForm({ load, onSave, onBack, user }) {
             <div />
           </div>
         )}
-        {expenses.map((e, i) => (
-          <div
-            key={i}
-            style={{
-              padding: "0 16px 16px",
-              borderBottom: "1px solid var(--border)",
-              marginBottom: 8,
-            }}
-          >
+        {expenses.map((e, i) =>
+          editingExpenses ? (
             <div
+              key={i}
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr auto",
-                gap: 8,
+                padding: "0 16px 16px",
+                borderBottom: "1px solid var(--border)",
                 marginBottom: 8,
-                alignItems: "flex-end",
               }}
             >
-              <input
-                type="text"
-                value={e.name}
-                placeholder="Lumper, tolls..."
-                onChange={(ev) => updateExpense(i, "name", ev.target.value)}
-                className="input"
-                style={{ fontSize: 14, padding: "10px 12px" }}
-              />
-              <input
-                type="text"
-                value={e.amount}
-                placeholder="0"
-                onChange={(ev) => updateExpense(i, "amount", ev.target.value)}
-                className="input"
-                style={{ fontSize: 14, padding: "10px 12px" }}
-              />
-              <button
-                onClick={() => removeExpense(i)}
+              <div
                 style={{
-                  height: 42,
-                  width: 36,
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-input)",
-                  background: "transparent",
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                  fontSize: 14,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr auto",
+                  gap: 8,
+                  marginBottom: 8,
+                  alignItems: "flex-end",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "var(--text-muted)")
-                }
               >
-                ×
-              </button>
+                <input
+                  type="text"
+                  value={e.name}
+                  placeholder="Lumper, tolls..."
+                  onChange={(ev) => updateExpense(i, "name", ev.target.value)}
+                  className="input"
+                  style={{ fontSize: 14, padding: "10px 12px" }}
+                />
+                <input
+                  type="text"
+                  value={e.amount}
+                  placeholder="0"
+                  onChange={(ev) => updateExpense(i, "amount", ev.target.value)}
+                  className="input"
+                  style={{ fontSize: 14, padding: "10px 12px" }}
+                />
+                <button
+                  onClick={() => removeExpense(i)}
+                  style={{
+                    height: 42,
+                    width: 36,
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-input)",
+                    background: "transparent",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "#f87171")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "var(--text-muted)")
+                  }
+                >
+                  ×
+                </button>
+              </div>
+              {/* Категорія — горизонтальний скрол тайлів замість dropdown,
+                  щоб водій міг обрати одним тапом за кермом, не відкриваючи
+                  додатковий екран/модалку. */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 6,
+                  overflowX: "auto",
+                  paddingBottom: 2,
+                }}
+              >
+                {EXPENSE_CATEGORIES.map((cat) => {
+                  const selected = e.category === cat.name;
+                  return (
+                    <button
+                      key={cat.name}
+                      onClick={() => updateExpense(i, "category", cat.name)}
+                      style={{
+                        flexShrink: 0,
+                        padding: "6px 10px",
+                        borderRadius: "var(--radius-btn)",
+                        border: "1px solid",
+                        borderColor: selected
+                          ? "var(--accent)"
+                          : "var(--border)",
+                        background: selected
+                          ? "rgba(255,138,61,0.12)"
+                          : "transparent",
+                        color: selected ? "var(--accent)" : "var(--text-muted)",
+                        fontFamily: "var(--font-sans)",
+                        fontSize: 12,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {cat.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            {/* Категорія — горизонтальний скрол тайлів замість dropdown,
-                щоб водій міг обрати одним тапом за кермом, не відкриваючи
-                додатковий екран/модалку. */}
-            <div
+          ) : (
+            // Read-only рядок — тап показує фото чека (якщо є), не
+            // відкриває редагування. Категорія і кількість позицій
+            // (для мульти-item сканів) показані як тихий підпис знизу.
+            <button
+              key={i}
+              onClick={() =>
+                e.receiptPhotoUrl
+                  ? setViewingReceiptUrl(e.receiptPhotoUrl)
+                  : showToast("No receipt photo attached to this expense.")
+              }
               style={{
-                display: "flex",
-                gap: 6,
-                overflowX: "auto",
-                paddingBottom: 2,
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                padding: "12px 16px",
+                borderBottom: "1px solid var(--border)",
+                background: "none",
+                border: "none",
+                borderBottomWidth: 1,
+                borderBottomStyle: "solid",
+                borderBottomColor: "var(--border)",
+                cursor: "pointer",
               }}
             >
-              {EXPENSE_CATEGORIES.map((cat) => {
-                const selected = e.category === cat.name;
-                return (
-                  <button
-                    key={cat.name}
-                    onClick={() => updateExpense(i, "category", cat.name)}
-                    style={{
-                      flexShrink: 0,
-                      padding: "6px 10px",
-                      borderRadius: "var(--radius-btn)",
-                      border: "1px solid",
-                      borderColor: selected ? "var(--accent)" : "var(--border)",
-                      background: selected
-                        ? "rgba(255,138,61,0.12)"
-                        : "transparent",
-                      color: selected ? "var(--accent)" : "var(--text-muted)",
-                      fontFamily: "var(--font-sans)",
-                      fontSize: 12,
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {cat.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 14,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {e.name || "(no description)"}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 14,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  ${e.amount || 0}
+                </span>
+              </div>
+              {(e.category || e.lineItems?.length) && (
+                <div
+                  style={{
+                    marginTop: 2,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {e.category}
+                  {e.category && e.lineItems?.length ? " · " : ""}
+                  {e.lineItems?.length
+                    ? `${e.lineItems.length} item${e.lineItems.length > 1 ? "s" : ""}`
+                    : ""}
+                </div>
+              )}
+            </button>
+          ),
+        )}
         <div
           style={{
             display: "grid",
@@ -1579,6 +1681,53 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         </div>
       </div>
       {toast && <Toast message={toast} />}
+      {viewingReceiptUrl && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 400,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setViewingReceiptUrl(null)}
+        >
+          <img
+            src={viewingReceiptUrl}
+            alt="Receipt"
+            style={{
+              maxWidth: "100%",
+              maxHeight: "100%",
+              borderRadius: "var(--radius-btn)",
+              objectFit: "contain",
+            }}
+          />
+          <button
+            onClick={() => setViewingReceiptUrl(null)}
+            style={{
+              position: "fixed",
+              top: 16,
+              right: 16,
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,0.3)",
+              background: "rgba(0,0,0,0.5)",
+              color: "#fff",
+              fontSize: 18,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }
