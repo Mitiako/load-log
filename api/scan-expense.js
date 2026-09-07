@@ -65,7 +65,7 @@ A receipt with many items is normal — extract ALL of them, do not summarize, s
                 type: "text",
                 text: "Extract the expense data from this receipt image.",
               },
-              { type: "image_url", image_url: { url: image } },
+              { type: "image_url", image_url: { url: image, detail: "high" } },
             ],
           },
         ],
@@ -81,13 +81,24 @@ A receipt with many items is normal — extract ALL of them, do not summarize, s
       return res.status(502).json({ error: "AI service error" });
     }
 
-    const content = data.choices?.[0]?.message?.content;
     const parsed = JSON.parse(content);
-    console.log(
-      "scan-expense lineItems count:",
-      parsed.lineItems?.length,
-      JSON.stringify(parsed.lineItems),
-    ); // ТИМЧАСОВО для діагностики
+
+    // Перевірка кодом, не довірою до моделі: якщо сума окремих позицій
+    // не збігається з надрукованим total чека — це ознака того, що
+    // OCR переплутав суми між рядками (row misalignment), а не просто
+    // помилка округлення. Позначаємо прапорцем — водій бачить
+    // попередження в UI, дані все одно повертаються для перегляду.
+    if (parsed.lineItems?.length && typeof parsed.total === "number") {
+      const itemsSum = parsed.lineItems.reduce(
+        (s, item) => s + (Number(item.amount) || 0),
+        0,
+      );
+      const diff = Math.abs(itemsSum - parsed.total);
+      if (diff > 0.02) {
+        parsed.amountsMismatch = true;
+      }
+    }
+
     return res.status(200).json(parsed);
   } catch (err) {
     console.error("Scan expense error:", err);

@@ -306,9 +306,15 @@ export default function LoadForm({ load, onSave, onBack, user }) {
               receiptPhotoUrl: null, // TODO: Firebase Storage upload — окрема задача
             },
           ]);
-          showToast(
-            `Added ${data.merchant || "receipt"} — ${data.lineItems.length} item${data.lineItems.length > 1 ? "s" : ""} recorded, tap to review.`,
-          );
+          if (data.amountsMismatch) {
+            showToast(
+              `Added ${data.merchant || "receipt"} — item amounts don't quite add up to the total, double-check them.`,
+            );
+          } else {
+            showToast(
+              `Added ${data.merchant || "receipt"} — ${data.lineItems.length} item${data.lineItems.length > 1 ? "s" : ""} recorded, tap to review.`,
+            );
+          }
         } else {
           showToast(
             "Couldn't read any items on this receipt — please enter details manually.",
