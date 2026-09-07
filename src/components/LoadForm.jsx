@@ -12,7 +12,7 @@ import RouteConnector from "./RouteConnector";
 import ScanRateConMenu from "./ScanRateConMenu";
 import { pdfToImagesBase64 } from "../utils/pdfToImage";
 import { lookupZip } from "../utils/zipLookup";
-import { EXPENSE_CATEGORIES } from "./utils/expenseCategories";
+import { EXPENSE_CATEGORIES } from "../utils/expenseCategories";
 
 const ORDINALS = ["", "first", "second", "third", "fourth", "fifth", "sixth"];
 function ordinal(n) {
