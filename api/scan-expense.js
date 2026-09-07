@@ -81,6 +81,7 @@ A receipt with many items is normal — extract ALL of them, do not summarize, s
       return res.status(502).json({ error: "AI service error" });
     }
 
+    const content = data.choices?.[0]?.message?.content;
     const parsed = JSON.parse(content);
 
     // Перевірка кодом, не довірою до моделі: якщо сума окремих позицій
