@@ -31,18 +31,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `You are a business expense receipt scanner for a trucking app (NOT for fuel receipts — those are handled elsewhere). Respond with ONLY a JSON object, no other text, no markdown.
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GEMINI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gemini-3.6-flash",
+          messages: [
+            {
+              role: "system",
+              content: `You are a business expense receipt scanner for a trucking app (NOT for fuel receipts — those are handled elsewhere). Respond with ONLY a JSON object, no other text, no markdown.
 
 If this is actually a diesel fuel receipt, respond with exactly: {"isFuelReceipt": true}.
 If the image doesn't look like any kind of receipt, respond with exactly: {"notAReceipt": true}.
@@ -57,22 +59,26 @@ Otherwise extract:
   - category (pick the SINGLE best match from this exact list, use "Other" if nothing fits: ${CATEGORY_NAMES})
 
 A receipt with many items is normal — extract ALL of them, do not summarize, skip, or merge items. Never guess or invent values — only extract what is actually printed on the receipt.`,
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Extract the expense data from this receipt image.",
-              },
-              { type: "image_url", image_url: { url: image, detail: "high" } },
-            ],
-          },
-        ],
-        max_tokens: 4000,
-        response_format: { type: "json_object" },
-      }),
-    });
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Extract the expense data from this receipt image.",
+                },
+                {
+                  type: "image_url",
+                  image_url: { url: image, detail: "high" },
+                },
+              ],
+            },
+          ],
+          max_tokens: 4000,
+          response_format: { type: "json_object" },
+        }),
+      },
+    );
 
     const data = await response.json();
 
