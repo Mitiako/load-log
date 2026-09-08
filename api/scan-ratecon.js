@@ -86,34 +86,37 @@ Never guess or invent values anywhere in this task — only extract what is actu
 
   let openaiResponse;
   try {
-    openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    openaiResponse = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GEMINI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gemini-3.6-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Extract the rate confirmation data. This document has ${images.length} page(s), shown in order.`,
+                },
+                ...images.map((img) => ({
+                  type: "image_url",
+                  image_url: { url: img },
+                })),
+              ],
+            },
+          ],
+          max_tokens: 1600,
+          stream: true,
+        }),
       },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Extract the rate confirmation data. This document has ${images.length} page(s), shown in order.`,
-              },
-              ...images.map((img) => ({
-                type: "image_url",
-                image_url: { url: img },
-              })),
-            ],
-          },
-        ],
-        max_tokens: 1600,
-        stream: true,
-      }),
-    });
+    );
   } catch (err) {
     console.error("OpenAI fetch failed:", err);
     return res.status(502).json({ error: "AI service error" });
