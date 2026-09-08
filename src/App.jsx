@@ -305,6 +305,7 @@ export default function App() {
             load={
               selectedLoadIdx !== null ? currentLoads[selectedLoadIdx] : null
             }
+            tripLoads={currentLoads}
             onSave={handleSaveLoad}
             onBack={handleBack}
             user={user}

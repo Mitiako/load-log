@@ -25,7 +25,7 @@ function ordinalSuffix(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-export default function LoadForm({ load, onSave, onBack, user }) {
+export default function LoadForm({ load, tripLoads, onSave, onBack, user }) {
   const settings = getSettings();
 
   const [from, setFrom] = useState(load?.from || "");
@@ -348,6 +348,69 @@ export default function LoadForm({ load, onSave, onBack, user }) {
     }
   }
 
+  // Останній лоуд у ПОТОЧНОМУ Trip за датою, виключаючи сам лоуд що
+  // редагується (щоб не порівнювати запис сам із собою при edit).
+  // Не глобально по всіх Trips — водій сам підтвердив цю межу.
+  function findLastLoadInTrip() {
+    if (!tripLoads?.length) return null;
+    const others = tripLoads.filter((l) => l !== load);
+    if (others.length === 0) return null;
+    return [...others].sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  }
+
+  // Deadhead = відстань delivery попереднього лоуда → pickup поточного.
+  // Той самий route-miles.js, що вже рахує завантажені милі — просто
+  // інша пара точок. КОД рахує, не AI-модель (вона не бачить попередній
+  // лоуд узагалі, лише поточний RateCon-документ).
+  async function fetchDeadheadMiles(
+    newOriginCity,
+    newOriginState,
+    newOriginAddress,
+    newOriginZip,
+  ) {
+    const lastLoad = findLastLoadInTrip();
+    if (!lastLoad) return; // перший лоуд у Trip — поле лишається порожнім
+
+    // lastLoad.to зберігається як комбінований рядок "City, ST" — та
+    // сама логіка розбору, що вже є в buildRouteStops вище у файлі.
+    const parts = (lastLoad.to || "").split(",");
+    if (parts.length < 2) return; // не змогли розпарсити — тихо пропускаємо
+
+    const lastLoadCity = parts.slice(0, -1).join(",").trim();
+    const lastLoadState = parts[parts.length - 1].trim();
+
+    try {
+      const res = await authFetch("/api/route-miles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stops: [
+            {
+              city: lastLoadCity,
+              state: lastLoadState,
+              address: lastLoad.toAddress,
+              zip: lastLoad.toZip,
+            },
+            {
+              city: newOriginCity,
+              state: newOriginState,
+              address: newOriginAddress,
+              zip: newOriginZip,
+            },
+          ],
+        }),
+      });
+      const data = await res.json();
+      if (data.miles) {
+        setDh(String(data.miles));
+        setShowDh(true);
+      }
+    } catch (err) {
+      console.error("Deadhead miles fetch failed:", err);
+      // Тихо ігноруємо — водій довводить deadhead вручну, як і зараз.
+    }
+  }
+
   // Збирає впорядкований список усіх стопів маршруту для розрахунку миль:
   // перший pickup → додаткові pickup → додаткові delivery → останній delivery.
   // City/State тут беремо з полів форми, не з даних скану — так само
@@ -475,6 +538,20 @@ export default function LoadForm({ load, onSave, onBack, user }) {
         if (data.originZip) setFromZip(data.originZip);
         if (data.shipperName) setFromShipperName(data.shipperName);
         if (data.shipperContact) setFromShipperContact(data.shipperContact);
+
+        // Deadhead — рахуємо ОДРАЗУ з даних скану (data), не зі стейту
+        // (from/fromAddress/fromZip ще не встигли оновитись у React —
+        // та сама "stale closure" пастка, що вже прокоментована нижче
+        // для routeStops). Не блокуюче — просто запускаємо паралельно,
+        // не чекаючи на нього перед показом іншого тосту.
+        if (data.originCity && data.originState) {
+          fetchDeadheadMiles(
+            data.originCity,
+            data.originState,
+            data.originAddress,
+            data.originZip,
+          );
+        }
         if (data.destinationCity && data.destinationState) {
           setTo(`${data.destinationCity}, ${data.destinationState}`);
         }
