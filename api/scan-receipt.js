@@ -30,35 +30,38 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GEMINI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gemini-3.6-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a fuel receipt scanner for a trucking app. First check: is this actually a DIESEL FUEL receipt (truck stop, gas station, showing gallons pumped)? Respond with ONLY a JSON object, no other text, no markdown. If it is NOT a fuel receipt (e.g. it's a parts store, restaurant, or unrelated document), respond with exactly: {\"notFuelReceipt\": true}. If it IS a fuel receipt, extract: location (truck stop name and city/state if visible, e.g. 'Loves - Oklahoma City, OK'), date (YYYY-MM-DD format), gallons (number), amount (total dollar amount paid, number), discount (any discount/rebate shown, number, 0 if none visible). If a field is not visible or unclear, use null for that field. Never guess or invent values — only extract what is actually printed on the receipt.",
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Extract the fuel receipt data from this image.",
+                },
+                { type: "image_url", image_url: { url: image } },
+              ],
+            },
+          ],
+          max_tokens: 300,
+          response_format: { type: "json_object" },
+        }),
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a fuel receipt scanner for a trucking app. First check: is this actually a DIESEL FUEL receipt (truck stop, gas station, showing gallons pumped)? Respond with ONLY a JSON object, no other text, no markdown. If it is NOT a fuel receipt (e.g. it's a parts store, restaurant, or unrelated document), respond with exactly: {\"notFuelReceipt\": true}. If it IS a fuel receipt, extract: location (truck stop name and city/state if visible, e.g. 'Loves - Oklahoma City, OK'), date (YYYY-MM-DD format), gallons (number), amount (total dollar amount paid, number), discount (any discount/rebate shown, number, 0 if none visible). If a field is not visible or unclear, use null for that field. Never guess or invent values — only extract what is actually printed on the receipt.",
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Extract the fuel receipt data from this image.",
-              },
-              { type: "image_url", image_url: { url: image } },
-            ],
-          },
-        ],
-        max_tokens: 300,
-        response_format: { type: "json_object" },
-      }),
-    });
+    );
 
     const data = await response.json();
 
