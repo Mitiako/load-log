@@ -186,6 +186,7 @@ export default function ScanRateConMenu({ onScan, scanning }) {
         ref={fileInputRef}
         type="file"
         accept="image/*,application/pdf"
+        multiple
         style={{ display: "none" }}
         onChange={handleFileChange}
       />

@@ -383,27 +383,40 @@ export default function LoadForm({ load, onSave, onBack, user }) {
   }
 
   async function handleScanRateCon(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    if (files.length > 4) {
+      showToast("You can select up to 4 files at once.");
+      e.target.value = "";
+      return;
+    }
     setScanningRateCon(true);
     try {
-      // PDF конвертуємо в масив JPEG-картинок (усі сторінки) локально
-      // в браузері — OpenAI vision API приймає лише зображення, не PDF,
-      // і нам треба ВСІ сторінки, бо адреси/суми часто на другій-третій.
-      let imageDataUrls;
-      if (file.type === "application/pdf") {
-        const base64Pages = await pdfToImagesBase64(file);
-        imageDataUrls = base64Pages.map(
-          (b64) => `data:image/jpeg;base64,${b64}`,
-        );
-      } else {
-        const singleImage = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (ev) => resolve(ev.target.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        imageDataUrls = [singleImage];
+      // Кожен вибраний файл конвертуємо в зображення (PDF — усі сторінки
+      // через pdfToImagesBase64, фото — як є). Водій часто отримує
+      // RateCon кількома окремими фото (stops на одному, ціна на
+      // іншому) — тому обробляємо весь набір файлів, не лише перший.
+      const imageDataUrlArrays = await Promise.all(
+        files.map(async (file) => {
+          if (file.type === "application/pdf") {
+            const base64Pages = await pdfToImagesBase64(file);
+            return base64Pages.map((b64) => `data:image/jpeg;base64,${b64}`);
+          }
+          const singleImage = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => resolve(ev.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          return [singleImage];
+        }),
+      );
+      const imageDataUrls = imageDataUrlArrays.flat();
+      if (imageDataUrls.length > 4) {
+        showToast("Too many pages total (max 4) — try fewer files or pages.");
+        setScanningRateCon(false);
+        e.target.value = "";
+        return;
       }
 
       const res = await authFetch("/api/scan-ratecon", {
