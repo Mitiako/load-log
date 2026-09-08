@@ -69,7 +69,7 @@ A receipt with many items is normal — extract ALL of them, do not summarize, s
             ],
           },
         ],
-        max_tokens: 2000,
+        max_tokens: 4000,
         response_format: { type: "json_object" },
       }),
     });
