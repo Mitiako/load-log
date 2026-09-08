@@ -53,12 +53,12 @@ Otherwise extract:
 - merchant (store/vendor name as printed, e.g. "Walmart", "O'Reilly Auto Parts")
 - date (YYYY-MM-DD format, null if not visible)
 - total (the final total amount paid, number)
-- lineItems: an array of EVERY distinct item/service on the receipt, each with:
-  - label (item name exactly as printed, or a short clear description if abbreviated)
+- lineItems: an array of EVERY distinct item/service on the receipt, PLUS sales tax as its own entry if shown separately, each with:
+  - label (item name exactly as printed, or a short clear description if abbreviated; use "Sales Tax" for tax line(s) — combine multiple tax lines like "Tax1"/"Tax2" into one "Sales Tax" entry with their summed amount)
   - amount (that item's price, number)
   - category (pick the SINGLE best match from this exact list, use "Other" if nothing fits: ${CATEGORY_NAMES})
 
-A receipt with many items is normal — extract ALL of them, do not summarize, skip, or merge items. Never guess or invent values — only extract what is actually printed on the receipt.`,
+The sum of all lineItems amounts (including sales tax) should equal the printed total. A receipt with many items is normal — extract ALL of them, do not summarize, skip, or merge items. Never guess or invent values — only extract what is actually printed on the receipt.`,
             },
             {
               role: "user",
