@@ -97,6 +97,7 @@ The sum of lineItems amounts (including sales tax) should closely match the prin
 
     const content = data.choices?.[0]?.message?.content;
     const parsed = JSON.parse(content);
+    console.log("scan-expense raw output:", JSON.stringify(parsed)); // ТИМЧАСОВО для діагностики
 
     // Перевірка кодом, не довірою до моделі: якщо сума окремих позицій
     // не збігається з надрукованим total чека — це ознака того, що
