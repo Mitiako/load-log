@@ -58,7 +58,15 @@ Otherwise extract:
   - amount (that item's price, number)
   - category (pick the SINGLE best match from this exact list, use "Other" if nothing fits: ${CATEGORY_NAMES})
 
-The sum of all lineItems amounts (including sales tax) should equal the printed total. A receipt with many items is normal — extract ALL of them, do not summarize, skip, or merge items. Never guess or invent values — only extract what is actually printed on the receipt.`,
+Ignore completely (do not create lineItems for):
+- Masked card numbers (e.g. XXXXXXXXXXXX0000)
+- Authorization / approval codes
+- Terminal ID, merchant ID, store number
+- Loyalty / rewards / points lines
+- "Redeem", "Cash Back", "Change Due", "Amount Tendered" (these are payment method info, not purchased items)
+- Any purely technical or payment-processing line
+
+The sum of lineItems amounts (including sales tax) should closely match the printed total. If there's a small unexplained difference, still only extract what is clearly a purchased item or service printed on the receipt — never invent an extra item just to force the sum to match. A receipt with many items is normal — extract ALL genuine items, do not summarize, skip, or merge them. Never guess or invent values — only extract what is actually printed on the receipt.`,
             },
             {
               role: "user",
