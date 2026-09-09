@@ -112,7 +112,7 @@ Never guess or invent values anywhere in this task — only extract what is actu
               ],
             },
           ],
-          max_tokens: 1600,
+          max_tokens: 3200,
           stream: true,
         }),
       },
