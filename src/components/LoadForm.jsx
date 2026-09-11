@@ -13,7 +13,7 @@ import ScanRateConMenu from "./ScanRateConMenu";
 import { pdfToImagesBase64 } from "../utils/pdfToImage";
 import { lookupZip } from "../utils/zipLookup";
 import { EXPENSE_CATEGORIES } from "../utils/expenseCategories";
-import { uploadReceiptPhoto } from "../data/storage";
+import { uploadReceiptPhoto, getReceiptPhotoUrl } from "../data/storage";
 
 const ORDINALS = ["", "first", "second", "third", "fourth", "fifth", "sixth"];
 function ordinal(n) {
@@ -308,10 +308,9 @@ export default function LoadForm({
           // в Storage АСИНХРОННО, не блокуючи додавання рядка витрати —
           // якщо upload впаде, водій все одно бачить свою витрату,
           // просто без фото для перегляду.
-          let receiptPhotoUrl = null;
+          let receiptPhotoKey = null;
           try {
-            receiptPhotoUrl = await uploadReceiptPhoto(
-              user.uid,
+            receiptPhotoKey = await uploadReceiptPhoto(
               tripId,
               ev.target.result,
             );
@@ -327,7 +326,7 @@ export default function LoadForm({
               name: data.merchant || "Receipt",
               amount: data.total ?? "",
               lineItems: data.lineItems,
-              receiptPhotoUrl,
+              receiptPhotoKey,
             },
           ]);
           if (data.amountsMismatch) {
@@ -1593,11 +1592,19 @@ export default function LoadForm({
             // (для мульти-item сканів) показані як тихий підпис знизу.
             <button
               key={i}
-              onClick={() =>
-                e.receiptPhotoUrl
-                  ? setViewingReceiptUrl(e.receiptPhotoUrl)
-                  : showToast("No receipt photo attached to this expense.")
-              }
+              onClick={async () => {
+                if (!e.receiptPhotoKey) {
+                  showToast("No receipt photo attached to this expense.");
+                  return;
+                }
+                try {
+                  const url = await getReceiptPhotoUrl(e.receiptPhotoKey);
+                  setViewingReceiptUrl(url);
+                } catch (err) {
+                  console.error("Failed to load receipt photo:", err);
+                  showToast("Couldn't load the receipt photo.");
+                }
+              }}
               style={{
                 display: "block",
                 width: "100%",

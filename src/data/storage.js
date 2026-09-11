@@ -1,14 +1,13 @@
 // src/data/storage.js
-// Firebase Storage — стиснення й завантаження фото чеків/документів.
-// Профіль (truck/trailer/CDL) свідомо лишається на base64-в-Firestore
-// (фіксована кількість фото, окрема усталена система) — це тільки для
-// НЕОБМЕЖЕНОЇ кількості записів (чек на кожну заправку/витрату/лоуд).
-import { storage } from "../firebase";
-import { ref, uploadString, getDownloadURL } from "firebase/storage";
+// Завантаження й перегляд фото чеків через Cloudflare R2 (не Firebase
+// Storage — той вимагає платного Blaze-плану лише для активації).
+// Стиснення відбувається тут, на клієнті, ПЕРЕД відправкою на сервер —
+// самі R2-ключі ніколи не потрапляють у клієнтський код, весь
+// фактичний upload/download проходить через наші authFetch-ендпоінти.
+import { authFetch } from "../utils/authFetch";
 
-// Стискає зображення в браузері ПЕРЕД завантаженням: максимум 1600px
-// по довшій стороні, JPEG якість 0.7. Це і зменшує розмір у Storage, і
-// зменшує трафік — водій не тягне мегабайти на кожен перегляд.
+// Стискає зображення в браузері: максимум 1600px по довшій стороні,
+// JPEG якість 0.7. Зменшує розмір і в R2, і трафік при перегляді.
 export function compressImage(dataUrl, maxDimension = 1600, quality = 0.7) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -33,15 +32,29 @@ export function compressImage(dataUrl, maxDimension = 1600, quality = 0.7) {
   });
 }
 
-// Завантажує стиснуте фото в Storage за шляхом
-// users/{uid}/receipts/{tripId}/{timestamp}.jpg і повертає ПОСТІЙНИЙ
-// download URL — саме його зберігаємо в Firestore-записі витрати
-// (не сам файл), тому <img> вантажить повний розмір лише коли водій
-// реально відкриє перегляд, а не при кожному завантаженні лоуда.
-export async function uploadReceiptPhoto(uid, tripId, dataUrl) {
+// Стискає й завантажує фото чека, повертає КЛЮЧ файлу в R2 (не URL —
+// бакет приватний, перегляд відбувається через getReceiptPhotoUrl).
+export async function uploadReceiptPhoto(tripId, dataUrl) {
   const compressed = await compressImage(dataUrl);
-  const path = `users/${uid}/receipts/${tripId}/${Date.now()}.jpg`;
-  const storageRef = ref(storage, path);
-  await uploadString(storageRef, compressed, "data_url");
-  return getDownloadURL(storageRef);
+  const res = await authFetch("/api/upload-receipt-photo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: compressed, tripId }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Upload failed");
+  return data.key;
+}
+
+// Перетворює збережений R2-ключ на тимчасовий blob-URL для показу в
+// <img>. Викликається лише коли водій РЕАЛЬНО відкриває перегляд —
+// не при завантаженні лоуда, тому немає зайвого трафіку.
+export async function getReceiptPhotoUrl(key) {
+  const res = await authFetch(
+    `/api/get-receipt-photo?key=${encodeURIComponent(key)}`,
+    { method: "GET" },
+  );
+  if (!res.ok) throw new Error("Failed to load photo");
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }
