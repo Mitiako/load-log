@@ -13,6 +13,7 @@ import ScanRateConMenu from "./ScanRateConMenu";
 import { pdfToImagesBase64 } from "../utils/pdfToImage";
 import { lookupZip } from "../utils/zipLookup";
 import { EXPENSE_CATEGORIES } from "../utils/expenseCategories";
+import { uploadReceiptPhoto } from "../data/storage";
 
 const ORDINALS = ["", "first", "second", "third", "fourth", "fifth", "sixth"];
 function ordinal(n) {
@@ -25,7 +26,14 @@ function ordinalSuffix(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-export default function LoadForm({ load, tripLoads, onSave, onBack, user }) {
+export default function LoadForm({
+  load,
+  tripLoads,
+  tripId,
+  onSave,
+  onBack,
+  user,
+}) {
   const settings = getSettings();
 
   const [from, setFrom] = useState(load?.from || "");
@@ -295,15 +303,31 @@ export default function LoadForm({ load, tripLoads, onSave, onBack, user }) {
           );
         } else if (data.lineItems?.length) {
           // Один рядок витрати на весь чек — merchant + загальна сума,
-          // деталізація по позиціях вкладена в lineItems (для майбутнього
-          // перегляду по кліку і для Analytics donut-агрегації).
+          // деталізація по позиціях вкладена в lineItems (для перегляду
+          // по кліку і для Analytics donut-агрегації). Фото завантажуємо
+          // в Storage АСИНХРОННО, не блокуючи додавання рядка витрати —
+          // якщо upload впаде, водій все одно бачить свою витрату,
+          // просто без фото для перегляду.
+          let receiptPhotoUrl = null;
+          try {
+            receiptPhotoUrl = await uploadReceiptPhoto(
+              user.uid,
+              tripId,
+              ev.target.result,
+            );
+          } catch (uploadErr) {
+            console.error("Receipt photo upload failed:", uploadErr);
+            // Тихо ігноруємо — витрата все одно зберігається, просто
+            // без фото для перегляду.
+          }
+
           setExpenses((prev) => [
             ...prev,
             {
               name: data.merchant || "Receipt",
               amount: data.total ?? "",
               lineItems: data.lineItems,
-              receiptPhotoUrl: null, // TODO: Firebase Storage upload — окрема задача
+              receiptPhotoUrl,
             },
           ]);
           if (data.amountsMismatch) {

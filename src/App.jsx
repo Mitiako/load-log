@@ -306,6 +306,7 @@ export default function App() {
               selectedLoadIdx !== null ? currentLoads[selectedLoadIdx] : null
             }
             tripLoads={currentLoads}
+            tripId={currentTrip.id}
             onSave={handleSaveLoad}
             onBack={handleBack}
             user={user}
