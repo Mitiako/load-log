@@ -5,6 +5,10 @@ import { calcLoad, fmtMoney } from "../data/calc";
 export default function TripCard({ trip, index, onClick, onEdit, onDelete }) {
   const [confirm, setConfirm] = useState(false);
 
+  const totalMyGross = (trip.loads || []).reduce(
+    (s, l) => s + calcLoad(l).myGross,
+    0,
+  );
   const totalNet = (trip.loads || []).reduce((s, l) => s + calcLoad(l).net, 0);
   const totalMiles = (trip.loads || []).reduce(
     (s, l) => s + l.miles + (l.dh || 0),
@@ -118,18 +122,36 @@ export default function TripCard({ trip, index, onClick, onEdit, onDelete }) {
         >
           {trip.name}
         </span>
-        <span
+        <div
           style={{
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 16,
-            color: totalNet >= 0 ? "var(--accent)" : "#f87171",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
             flexShrink: 0,
             marginLeft: 12,
           }}
         >
-          {fmtMoney(totalNet)}
-        </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 16,
+              color: "var(--accent)",
+            }}
+          >
+            {fmtMoney(totalMyGross)}
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: "var(--text-muted)",
+              marginTop: 1,
+            }}
+          >
+            net {fmtMoney(totalNet)}
+          </span>
+        </div>
       </div>
 
       {/* Рядок 2: дата */}

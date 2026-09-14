@@ -12,6 +12,10 @@ export default function LoadList({
   onDelete,
   onBack,
 }) {
+  const totalMyGross = (loads || []).reduce(
+    (s, l) => s + calcLoad(l).myGross,
+    0,
+  );
   const totalNet = (loads || []).reduce((s, l) => s + calcLoad(l).net, 0);
   const totalMiles = (loads || []).reduce(
     (s, l) => s + l.miles + (l.dh || 0),
@@ -94,16 +98,27 @@ export default function LoadList({
             {loadCount} {loadCount === 1 ? "load" : "loads"} ·{" "}
             {totalMiles.toLocaleString()} mi
           </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 15,
-              color: totalNet >= 0 ? "var(--accent)" : "#f87171",
-            }}
-          >
-            {fmtMoney(totalNet)}
-          </span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                fontSize: 15,
+                color: "var(--accent)",
+              }}
+            >
+              {fmtMoney(totalMyGross)}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--text-muted)",
+              }}
+            >
+              (net {fmtMoney(totalNet)})
+            </span>
+          </div>
         </div>
       )}
 

@@ -183,18 +183,39 @@ export default function LoadCard({ load, index, onClick, onDelete }) {
             </span>
           )}
         </div>
-        {/* Net profit */}
-        <span
+        {/* Your gross — те, що компанія/брокер винен за контрактом,
+            НЕЗАЛЕЖНО від особистих витрат водія (паливо, Costco тощо).
+            Головне число тут — щоб не виникало плутанини "скільки мені
+            винні" vs "скільки лишилось на руках після моїх витрат". */}
+        <div
           style={{
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 17,
-            color: c.net >= 0 ? "var(--accent)" : "#f87171",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
             flexShrink: 0,
           }}
         >
-          {fmtMoney(c.net)}
-        </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 17,
+              color: "var(--accent)",
+            }}
+          >
+            {fmtMoney(c.myGross)}
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: "var(--text-muted)",
+              marginTop: 1,
+            }}
+          >
+            net {fmtMoney(c.net)}
+          </span>
+        </div>
       </div>
 
       {/* Рядок 2: miles · gross */}
