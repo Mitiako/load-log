@@ -1,8 +1,8 @@
-// LoadDetail.jsx
 import { authFetch } from "../utils/authFetch";
 import { useState, useRef } from "react";
 import { calcLoad, fmtDate, fmtMoney } from "../data/calc";
 import { compressImage } from "../utils/compressImage";
+import { getReceiptPhotoUrl } from "../data/storage";
 import { BolIcon, CloseIcon } from "./icons/ProfileIcons";
 import ZoomableImage from "./ZoomableImage";
 import Header from "./Header";
@@ -18,7 +18,18 @@ export default function LoadDetail({
   const [scanningBol, setScanningBol] = useState(false);
   const [bolToast, setBolToast] = useState(null);
   const [viewingBol, setViewingBol] = useState(false);
+  const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null);
   const bolRef = useRef(null);
+
+  async function handleViewReceipt(key) {
+    if (!key) return;
+    try {
+      const url = await getReceiptPhotoUrl(key);
+      setViewingReceiptUrl(url);
+    } catch (err) {
+      console.error("Failed to load receipt photo:", err);
+    }
+  }
 
   function showBolToast(message) {
     setBolToast(message);
@@ -177,9 +188,22 @@ export default function LoadDetail({
               {d.date && <Row label="Fuel date" value={fmtDate(d.date)} />}
             </div>
           ))}
-          {load.expenses?.map((e, i) => (
-            <Row key={i} label={e.name} value={fmtMoney(e.amount)} />
-          ))}
+          {load.expenses?.map((e, i) =>
+            e.receiptPhotoKey ? (
+              <div
+                key={i}
+                onClick={() => handleViewReceipt(e.receiptPhotoKey)}
+                style={{ cursor: "pointer" }}
+              >
+                <Row
+                  label={`${e.name}${e.lineItems?.length ? ` (${e.lineItems.length} items) 📷` : " 📷"}`}
+                  value={fmtMoney(e.amount)}
+                />
+              </div>
+            ) : (
+              <Row key={i} label={e.name} value={fmtMoney(e.amount)} />
+            ),
+          )}
           {c.fuelActual > 0 && (
             <Row label="Total fuel (actual)" value={fmtMoney(c.fuelActual)} />
           )}
@@ -376,6 +400,40 @@ export default function LoadDetail({
           <ZoomableImage src={load.bolPhoto} alt="BOL full size" />
           <button
             onClick={() => setViewingBol(false)}
+            style={{
+              position: "absolute",
+              top: 20,
+              right: 20,
+              width: 36,
+              height: 36,
+              borderRadius: 99,
+              border: "none",
+              background: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              zIndex: 301,
+            }}
+          >
+            <CloseIcon size={16} style={{ color: "#fff" }} />
+          </button>
+        </div>
+      )}
+
+      {viewingReceiptUrl && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 300,
+            background: "rgba(0,0,0,0.9)",
+          }}
+        >
+          <ZoomableImage src={viewingReceiptUrl} alt="Receipt full size" />
+          <button
+            onClick={() => setViewingReceiptUrl(null)}
             style={{
               position: "absolute",
               top: 20,
