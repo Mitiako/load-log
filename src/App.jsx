@@ -183,7 +183,7 @@ export default function App() {
     const updatedLoads =
       selectedLoadIdx !== null
         ? currentLoads.map((l, i) => (i === selectedLoadIdx ? load : l))
-        : [...currentLoads, load];
+        : [load, ...currentLoads];
     const updatedTrip = { ...currentTrip, loads: updatedLoads };
     setTrips(trips.map((t, i) => (i === selectedTripIdx ? updatedTrip : t)));
     await saveTrip(user.uid, updatedTrip);
