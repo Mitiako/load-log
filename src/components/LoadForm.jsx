@@ -686,9 +686,6 @@ export default function LoadForm({
   }
 
   function handleSave() {
-    showToast(
-      `ДІАГНОСТИКА: gross=${gross} fromAddress=${fromAddress} fromZip=${fromZip} toAddress=${toAddress} toZip=${toZip}`,
-    ); // ТИМЧАСОВО
     if (!gross) return;
     if (!fromAddress || !fromZip || !toAddress || !toZip) {
       setLocationError(true);
