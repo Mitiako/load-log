@@ -172,8 +172,8 @@ export default function LoadDetail({
             : `${load.payVal}¢/mile`
         }
       />
-      <Row label="Your gross" value={fmtMoney(c.myGross)} />
-      <Row label="RPM" value={`$${c.ppm.toFixed(2)}/mi`} />
+      <Row label="Your gross" value={fmtMoney(c.myGross)} highlight />
+      <Row label="Net RPM (after deadhead)" value={`$${c.ppm.toFixed(2)}/mi`} />
       <Row label="Total expenses" value={fmtMoney(c.fuelActual + c.otherExp)} />
 
       {(load.diesel?.length > 0 || load.expenses?.length > 0) && (
@@ -459,7 +459,7 @@ export default function LoadDetail({
   );
 }
 
-function Row({ label, value }) {
+function Row({ label, value, highlight }) {
   return (
     <div
       style={{
@@ -468,13 +468,15 @@ function Row({ label, value }) {
         alignItems: "center",
         padding: "12px 20px",
         borderBottom: "1px solid var(--border)",
+        background: highlight ? "rgba(255,138,61,0.08)" : "transparent",
       }}
     >
       <span
         style={{
           fontFamily: "var(--font-sans)",
           fontSize: 14,
-          color: "var(--text-secondary)",
+          fontWeight: highlight ? 600 : 400,
+          color: highlight ? "var(--text-primary)" : "var(--text-secondary)",
         }}
       >
         {label}
@@ -482,9 +484,9 @@ function Row({ label, value }) {
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 14,
-          fontWeight: 500,
-          color: "var(--text-primary)",
+          fontSize: highlight ? 16 : 14,
+          fontWeight: highlight ? 700 : 500,
+          color: highlight ? "var(--accent)" : "var(--text-primary)",
         }}
       >
         {value}
